@@ -1,0 +1,13 @@
+behavior:
+  scenarios:
+    - id: AC-1
+      description: "Spec Kit provider adapter exists"
+    - id: AC-2
+      description: "converge generates requirement spec plan tasks bmad lock"
+    - id: AC-3
+      description: "validate passes and drift shows none"
+model:
+  schemas:
+    - requirement_boundary_v1
+architecture:
+  calm_ref: .ananke/architecture/system.calm.json

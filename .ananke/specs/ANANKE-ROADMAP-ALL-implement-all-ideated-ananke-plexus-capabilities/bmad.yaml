@@ -1,0 +1,17 @@
+behavior:
+  scenarios:
+    - id: AC-1
+      description: "All epics A-M have tracked implementation tasks"
+    - id: AC-2
+      description: "Spec pipeline maintains lock and drift checks"
+    - id: AC-3
+      description: "Each roadmap phase is represented by executable milestones"
+    - id: AC-4
+      description: "Security and provenance controls are part of release criteria"
+    - id: AC-5
+      description: "MCP APM lifecycle and graph integrations are delivered incrementally"
+model:
+  schemas:
+    - requirement_boundary_v1
+architecture:
+  calm_ref: .ananke/architecture/system.calm.json

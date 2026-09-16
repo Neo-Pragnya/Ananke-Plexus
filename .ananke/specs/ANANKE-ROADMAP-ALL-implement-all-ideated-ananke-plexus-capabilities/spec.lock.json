@@ -1,0 +1,11 @@
+{
+  "feature_dir": "ANANKE-ROADMAP-ALL-implement-all-ideated-ananke-plexus-capabilities",
+  "content_hash": "613971010993379c67dcf1058c23d1bdfa4895035a37386d6ebf8d0f2f82652f",
+  "files": {
+    "requirement.md": "37b7485df865b25961f0e8c1f5760feb68e0b123238f6c7eee4d760ad255a82f",
+    "spec.md": "ededc5025f08bf9d349b09283356742e297de58dbc1d2e7d36124eda0555a1d1",
+    "plan.md": "2a7d1538ba7854451dc133bd43725e8745aa85837a855aa5587859d7f74a0e6b",
+    "tasks.md": "76728d2bea9bc0ec7461b9bd88bb695885af6efa4be0942064106104f99dd481",
+    "bmad.yaml": "a39768c96bc137b39746add3401d418dbdc35168181844afd18bd7b2ad994c2e"
+  }
+}

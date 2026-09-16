@@ -1,0 +1,83 @@
+site_name: Ananke Plexus
+site_description: >-
+  A local-first ADLC control plane for governed autonomous software engineering.
+  Spec-driven development, CALM architecture, code graphs, policy gates, and verifiable evidence.
+site_url: https://neo-pragnya.github.io/ananke-plexus/
+repo_url: https://github.com/neo-pragnya/ananke-plexus
+repo_name: neo-pragnya/ananke-plexus
+copyright: Copyright &copy; 2026 Neo Pragnya Architecture Group — Apache-2.0
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep-purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: deep-purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/neo-pragnya/ananke-plexus
+
+nav:
+  - Home: index.md
+  - Concepts:
+      - Why Ananke Plexus: concepts/why-ananke.md
+      - System Architecture: concepts/architecture.md
+      - Ananke BMAD Contracts: concepts/bmad.md
+      - Code Graph Intelligence: concepts/graph.md
+      - Policy Engine & Security: concepts/policy-security.md
+      - MCP Server & APM: concepts/mcp-apm.md
+  - Guides:
+      - Getting Started: guides/getting-started.md
+      - Setup & Capabilities: guides/setup-and-capabilities.md
+      - Release Guide: guides/release.md
+      - Implementation Log: guides/implementation-log.md
+  - Reference:
+      - CLI Commands: reference/commands.md
+      - Configuration: reference/configuration.md
+      - Policy Language: reference/policy.md

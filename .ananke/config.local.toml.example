@@ -1,0 +1,10 @@
+# Local-only overrides. Copy to config.local.toml (ignored by git).
+[jira]
+base_url = "https://example.atlassian.net"
+email = ""
+token = { env = "ANANKE_JIRA_TOKEN" }
+
+[bitbucket]
+base_url = "https://api.bitbucket.org"
+username = ""
+app_password = { env = "ANANKE_BITBUCKET_APP_PASSWORD" }

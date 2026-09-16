@@ -1,0 +1,23 @@
+[skill]
+name = "code-graph-reviewer"
+version = "0.1.0"
+description = "Imported Copilot skill"
+license = "UNKNOWN"
+
+[compatibility]
+ananke = ">=0.1,<1"
+skill_api = "1"
+
+[permissions]
+filesystem_read = ["src/**", ".ananke/**"]
+filesystem_write = [".ananke/evidence/**"]
+network = []
+shell = []
+
+[entrypoints]
+instructions = "SKILL.md"
+
+[provenance]
+source = "copilot"
+repository = "tests/fixtures/copilot-skills"
+revision = "local"

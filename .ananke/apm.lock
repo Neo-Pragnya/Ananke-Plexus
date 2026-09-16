@@ -1,0 +1,22 @@
+{
+  "packages": [
+    {
+      "name": "code-graph-reviewer",
+      "version": "0.1.0",
+      "source": "/Users/abhikanap/Documents/Repositories/Ananke-Plexus/.ananke/tmp/import-code-graph-reviewer",
+      "digest": "63efd3b0ed2fcfeca0536c4c28e6559adc6e534e8c863dc2da780ed7b999aa98",
+      "installed_at": "2026-09-16T03:49:14.866819+00:00",
+      "permissions": {
+        "filesystem_read": [
+          "src/**",
+          ".ananke/**"
+        ],
+        "filesystem_write": [
+          ".ananke/evidence/**"
+        ],
+        "network": [],
+        "shell": []
+      }
+    }
+  ]
+}

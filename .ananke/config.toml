@@ -1,0 +1,19 @@
+[project]
+name = "ananke-project"
+default_branch = "main"
+
+[ananke]
+mode = "developer"
+fail_closed = true
+offline = false
+
+[spec]
+provider = "speckit"
+contract_mode = "ananke-bmad"
+
+[security]
+allow_network = false
+secret_scan = true
+sast = true
+sca = true
+license_scan = true

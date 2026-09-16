@@ -216,3 +216,34 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Ananke Plexus runtime state
+.ananke/tmp/
+.ananke/state/
+.ananke/runs/*/scratch/
+.ananke/config.local.toml
+.ananke/secrets/
+site/
+.ananke/state/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# IDEs (personal settings)
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+
+# Trivy
+trivy-report.txt
+trivy-report.json
+trivy-results.sarif
+
+# Ananke volatile runtime data (per spec section 9)
+.ananke/evidence/
+.ananke/runs/
+.ananke/graph/cache/
+.ananke/graph/metadata.json
+.ananke/graph/export.md
+.ananke/graph/overlays/

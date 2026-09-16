@@ -1,0 +1,164 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ananke-plexus"
+dynamic = ["version"]
+description = "A local-first ADLC control plane for governed agentic software engineering."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Neo Pragnya Architecture Group" }]
+keywords = [
+  "agentic",
+  "adlc",
+  "spec-driven-development",
+  "architecture-as-code",
+  "mcp",
+  "code-graph",
+  "ai-agents",
+  "software-supply-chain",
+  "devsecops",
+  "policy-engine",
+  "calm",
+  "evidence",
+  "tensegrity",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Security",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Environment :: Console",
+  "Operating System :: OS Independent",
+  "Typing :: Typed",
+]
+dependencies = [
+  "pydantic>=2.11,<3",
+  "typer>=0.16,<1",
+  "rich>=14,<15",
+  "httpx>=0.28,<1",
+  "platformdirs>=4,<5",
+  "PyYAML>=6,<7",
+  "jinja2>=3.1,<4",
+  "networkx>=3.4,<4",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=2,<3"]
+telemetry = [
+  "opentelemetry-api>=1.30",
+  "opentelemetry-sdk>=1.30",
+]
+jira = ["atlassian-python-api>=3"]
+security = [
+  "pip-audit>=2.8",
+]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.25",
+  "pytest-cov>=6",
+  "mypy>=1.15",
+  "ruff>=0.12",
+  "pre-commit>=4",
+  "python-dotenv>=1.0",
+  # uv handles build+publish; no twine dependency needed
+]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.6",
+  "pymdown-extensions>=10.15",
+]
+all = [
+  "ananke-plexus[mcp,telemetry,jira,security,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/neo-pragnya/ananke-plexus"
+Documentation = "https://neo-pragnya.github.io/ananke-plexus/"
+Changelog = "https://github.com/neo-pragnya/ananke-plexus/releases"
+Issues = "https://github.com/neo-pragnya/ananke-plexus/issues"
+
+[project.scripts]
+ananke = "ananke.plexus.cli.app:app"
+apm = "ananke.plexus.apm.cli:app"
+
+[tool.hatch.version]
+path = "src/ananke/plexus/version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ananke"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.25",
+  "pytest-cov>=6",
+  "mypy>=1.15",
+  "ruff>=0.12",
+  "pre-commit>=4",
+  "python-dotenv>=1.0",
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.6",
+  "pymdown-extensions>=10.15",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S", "UP", "SIM", "RUF"]
+# B008: function calls in default arg — Typer requires it
+# E501: line too long — accepted in CLI wrappers, complex expressions, tests
+ignore = ["B008", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# S101: use of assert — expected in tests
+# S603/S607: subprocess in tests uses controlled static commands
+# S604: shell=True in test stubs for sandbox checks
+"tests/**/*.py" = ["S101", "S603", "S604", "S607"]
+# S604: BackendCapabilities(shell=True) is a Pydantic field, not subprocess
+# S607: all subprocess calls use static commands; shutil.which used for full path
+"src/ananke/plexus/backends/adapters/*.py" = ["S604", "S607"]
+# S607: git/subprocess calls use static 'git' binary — intentional
+"src/ananke/plexus/lifecycle/git.py" = ["S607"]
+"src/ananke/plexus/lifecycle/worktree.py" = ["S607"]
+# S607: secrets resolver invokes user-configured commands
+"src/ananke/plexus/config/secrets.py" = ["S607"]
+# S607: MCP git commit uses static git binary
+"src/ananke/plexus/mcp/tools.py" = ["S607"]
+# S202: tarfile.extractall — Python 3.11; filter= added in 3.12
+"src/ananke/plexus/apm/bundle.py" = ["S202"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["ananke.plexus"]
+
+[tool.coverage.report]
+fail_under = 78
+show_missing = true
+omit = [
+  "*/cli/app.py",
+  "*/mcp/http.py",
+  "*/lifecycle/http_client.py",
+]

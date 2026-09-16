@@ -1,0 +1,7 @@
+[[rule]]
+id = "policy.core.fail-closed"
+stage = "verify"
+severity = "high"
+gate = "core"
+assert = "config.ananke.fail_closed == true"
+on_failure = "block"

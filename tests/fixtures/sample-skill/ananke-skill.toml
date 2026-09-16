@@ -1,0 +1,23 @@
+[skill]
+name = "graph-reviewer"
+version = "1.0.0"
+description = "Sample skill for tests"
+license = "MIT"
+
+[compatibility]
+ananke = ">=0.1,<1"
+skill_api = "1"
+
+[permissions]
+filesystem_read = ["src/**"]
+filesystem_write = [".ananke/evidence/**"]
+network = []
+shell = ["ananke graph *"]
+
+[entrypoints]
+instructions = "SKILL.md"
+
+[provenance]
+source = "local"
+repository = ""
+revision = "test"
