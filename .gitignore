@@ -253,5 +253,4 @@ trivy-results.sarif
 **/debug**
 **/Debug**
 **/DEBUG**
-Debug-Specs/*
-Debug-Specs/ANANKE_ENTERPRISE_AGENT_EVAL_HARNESS_SPEC.md
+Debug-Specs/**

@@ -33,6 +33,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Quality Assurance",
   "Topic :: Software Development :: Testing",
   "Topic :: Security",
@@ -100,7 +101,7 @@ eval-openevals = [
   "openevals>=0.1",
 ]
 eval-agentevals = [
-  "agentevals>=0.1",
+  "agentevals>=0.0.9,<0.1",
 ]
 eval-enterprise = [
   "ananke-plexus[eval-otel,eval-mlflow]",

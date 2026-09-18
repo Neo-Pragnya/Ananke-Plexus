@@ -2,7 +2,7 @@
 
 Ananke treats your repository as a **graph of semantic relationships**, not a flat directory tree.
 
-![Code Graph Intelligence](../../assets/code_graph_intelligence_infographic.png)
+![Code Graph Intelligence](../assets/code_graph_intelligence_infographic.png)
 
 ---
 

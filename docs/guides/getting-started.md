@@ -2,7 +2,7 @@
 
 This guide walks you through installing Ananke Plexus, initializing a project, and running your first governed development lifecycle.
 
-![Getting Started](../../assets/open_ecosystem_getting_started.png)
+![Getting Started](../assets/open_ecosystem_getting_started.png)
 
 ---
 
