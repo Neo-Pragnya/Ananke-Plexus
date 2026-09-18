@@ -102,13 +102,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks
+      - name: Gitleaks (licensed org action)
         if: ${{ secrets.GITLEAKS_LICENSE != '' }}
         uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
-      - name: Gitleaks skipped (no license configured)
+      - name: Gitleaks (free CLI fallback)
         if: ${{ secrets.GITLEAKS_LICENSE == '' }}
-        run: echo "Skipping Gitleaks because GITLEAKS_LICENSE is not configured."
+        run: |
+          docker run --rm \
+            -v "$PWD:/src" \
+            ghcr.io/gitleaks/gitleaks:latest \
+            detect \
+            --source="/src" \
+            --no-banner \
+            --redact \
+            --exit-code=1
+
+      - name: Gitleaks skipped notification
+        if: ${{ secrets.GITLEAKS_LICENSE == '' }}
+        run: echo "Using the free Gitleaks CLI fallback because no GITLEAKS_LICENSE secret is configured."
