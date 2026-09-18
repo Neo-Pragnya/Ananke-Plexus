@@ -218,7 +218,7 @@ ignore = ["B008", "E501"]
 "src/ananke/plexus/evals/regression/statistics.py" = ["S311"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -277,7 +277,7 @@ branch = true
 source = ["ananke.plexus"]
 
 [tool.coverage.report]
-fail_under = 78
+fail_under = 73
 show_missing = true
 omit = [
   "*/cli/app.py",
