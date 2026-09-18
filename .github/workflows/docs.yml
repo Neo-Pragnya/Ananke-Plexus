@@ -6,14 +6,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Install uv
         uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
@@ -28,7 +37,26 @@ jobs:
         run: uv sync --extra docs
 
       - name: Copy assets into docs directory
-        run: cp -r assets docs/assets
+        run: |
+          rm -rf docs/assets
+          mkdir -p docs/assets
+          cp -R assets/. docs/assets/
 
-      - name: Build and deploy docs
-        run: uv run mkdocs gh-deploy --force
+      - name: Build MkDocs site
+        run: uv run mkdocs build --strict --site-dir site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
