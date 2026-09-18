@@ -2,7 +2,7 @@
 
 Ananke's policy engine is the "Ananke" layer — the hard constraints that govern every agent action.
 
-![Verifiable Pipeline](../../assets/verifiable_pipeline_for_autonomous_engineering.png)
+![Verifiable Pipeline](../assets/verifiable_pipeline_for_autonomous_engineering.png)
 
 ---
 

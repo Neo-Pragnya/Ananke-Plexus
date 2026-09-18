@@ -3848,6 +3848,35 @@ To ensure all ideated features are implemented over time:
 - [x] `[dependency-groups]` replaces deprecated `[tool.uv.dev-dependencies]`
 - [x] release-pypi and release-testpypi now follow build-once → trivy → provenance → publish DAG
 
+**Completed session 5 — Enterprise Evaluation Harness:**
+- [x] N1 Core eval models (EvalStatus, SpanKind, Usage, AgentSpan, AgentTrace, EvalCase, EvalScore, EvalSuite, EvalDataset)
+- [x] N2 Evaluator port + EvaluationContext
+- [x] N3 Native outcome evaluators (ExactMatch, NormalizedMatch, RegexMatch, JsonEquality, SchemaConformance, SetEquality, NumericTolerance, TaskCompletion, AcceptanceCriteria)
+- [x] N4 Trajectory evaluators (Strict, OrderedSubset, UnorderedSubset, Superset, ForbiddenStep, RequiredStep, LoopDetection, StepEfficiency, GraphTrajectory)
+- [x] N5 Tool-use evaluators (ToolSelection, ToolArgument, ToolSchema, ToolAllowlist, ToolDenylist, DuplicateSideEffect, Idempotency, ToolRetry, ToolFailureRecovery)
+- [x] N6 Planning evaluators (PlanCoverage, PlanDependency, PlanFeasibility, PlanRisk, PlanAdherence, PlanRevisionQuality)
+- [x] N7 RAG/context evaluators (ContextPrecision, ContextRecall, Faithfulness, AnswerRelevance, RetrievalRedundancy, CitationCoverage, CitationCorrectness, ContextFreshness, ContextAuthority, ContextEfficiency)
+- [x] N8 Ananke-specific context evaluators (GraphContextPrecision, GraphContextRecall, BlastRadiusCoverage, SpecContextCoverage, ArchitectureContextCoverage, PolicyContextCoverage, ContextBudget)
+- [x] N9 Safety/governance evaluators (PermissionBoundary, FilesystemScope, NetworkPolicy, ShellPolicy, SecretAccess, SecretLeakage, ApprovalGate, DependencyApproval, AgentAuthority, HumanEscalation)
+- [x] N10 Software engineering evaluators (SpecAdherence, BehaviorCoverage, ModelConformance, ArchitectureConformance, UnexpectedDependency, BlastRadiusDiscipline, ChangedFileScope, TestSelection, RegressionRisk, BreakingContract)
+- [x] N11 Efficiency evaluators (TokenBudget, CostBudget, Latency, ToolCallCount, ModelCallCount, ContextSize, RetryCount, WallClock, CacheEfficiency)
+- [x] N12 Resilience evaluators (FailureRecognition, RecoveryPath, RepeatedFailure, CheckpointUsage, Rollback, Fallback, Escalation, PartialFailureContainment)
+- [x] N13 Multi-agent evaluators (DelegationAccuracy, RoleBoundary, HandoffCompleteness, SharedContextConsistency, CrossAgentContradiction, MessageDuplication, CyclicDelegation, FinalOwnership)
+- [x] N14 LLM Judge port + gateway (enterprise provider routing: Azure, Bedrock, local, custom gateway)
+- [x] N15 Judge ensemble + calibration (meta-eval: human-judge agreement, Cohen's kappa, positional bias detection)
+- [x] N16 OTel trace normalizer (runtime adapter for Pydantic AI, Microsoft Agent, Hermes, generic OTel)
+- [x] N17 Dataset loader/validator/versioning (YAML + provenance records)
+- [x] N18 Regression engine (compare, statistics, policy: mean/median/pass-rate/bootstrap CI)
+- [x] N19 Report generators (console, markdown, JSON, JUnit XML)
+- [x] N20 Third-party adapter stubs — lazy, graceful UNAVAILABLE (MLflow, DeepEval, Inspect AI, Ragas, OpenEvals, AgentEvals)
+- [x] N21 Dependency allowlist enforcement (license/package policy validation)
+- [x] N22 Evaluator registry (discovery, enable/disable, version, network declaration)
+- [x] N23 Eval evidence bundle (`evals/evidence/` under run directory: suite, scores, trace hash, policy decision, JUnit)
+- [x] N24 Eval gate policy integration (EvalScore[] → Ananke policy → PASS/WARN/REVIEW/BLOCK)
+- [x] N25 CLI `ananke eval` tree (run, suite list/show/validate, case show/run, dataset list/validate/import, baseline create/show/approve, compare, regression, trace show/import, judge list/test, adapter list/doctor, report)
+- [x] N26 PyPI extras: eval-otel, eval-mlflow, eval-pydantic, eval-deepeval, eval-inspect, eval-ragas, eval-openevals, eval-agentevals, eval-enterprise
+- [x] N27 Evaluation docs (concepts/evaluation.md, reference/eval-harness.md)
+
 **Remaining items:**
 - J3 Jira full adapter (dry-run baseline in place)
 - J4 Bitbucket full adapter (dry-run baseline in place)
@@ -3856,4 +3885,172 @@ To ensure all ideated features are implemented over time:
 - M3/M4 OIDC Trusted Publishing environments must be configured in GitHub repo settings
 - action SHA pinning in CI YAML files (`core/workflow_audit.py` detects; apply after lookup)
 - A4 enterprise vault adapter
+
+---
+
+## Epic N — Enterprise Agent Evaluation Harness
+
+The evaluation harness is the quality-intelligence plane of Ananke Plexus. It evaluates **what the agent did and how well**, while Ananke policy converts those measurements into governance decisions.
+
+### Design Principles
+
+- **Deterministic before probabilistic**: computed facts must not defer to an LLM judge.
+- **Policy separate from score**: evaluators produce facts/scores; Ananke Policy decides PASS/WARN/REVIEW/BLOCK.
+- **Run once, score many**: trace-only rescoring without re-executing the agent.
+- **Enterprise-safe by default**: core has no restrictive-license or SaaS dependencies.
+- **Runtime-independent**: evaluates Pydantic AI, Microsoft Agent, Hermes, custom OTel traces.
+- **Local-first**: zero network required for deterministic evaluation.
+- **Adapter-driven**: third-party frameworks live behind stable ports and fail gracefully.
+
+### N1 — Core Models
+
+Module: `evals/models/`
+
+Key types:
+- `EvalStatus` — `pass | warn | review | fail | error | skipped`
+- `SpanKind` — `agent | model | planning | tool | retrieval | subagent | approval | verification | policy | filesystem | shell`
+- `Usage` — prompt/completion tokens, cost_usd, duration_ms, tool_calls, retries
+- `AgentSpan` — span_id, parent_span_id, kind, name, timestamps, input, output, attributes, events
+- `AgentTrace` — trace_id, run_id, runtime, model, spans, final_output, usage, spec/arch/policy hashes, dataset_case_id
+- `EvalCase` — id, input, expected, metadata, tags
+- `EvalScore` — evaluator_id/version, dimension, metric, value, normalized_score, status, threshold, reason, evidence, deterministic, judge_model
+- `EvalSuite` — id, version, cases, evaluators (EvaluatorSpec[]), policy (GatePolicy)
+- `EvalDataset` — id, version, cases, provenance
+- `Rubric` — rubric_id, version, criteria, scale, prompt_template
+- `Baseline` — baseline_id, version, scores, approved_by, approved_at
+- `EvalReport` — run_id, suite_id, scores, policy_decision, baseline_comparison, timestamp
+
+### N2 — Evaluator Port
+
+```python
+class Evaluator(Protocol):
+    id: str
+    version: str
+
+    def evaluate(
+        self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
+    ) -> list[EvalScore]: ...
+```
+
+`EvaluationContext` holds: project root, policy engine ref, graph service ref, spec loader ref, architecture ref, CALM file, config.
+
+### N3–N13 — Native Evaluator Catalog
+
+Each evaluator family lives in its own subpackage: `evaluators/outcome/`, `evaluators/trajectory/`, etc.
+
+All evaluators:
+- declare `deterministic: bool`
+- return `list[EvalScore]` with full evidence
+- handle missing trace fields gracefully (`status=skipped`)
+- carry `id`, `version`, `dimension`, `metric`
+
+### N14–N15 — Judge Subsystem
+
+`judges/base.py` — `Judge` Protocol + `JudgeResult` model
+`judges/gateway.py` — enterprise gateway routing (Azure/Bedrock/local/custom), credential resolution, redaction, retries, budget
+`judges/ensemble.py` — multi-judge consensus, majority/weighted voting
+`judges/calibration.py` — human-judge agreement, Cohen's kappa, positional/length bias detection
+
+Judge input envelopes always separate trusted rubric from untrusted agent output.
+
+### N16 — Trace Normalizer
+
+`traces/normalize.py` — maps runtime-specific events → canonical `AgentTrace`
+`traces/otel.py` — OpenTelemetry span extraction
+`traces/importers.py` — load from JSON/JSONL file
+`traces/exporters.py` — export canonical trace to JSON/OTel proto
+
+Required resource attributes on OTel spans:
+- `service.name`, `service.version`, `deployment.environment`
+- `ananke.project.id`, `ananke.run.id`, `ananke.runtime`, `ananke.spec.hash`, `ananke.policy.hash`, `ananke.eval.suite`
+
+### N17 — Dataset Subsystem
+
+`datasets/loader.py` — YAML/JSON dataset loading with provenance
+`datasets/validator.py` — schema validation, sensitivity classification
+`datasets/versioning.py` — content hash, version tracking, case hashes
+
+Dataset classes: smoke, regression, golden, adversarial, rag, tool-use, architecture, recovery, production-mined, benchmark.
+
+### N18 — Regression Engine
+
+`regression/compare.py` — metric delta computation (candidate vs. baseline)
+`regression/statistics.py` — mean, median, pass-rate, variance, bootstrap CI, paired comparison
+`regression/policy.py` — regression thresholds (max_drop, max_increase_percent, allow_regression)
+
+### N19 — Reports
+
+`reports/console.py` — rich table output
+`reports/markdown.py` — PR-ready markdown eval table
+`reports/json.py` — structured JSON
+`reports/junit.py` — JUnit XML (CI integration)
+
+### N20 — Third-Party Adapters
+
+All adapters implement `EvaluatorAdapter` Protocol with `available() -> bool`. Missing dependencies → `status=UNAVAILABLE`, never a crash.
+
+| Adapter | Extra | Package |
+|---|---|---|
+| `adapters/mlflow/` | `eval-mlflow` | `mlflow` |
+| `adapters/deepeval/` | `eval-deepeval` | `deepeval` |
+| `adapters/inspect_ai/` | `eval-inspect` | `inspect-ai` |
+| `adapters/ragas/` | `eval-ragas` | `ragas` |
+| `adapters/openevals/` | `eval-openevals` | `openevals` |
+| `adapters/agentevals/` | `eval-agentevals` | `agentevals` |
+
+### N21 — Dependency Allowlist
+
+`evals/policy/thresholds.py` — license/package allowlist loaded from `.ananke/evals/config.yaml`
+
+Validates: `allowed_licenses`, `denied_licenses`, `allowed_packages`, `require_explicit_approval`, `deny_external_saas`.
+
+### N22 — Evaluator Registry
+
+`evaluators/registry.py` — register/discover/enable/disable evaluators; records id, version, dimension, deterministic, requires, network, license.
+
+### N23 — Eval Evidence Bundle
+
+Layout under `.ananke/evidence/<run-id>/eval/`:
+```
+manifest.json, suite.json, dataset.json, case.json, trace.json,
+scores.json, policy-decision.json, baseline-comparison.json,
+judges/, reports/, checksums.txt
+```
+
+### N24 — Gate Policy Integration
+
+`evals/policy/decisions.py` — maps `EvalScore[]` through Ananke policy rules → `EvalGateDecision` (PASS/WARN/REVIEW/BLOCK) with evidence.
+
+### N25 — CLI
+
+`ananke eval run --suite <id> [--case <id>] [--trace <path>]`
+`ananke eval suite list|show|validate|explain`
+`ananke eval dataset list|validate|import`
+`ananke eval baseline create|show|approve`
+`ananke eval compare --baseline <id>`
+`ananke eval regression --suite <id> --baseline <id>`
+`ananke eval trace show|import`
+`ananke eval judge list|test`
+`ananke eval adapter list|doctor [<name>]`
+`ananke eval report --run <id> [--format markdown|json|junit|console]`
+
+### N26 — PyPI Extras
+
+```toml
+[project.optional-dependencies]
+eval-otel = ["opentelemetry-api", "opentelemetry-sdk"]
+eval-mlflow = ["mlflow"]
+eval-pydantic = ["pydantic-evals"]
+eval-deepeval = ["deepeval"]
+eval-inspect = ["inspect-ai"]
+eval-ragas = ["ragas"]
+eval-openevals = ["openevals"]
+eval-agentevals = ["agentevals"]
+eval-enterprise = ["mlflow", "opentelemetry-api", "opentelemetry-sdk"]
+```
+
+### N27 — Documentation
+
+- `docs/concepts/evaluation.md` — evaluation philosophy, ADLC placement, evaluator catalog
+- `docs/reference/eval-harness.md` — API reference, configuration, CLI examples
 

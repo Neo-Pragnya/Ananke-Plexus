@@ -6,7 +6,7 @@ from ananke.plexus.mcp.http import handle_http_payload
 
 def test_http_payload_requires_token_when_configured(tmp_path: Path) -> None:
     Ananke.open(tmp_path).init_project()
-    token = "demo-token"  # noqa: S105 - test fixture token, not a credential
+    token = "demo-token"
 
     unauthorized = handle_http_payload(
         tmp_path,

@@ -72,6 +72,7 @@ nav:
       - Code Graph Intelligence: concepts/graph.md
       - Policy Engine & Security: concepts/policy-security.md
       - MCP Server & APM: concepts/mcp-apm.md
+      - Enterprise Evaluation Harness: concepts/evaluation.md
   - Guides:
       - Getting Started: guides/getting-started.md
       - Setup & Capabilities: guides/setup-and-capabilities.md
@@ -81,3 +82,4 @@ nav:
       - CLI Commands: reference/commands.md
       - Configuration: reference/configuration.md
       - Policy Language: reference/policy.md
+      - Eval Harness API: reference/eval-harness.md

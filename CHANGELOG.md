@@ -6,7 +6,54 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
-## [Unreleased] — v0.1.0-dev
+## [Unreleased]
+
+---
+
+## [0.2.0] — 2026-09-18
+
+### Added
+
+#### Enterprise Agent Evaluation Harness (Epic N)
+
+- **N1** `evals/models/trace.py` — canonical `AgentTrace` / `AgentSpan` normalising across Pydantic AI, Microsoft Agent Framework, Hermes, generic OTel; `SpanKind` (11 values), `Usage` aggregate model
+- **N2** `evals/models/score.py` — `EvalScore` with `EvalStatus` (pass/warn/review/fail/error/skipped) and `normalized_score ∈ [0, 1]`
+- **N3** `evals/models/suite.py` — `EvalSuite`, `EvaluatorSpec`, `GatePolicy`, `GatePolicyRule`
+- **N4** `evals/models/dataset.py` — `EvalDataset`, `DataClassification` (PUBLIC/INTERNAL/CONFIDENTIAL/RESTRICTED/SECRET), `DatasetProvenance`
+- **N5** `evals/models/report.py` — `EvalReport`, `EvalGateDecision` (PASS/WARN/REVIEW/BLOCK), `BaselineComparison`
+- **N6** `evals/models/baseline.py` — `Baseline`, `BaselineApproval`
+- **N7** `evals/models/rubric.py` — `Rubric`, `RubricCriterion` for LLM judge rubric governance
+- **N8** `evals/evaluators/base.py` — `Evaluator` protocol; `make_score()`, `skipped_score()`, `error_score()` helpers
+- **N9** `evals/evaluators/registry.py` — `EvaluatorRegistry` singleton with enable/disable, metadata indexing
+- **N10** `evals/evaluators/outcome/` — 9 evaluators: ExactMatch, NormalizedMatch, RegexMatch, JsonEquality, SchemaConformance (lazy jsonschema), SetEquality, NumericTolerance, TaskCompletion, AcceptanceCriteria
+- **N11** `evals/evaluators/trajectory/` — 9 evaluators: StrictTrajectory, OrderedSubset, UnorderedSubset, Superset, ForbiddenStep, RequiredStep, LoopDetection, StepEfficiency, GraphTrajectory
+- **N12** `evals/evaluators/tool_use/` — 8 evaluators: ToolSelection, ToolAllowlist, ToolDenylist, ToolSchema (lazy jsonschema), ToolOrder, DuplicateSideEffect, Idempotency, ToolRetry
+- **N13** `evals/evaluators/planning/` — 6 evaluators: PlanCoverage, PlanDependency, PlanFeasibility, PlanRisk, PlanAdherence, PlanRevisionQuality
+- **N14** `evals/evaluators/retrieval/` — 9 evaluators: ContextPrecision, ContextRecall, Faithfulness, AnswerRelevance, ContextEfficiency, BlastRadiusCoverage, SpecContextCoverage, GraphContextPrecision, ArchitectureContextCoverage
+- **N15** `evals/evaluators/safety/` — 8 evaluators: PermissionBoundary, FilesystemScope, SecretAccess, SecretLeakage, ApprovalGate, ShellPolicy, AgentAuthority, DependencyApproval; `_SECRET_PATTERNS` regex guard list
+- **N16** `evals/evaluators/architecture/` — 8 evaluators: SpecAdherence, BehaviorCoverage, ModelConformance, ArchitectureConformance (reads CALM JSON), UnexpectedDependency, BlastRadiusDiscipline, ChangedFileScope, BreakingContract
+- **N17** `evals/evaluators/efficiency/` — 8 evaluators: TokenBudget, CostBudget, Latency, ToolCallCount, ModelCallCount, WallClock, RetryCount, CacheEfficiency
+- **N18** `evals/evaluators/resilience/` — 6 evaluators: FailureRecognition, RecoveryPath, RepeatedFailure, CheckpointUsage, Rollback, PartialFailureContainment
+- **N19** `evals/evaluators/multi_agent/` — 6 evaluators: DelegationAccuracy, RoleBoundary, HandoffCompleteness, SharedContextConsistency, CyclicDelegation, MessageDuplication
+- **N20** `evals/evaluators/meta/` — pure calibration functions: `cohens_kappa()`, `judge_human_agreement()`, `detect_positional_bias()`, `score_variance()`
+- **N21** `evals/judges/base.py` — `Judge` protocol; `JudgeInputEnvelope.to_prompt()` separates trusted rubric from untrusted agent output (prompt-injection hardening)
+- **N22** `evals/judges/gateway.py` — `EnterpriseJudgeGateway`: provider allowlist, secret redaction, local heuristic fallback
+- **N23** `evals/judges/ensemble.py` — `JudgeEnsemble` with mean/majority/min aggregation
+- **N24** `evals/judges/calibration.py` — `JudgeCalibrator`: judge-vs-human agreement and positional bias detection
+- **N25** `evals/traces/normalize.py` — `normalize_otel_span()`, `normalize_trace()`, `build_trace_from_run_id()`; `evals/traces/otel.py` — `emit_trace_to_otel()` (graceful without OTel SDK); `evals/traces/importers.py` — `load_trace_from_file()`, `load_trace_from_ananke_evidence()`; `evals/traces/exporters.py` — `export_trace_to_json()`
+- **N26** `evals/datasets/loader.py` — `load_dataset()` (YAML/JSON), `load_datasets_from_dir()`; `evals/datasets/validator.py` — `validate_dataset()`, `check_egress_policy()`; `evals/datasets/versioning.py` — `content_hash()`, `case_hashes()`, `stamp_provenance()`
+- **N27** `evals/regression/compare.py` — `compare_to_baseline()` → `BaselineComparison`; `evals/regression/statistics.py` — `bootstrap_confidence_interval()`, `summary_statistics()`; `evals/regression/policy.py` — `enforce_regression_policy()` → `(blocked, reasons)`
+- **N28** `evals/reports/markdown.py` — PR-ready Markdown table; `evals/reports/json.py` — machine-readable JSON report; `evals/reports/junit.py` — JUnit XML for CI; `evals/reports/console.py` — plain-text console output
+- **N29** `evals/policy/thresholds.py` — `load_eval_config()` from `.ananke/evals/config.yaml`; `evals/policy/decisions.py` — `apply_gate_policy()` → `EvalGateDecision`
+- **N30** `evals/adapters/mlflow/` — `MLflowAdapter`: preferred enterprise experiment backend (Apache-2.0); lazy mlflow import; `evals/adapters/deepeval/` — `DeepEvalAdapter` stub; `evals/adapters/inspect_ai/` — `InspectAIAdapter` stub; `evals/adapters/ragas/` — `RagasAdapter` stub; `evals/adapters/openevals/` — `OpenEvalsAdapter` stub; `evals/adapters/agentevals/` — `AgentEvalsAdapter` stub
+- **N31** `evals/context.py` — `EvaluationContext` dataclass with `from_project()` auto-detection; `evals/exceptions.py` — `EvalError` hierarchy (8 typed exceptions); `evals/runner.py` — `EvalRunner`, `run_suite_on_trace()`, `save_eval_evidence()` (writes `.ananke/evidence/<run_id>/eval/` bundle); `evals/api.py` — `run_evaluation()`, `evaluate_trace()`, `adapter_doctor()`, `list_native_evaluators()`
+- **N32** CLI: `ananke eval run/report/compare`; `ananke eval suite list/validate`; `ananke eval dataset list/validate`; `ananke eval baseline create`; `ananke eval trace show/import`; `ananke eval adapter list/doctor`; `ananke eval judge list/test`
+- **N33** `pyproject.toml` — 9 eval extras: `eval-otel`, `eval-mlflow`, `eval-pydantic`, `eval-deepeval`, `eval-inspect`, `eval-ragas`, `eval-openevals`, `eval-agentevals`, `eval-enterprise`
+- **N34** `docs/concepts/evaluation.md` — evaluation philosophy, ADLC placement, evaluator catalogue; `docs/reference/eval-harness.md` — full API reference, CLI, configuration, custom evaluator guide
+
+---
+
+## [0.1.0] — 2026-07-01
 
 ### Added
 

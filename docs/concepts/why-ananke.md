@@ -100,7 +100,7 @@ The agent remains creative at the edge. The middle provides context and structur
 
 This allows the system to support **more autonomy precisely because stronger constraints exist where they matter**.
 
-![Governed Software Architecture](../../assets/ananke_plexus_governed_software_architecture.png)
+![Governed Software Architecture](../assets/ananke_plexus_governed_software_architecture.png)
 
 ---
 
@@ -124,7 +124,7 @@ The specification becomes the durable source of truth.
 
 Agentic systems introduce new concerns: agent identity, context construction, tool availability, permissions, recovery, execution traces, human steering, and agent evaluation.
 
-![Why ADLC Matters](../../assets/why_adlc_matters_governed_autonomous_development.png)
+![Why ADLC Matters](../assets/why_adlc_matters_governed_autonomous_development.png)
 
 | Dimension | SDLC | SDD | ADLC |
 |---|---|---|---|

@@ -247,3 +247,11 @@ trivy-results.sarif
 .ananke/graph/metadata.json
 .ananke/graph/export.md
 .ananke/graph/overlays/
+
+# Debug Files
+**debug**
+**/debug**
+**/Debug**
+**/DEBUG**
+Debug-Specs/*
+Debug-Specs/ANANKE_ENTERPRISE_AGENT_EVAL_HARNESS_SPEC.md

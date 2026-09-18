@@ -1,6 +1,7 @@
 """Main Typer CLI entrypoint."""
 
 import json
+from datetime import UTC
 from pathlib import Path
 
 import typer
@@ -26,6 +27,13 @@ policy_app = typer.Typer(help="Policy operations")
 hooks_app = typer.Typer(help="Git hook management")
 backend_app = typer.Typer(help="Agent backend operations")
 bmad_app = typer.Typer(help="Ananke BMAD contract operations")
+eval_app = typer.Typer(help="Agent evaluation harness")
+eval_suite_app = typer.Typer(help="Evaluation suite operations")
+eval_dataset_app = typer.Typer(help="Evaluation dataset operations")
+eval_baseline_app = typer.Typer(help="Evaluation baseline operations")
+eval_trace_app = typer.Typer(help="Trace operations")
+eval_adapter_app = typer.Typer(help="Eval adapter management")
+eval_judge_app = typer.Typer(help="Judge management")
 app.add_typer(spec_app, name="spec")
 app.add_typer(graph_app, name="graph")
 app.add_typer(arch_app, name="arch")
@@ -39,6 +47,13 @@ app.add_typer(policy_app, name="policy")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(backend_app, name="backend")
 app.add_typer(bmad_app, name="bmad")
+app.add_typer(eval_app, name="eval")
+eval_app.add_typer(eval_suite_app, name="suite")
+eval_app.add_typer(eval_dataset_app, name="dataset")
+eval_app.add_typer(eval_baseline_app, name="baseline")
+eval_app.add_typer(eval_trace_app, name="trace")
+eval_app.add_typer(eval_adapter_app, name="adapter")
+eval_app.add_typer(eval_judge_app, name="judge")
 
 
 @app.command("version")
@@ -1164,3 +1179,614 @@ def bmad_verify(
     )
     if not ok:
         raise typer.Exit(code=4)
+
+
+# ─── Eval CLI ───────────────────────────────────────────────────────────────
+
+
+@eval_app.command("run")
+def eval_run(
+    suite: str = typer.Option("standard", "--suite", help="Eval suite id"),
+    case_id: str = typer.Option("", "--case", help="Specific case id"),
+    trace_path: str = typer.Option("", "--trace", help="Path to recorded trace JSON"),
+    output_value: str = typer.Option("", "--output", help="Agent output for quick evaluation"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """Run an evaluation suite against a case or recorded trace."""
+
+    from ananke.plexus.evals.api import evaluate_trace, run_evaluation
+    from ananke.plexus.evals.models.case import EvalCase
+    from ananke.plexus.evals.models.suite import EvalSuite, GatePolicy
+
+    eval_suite = EvalSuite(id=suite, policy=GatePolicy())
+    eval_case = EvalCase(id=case_id or "cli-case", input=output_value or "(no input)")
+
+    if trace_path:
+        from pathlib import Path as P
+
+        report = evaluate_trace(
+            suite=eval_suite,
+            trace_path=P(trace_path),
+            case=eval_case,
+            project_root=project,
+            evaluators=[],
+        )
+    else:
+        report = run_evaluation(
+            suite=eval_suite,
+            case=eval_case,
+            output=output_value or None,
+            project_root=project,
+            evaluators=[],
+            save_evidence=True,
+        )
+
+    if as_json:
+        typer.echo(report.model_dump_json(indent=2))
+        return
+
+    from ananke.plexus.evals.reports.console import generate_console_report
+
+    typer.echo(generate_console_report(report))
+    if report.gate_decision and report.gate_decision.blocks:
+        raise typer.Exit(code=1)
+
+
+@eval_app.command("report")
+def eval_report(
+    run_id: str = typer.Option(..., "--run", help="Run ID to report on"),
+    fmt: str = typer.Option(
+        "console", "--format", help="Output format: console|markdown|json|junit"
+    ),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Generate an evaluation report for a completed run."""
+    import json as _json
+
+    evidence_root = project / ".ananke" / "evidence"
+    scores_file = evidence_root / run_id / "eval" / "scores.json"
+    if not scores_file.exists():
+        typer.echo(f"No eval evidence for run '{run_id}'")
+        raise typer.Exit(code=2)
+
+    from ananke.plexus.evals.models.report import EvalReport
+    from ananke.plexus.evals.models.score import EvalScore
+
+    scores_raw = _json.loads(scores_file.read_text(encoding="utf-8"))
+    scores = [EvalScore(**s) for s in scores_raw]
+    report = EvalReport(run_id=run_id, suite_id="unknown", scores=scores)
+
+    if fmt == "markdown":
+        from ananke.plexus.evals.reports.markdown import generate_markdown_report
+
+        typer.echo(generate_markdown_report(report))
+    elif fmt == "json":
+        typer.echo(report.model_dump_json(indent=2))
+    elif fmt == "junit":
+        from ananke.plexus.evals.reports.junit import generate_junit_xml
+
+        typer.echo(generate_junit_xml(report))
+    else:
+        from ananke.plexus.evals.reports.console import generate_console_report
+
+        typer.echo(generate_console_report(report))
+
+
+@eval_app.command("compare")
+def eval_compare(
+    baseline_id: str = typer.Option(..., "--baseline", help="Baseline ID"),
+    run_id: str = typer.Option(..., "--run", help="Candidate run ID"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Compare a candidate eval run against an approved baseline."""
+    import json as _json
+
+    baselines_dir = project / ".ananke" / "evals" / "baselines"
+    baseline_file = baselines_dir / f"{baseline_id}.json"
+    if not baseline_file.exists():
+        typer.echo(f"Baseline '{baseline_id}' not found in {baselines_dir}")
+        raise typer.Exit(code=2)
+
+    evidence_root = project / ".ananke" / "evidence"
+    scores_file = evidence_root / run_id / "eval" / "scores.json"
+    if not scores_file.exists():
+        typer.echo(f"No eval evidence for run '{run_id}'")
+        raise typer.Exit(code=2)
+
+    from ananke.plexus.evals.models.baseline import Baseline
+    from ananke.plexus.evals.models.report import EvalReport
+    from ananke.plexus.evals.models.score import EvalScore
+    from ananke.plexus.evals.regression.compare import compare_to_baseline
+
+    baseline = Baseline(**_json.loads(baseline_file.read_text(encoding="utf-8")))
+    scores = [EvalScore(**s) for s in _json.loads(scores_file.read_text(encoding="utf-8"))]
+    report = EvalReport(run_id=run_id, suite_id="unknown", scores=scores)
+    comparison = compare_to_baseline(report, baseline)
+
+    render_result(
+        f"regression comparison: {run_id} vs {baseline_id}",
+        {
+            "regressions": comparison.regressions,
+            "improvements": comparison.improvements,
+            "stable": comparison.stable,
+        },
+    )
+    if comparison.regression_blocked:
+        raise typer.Exit(code=1)
+
+
+# ─── Eval Suite sub-commands ─────────────────────────────────────────────────
+
+
+@eval_suite_app.command("list")
+def eval_suite_list(
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """List available evaluation suites."""
+    suites_dir = project / ".ananke" / "evals" / "suites"
+    if not suites_dir.exists():
+        render_result("no suites directory", {"path": str(suites_dir)})
+        return
+    files = (
+        list(suites_dir.glob("*.yaml"))
+        + list(suites_dir.glob("*.yml"))
+        + list(suites_dir.glob("*.json"))
+    )
+    names = [f.stem for f in sorted(files)]
+    if as_json:
+        typer.echo(json.dumps({"suites": names}, indent=2))
+        return
+    render_result(f"{len(names)} eval suite(s)", {"suites": ", ".join(names) or "none"})
+
+
+@eval_suite_app.command("validate")
+def eval_suite_validate(
+    suite_path: Path = typer.Option(..., "--path", help="Path to suite YAML/JSON"),
+) -> None:
+    """Validate an eval suite configuration file."""
+    if not suite_path.exists():
+        typer.echo(f"Suite file not found: {suite_path}")
+        raise typer.Exit(code=2)
+    import json as _json
+
+    try:
+        text = suite_path.read_text(encoding="utf-8")
+        data = _json.loads(text)
+        required = ["id", "evaluators"]
+        missing = [k for k in required if k not in data]
+        if missing:
+            typer.echo(f"Suite validation failed: missing fields {missing}")
+            raise typer.Exit(code=1)
+        render_result(
+            "suite valid", {"id": data.get("id"), "evaluators": len(data.get("evaluators", []))}
+        )
+    except Exception as exc:
+        typer.echo(f"Suite validation error: {exc}")
+        raise typer.Exit(code=1) from None
+
+
+# ─── Eval Dataset sub-commands ───────────────────────────────────────────────
+
+
+@eval_dataset_app.command("list")
+def eval_dataset_list(
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """List available evaluation datasets."""
+    ds_dir = project / ".ananke" / "evals" / "datasets"
+    if not ds_dir.exists():
+        render_result("no datasets directory", {"path": str(ds_dir)})
+        return
+    from ananke.plexus.evals.datasets.loader import load_datasets_from_dir
+
+    datasets = load_datasets_from_dir(ds_dir)
+    summary = {ds_id: f"{len(ds.cases)} cases" for ds_id, ds in datasets.items()}
+    if as_json:
+        typer.echo(json.dumps(summary, indent=2))
+        return
+    render_result(f"{len(datasets)} dataset(s)", summary)
+
+
+@eval_dataset_app.command("validate")
+def eval_dataset_validate(
+    dataset_path: Path = typer.Option(..., "--path", help="Path to dataset YAML/JSON"),
+) -> None:
+    """Validate an eval dataset file."""
+    from ananke.plexus.evals.datasets.loader import load_dataset
+    from ananke.plexus.evals.datasets.validator import validate_dataset
+
+    ds = load_dataset(dataset_path)
+    issues = validate_dataset(ds)
+    if issues:
+        typer.echo("Dataset validation failed:\n" + "\n".join(f"  - {i}" for i in issues))
+        raise typer.Exit(code=1)
+    render_result(f"dataset '{ds.id}' valid", {"cases": len(ds.cases)})
+
+
+# ─── Eval Baseline sub-commands ──────────────────────────────────────────────
+
+
+@eval_baseline_app.command("create")
+def eval_baseline_create(
+    run_id: str = typer.Option(..., "--run", help="Run ID to baseline"),
+    baseline_id: str = typer.Option(..., "--id", help="Baseline identifier"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Create a baseline from an existing eval run's scores."""
+    import json as _json
+    from datetime import datetime
+
+    scores_file = project / ".ananke" / "evidence" / run_id / "eval" / "scores.json"
+    if not scores_file.exists():
+        typer.echo(f"No eval scores for run '{run_id}'")
+        raise typer.Exit(code=2)
+
+    from ananke.plexus.evals.models.score import EvalScore
+
+    scores = [EvalScore(**s) for s in _json.loads(scores_file.read_text(encoding="utf-8"))]
+    agg = {s.dimension: s.normalized_score for s in scores if s.normalized_score is not None}
+
+    from ananke.plexus.evals.models.baseline import Baseline
+
+    baseline = Baseline(
+        baseline_id=baseline_id,
+        suite_id="unknown",
+        version=run_id,
+        scores=agg,
+        created_at=datetime.now(tz=UTC),
+    )
+    baselines_dir = project / ".ananke" / "evals" / "baselines"
+    baselines_dir.mkdir(parents=True, exist_ok=True)
+    out = baselines_dir / f"{baseline_id}.json"
+    out.write_text(baseline.model_dump_json(indent=2), encoding="utf-8")
+    render_result(f"baseline '{baseline_id}' created", {"scores": agg, "path": str(out)})
+
+
+# ─── Eval Trace sub-commands ─────────────────────────────────────────────────
+
+
+@eval_trace_app.command("show")
+def eval_trace_show(
+    trace_path: Path = typer.Option(..., "--path", help="Path to trace JSON"),
+) -> None:
+    """Show a canonical trace summary."""
+    from ananke.plexus.evals.traces.importers import load_trace_from_file
+
+    trace = load_trace_from_file(trace_path)
+    render_result(
+        f"trace {trace.trace_id}",
+        {
+            "runtime": trace.runtime,
+            "spans": len(trace.spans),
+            "tool_calls": trace.usage.tool_calls,
+            "tokens": trace.usage.total_tokens,
+        },
+    )
+
+
+@eval_trace_app.command("import")
+def eval_trace_import(
+    trace_path: Path = typer.Option(..., "--path", help="Path to raw trace JSON"),
+    run_id: str = typer.Option("", "--run-id", help="Override run ID"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Import and normalize a raw trace into the Ananke evidence store."""
+    from ananke.plexus.evals.traces.exporters import export_trace_to_json
+    from ananke.plexus.evals.traces.importers import load_trace_from_file
+
+    trace = load_trace_from_file(trace_path)
+    eff_run_id = run_id or trace.run_id
+    out_path = project / ".ananke" / "traces" / f"{eff_run_id}.json"
+    export_trace_to_json(trace, out_path)
+    render_result(f"trace imported as '{eff_run_id}'", {"path": str(out_path)})
+
+
+# ─── Eval Adapter sub-commands ───────────────────────────────────────────────
+
+
+@eval_adapter_app.command("list")
+def eval_adapter_list(
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """List all available evaluation adapters and their status."""
+    from ananke.plexus.evals.api import adapter_doctor
+
+    results = adapter_doctor()
+    if as_json:
+        typer.echo(json.dumps(results, indent=2, default=str))
+        return
+    render_result(
+        f"{len(results)} adapter(s)", {k: str(v.get("status", "?")) for k, v in results.items()}
+    )
+
+
+@eval_adapter_app.command("doctor")
+def eval_adapter_doctor(
+    adapter: str = typer.Argument("", help="Specific adapter ID (empty = all)"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """Check health of an evaluation adapter."""
+    from ananke.plexus.evals.api import adapter_doctor
+
+    results = adapter_doctor()
+    if adapter:
+        filtered = {k: v for k, v in results.items() if adapter in k}
+        if as_json:
+            typer.echo(json.dumps(filtered, indent=2, default=str))
+            return
+        render_result(
+            f"adapter doctor: {adapter}",
+            {k: str(v.get("status", "?")) for k, v in filtered.items()},
+        )
+    else:
+        if as_json:
+            typer.echo(json.dumps(results, indent=2, default=str))
+            return
+        render_result(
+            "adapter doctor: all", {k: str(v.get("status", "?")) for k, v in results.items()}
+        )
+
+
+# ─── Eval Judge sub-commands ─────────────────────────────────────────────────
+
+
+@eval_judge_app.command("list")
+def eval_judge_list() -> None:
+    """List configured judge providers."""
+    from ananke.plexus.evals.judges.gateway import EnterpriseJudgeGateway
+
+    gw = EnterpriseJudgeGateway()
+    render_result("available judge providers", {"providers": gw.list_providers()})
+
+
+@eval_judge_app.command("test")
+def eval_judge_test(
+    provider: str = typer.Option("local", "--provider", help="Provider to test"),
+) -> None:
+    """Test the judge gateway with a trivial prompt."""
+    from ananke.plexus.evals.judges.base import JudgeInputEnvelope
+    from ananke.plexus.evals.judges.gateway import EnterpriseJudgeGateway
+    from ananke.plexus.evals.models.rubric import Rubric
+
+    gw = EnterpriseJudgeGateway(allowed_providers=list({provider, "local"}))
+    rubric = Rubric(rubric_id="test-rubric", title="Test", pass_threshold=0.5)
+    envelope = JudgeInputEnvelope(rubric=rubric, case_input="hello", agent_output="world")
+    try:
+        result = gw.score(envelope=envelope, provider=provider)
+        render_result(
+            f"judge test: {provider}", {"score": result.normalized_score, "passed": result.passed}
+        )
+    except Exception as exc:
+        render_result(f"judge test failed: {exc}", {})
+        raise typer.Exit(code=1) from None
+
+
+# ─── Test CLI ──────────────────────────────────────────────────────────────
+
+test_app = typer.Typer(help="Unified quality test harness")
+test_profile_app = typer.Typer(help="Test profile operations")
+test_mutation_app = typer.Typer(help="Mutation testing")
+test_fuzz_app = typer.Typer(help="Fuzz testing")
+test_formal_app = typer.Typer(help="Formal verification")
+test_adapter_test_app = typer.Typer(help="Test adapter management")
+
+app.add_typer(test_app, name="test")
+test_app.add_typer(test_profile_app, name="profile")
+test_app.add_typer(test_mutation_app, name="mutation")
+test_app.add_typer(test_fuzz_app, name="fuzz")
+test_app.add_typer(test_formal_app, name="formal")
+test_app.add_typer(test_adapter_test_app, name="adapter")
+
+
+@test_app.command("run")
+def test_run(
+    profile: str = typer.Option(
+        "standard", "--profile", help="Quality profile: fast|standard|strict|verification|release"
+    ),
+    kind: list[str] = typer.Option([], "--kind", help="Filter by test kind (repeatable)"),
+    select: str = typer.Option(
+        "full", "--select", help="Selection mode: full|changed|impact|requirement"
+    ),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """Run the quality test suite."""
+    from ananke.plexus.testing.api import run_quality_suite
+    from ananke.plexus.testing.reports.console import generate_console_report
+
+    run = run_quality_suite(
+        project_root=project,
+        profile=profile,
+        kinds=list(kind) or None,
+        selection=select,
+        save_evidence=True,
+    )
+    if as_json:
+        typer.echo(run.model_dump_json(indent=2))
+        return
+    typer.echo(generate_console_report(run))
+    if any(r.status in ("fail", "error") for r in run.results):
+        raise typer.Exit(code=1)
+
+
+@test_app.command("discover")
+def test_discover(
+    profile: str = typer.Option("standard", "--profile", help="Quality profile"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """Discover available tests without running them."""
+    from ananke.plexus.testing.discovery import discover_tests
+
+    tests = discover_tests(project, profile=profile, adapters=None)
+    if as_json:
+        typer.echo(json.dumps({t.id: t.kind for t in tests}, indent=2))
+        return
+    render_result(f"{len(tests)} test(s) discovered", {t.id: t.kind for t in tests})
+
+
+@test_app.command("list")
+def test_list(
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """List all discovered tests."""
+    from ananke.plexus.testing.discovery import discover_tests
+
+    tests = discover_tests(project, profile="full", adapters=None)
+    details = {t.id: f"{t.kind} [{t.engine}]" for t in tests}
+    if as_json:
+        typer.echo(json.dumps(details, indent=2))
+        return
+    render_result(f"{len(tests)} test(s)", details)
+
+
+@test_app.command("report")
+def test_report(
+    run_id: str = typer.Option(..., "--run", help="Run ID to report on"),
+    fmt: str = typer.Option("console", "--format", help="console|markdown|json|junit|sarif"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Generate a quality report for a completed run."""
+    import json as _json
+
+    results_file = project / ".ananke" / "evidence" / run_id / "quality" / "results.json"
+    if not results_file.exists():
+        typer.echo(f"No quality results for run '{run_id}'")
+        raise typer.Exit(code=2)
+    from ananke.plexus.testing.models.result import TestRun
+
+    run = TestRun(**_json.loads(results_file.read_text(encoding="utf-8")))
+    if fmt == "markdown":
+        from ananke.plexus.testing.reports.markdown import generate_markdown_report
+
+        typer.echo(generate_markdown_report(run))
+    elif fmt == "json":
+        typer.echo(run.model_dump_json(indent=2))
+    elif fmt == "junit":
+        from ananke.plexus.testing.reports.junit import generate_junit_xml
+
+        typer.echo(generate_junit_xml(run))
+    elif fmt == "sarif":
+        from ananke.plexus.testing.reports.sarif import generate_sarif_report
+
+        typer.echo(generate_sarif_report(run))
+    else:
+        from ananke.plexus.testing.reports.console import generate_console_report
+
+        typer.echo(generate_console_report(run))
+
+
+@test_profile_app.command("list")
+def test_profile_list(as_json: bool = typer.Option(False, "--json", help="JSON output")) -> None:
+    """List built-in quality profiles."""
+    from ananke.plexus.testing.api import list_profiles
+
+    profiles = list_profiles()
+    if as_json:
+        typer.echo(json.dumps(profiles, indent=2))
+        return
+    render_result("available profiles", {k: str(v) for k, v in profiles.items()})
+
+
+@test_profile_app.command("show")
+def test_profile_show(
+    name: str = typer.Argument(help="Profile name"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """Show a quality profile configuration."""
+    from ananke.plexus.testing.models.profile import BUILTIN_PROFILES
+
+    if name not in BUILTIN_PROFILES:
+        typer.echo(f"Profile '{name}' not found")
+        raise typer.Exit(code=2)
+    profile_data = BUILTIN_PROFILES[name]
+    if as_json:
+        typer.echo(json.dumps(profile_data, indent=2))
+        return
+    render_result(f"profile: {name}", {k: str(v) for k, v in profile_data.items()})
+
+
+@test_adapter_test_app.command("list")
+def test_adapter_list(as_json: bool = typer.Option(False, "--json", help="JSON output")) -> None:
+    """List all test adapters and their status."""
+    from ananke.plexus.testing.api import adapter_doctor
+
+    results = adapter_doctor()
+    if as_json:
+        typer.echo(json.dumps(results, indent=2))
+        return
+    render_result("test adapters", {k: str(v.get("available", False)) for k, v in results.items()})
+
+
+@test_adapter_test_app.command("doctor")
+def test_adapter_doctor(
+    adapter: str = typer.Argument("", help="Adapter ID (empty = all)"),
+    as_json: bool = typer.Option(False, "--json", help="JSON output"),
+) -> None:
+    """Check health of a test adapter."""
+    from ananke.plexus.testing.api import adapter_doctor
+
+    results = adapter_doctor()
+    if adapter:
+        filtered = {k: v for k, v in results.items() if adapter in k}
+        if as_json:
+            typer.echo(json.dumps(filtered, indent=2))
+            return
+        render_result(f"adapter doctor: {adapter}", {k: str(v) for k, v in filtered.items()})
+    else:
+        if as_json:
+            typer.echo(json.dumps(results, indent=2))
+            return
+        render_result(
+            "adapter doctor: all", {k: str(v.get("available", False)) for k, v in results.items()}
+        )
+
+
+@test_mutation_app.command("run")
+def test_mutation_run(
+    package: str = typer.Option("", "--package", help="Package to mutate"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Run mutation testing (requires mutmut)."""
+    from ananke.plexus.testing.adapters.mutmut import MutmutAdapter
+
+    adapter = MutmutAdapter()
+    if not adapter.available():
+        typer.echo("mutmut is not installed — pip install ananke-plexus[test-mutation]")
+        raise typer.Exit(code=2)
+    render_result("mutation run", {k: str(v) for k, v in adapter.doctor().items()})
+
+
+@test_fuzz_app.command("run")
+def test_fuzz_run(
+    target: str = typer.Option(..., "--target", help="Fuzz target name"),
+    seconds: int = typer.Option(30, "--seconds", help="Fuzz duration"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Run fuzz testing (requires cargo-fuzz)."""
+    from ananke.plexus.testing.adapters.cargo_fuzz import CargoFuzzAdapter
+
+    adapter = CargoFuzzAdapter()
+    if not adapter.available():
+        typer.echo("cargo-fuzz is not available")
+        raise typer.Exit(code=2)
+    render_result("fuzz run", {"target": target, "seconds": seconds})
+
+
+@test_formal_app.command("run")
+def test_formal_run(
+    proof: str = typer.Option("", "--proof", help="Proof harness ID"),
+    project: Path = typer.Option(Path("."), "--project", help="Project root"),
+) -> None:
+    """Run formal verification (requires Kani)."""
+    from ananke.plexus.testing.adapters.kani import KaniAdapter
+
+    adapter = KaniAdapter()
+    if not adapter.available():
+        typer.echo("Kani is not available")
+        raise typer.Exit(code=2)
+    render_result("formal run", {"proof": proof})

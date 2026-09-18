@@ -61,12 +61,12 @@ def test_configure_auth_values_masks_secrets(tmp_path: Path) -> None:
     values = app.configure_auth_values()
     assert values.ok
     assert values.details["ANANKE_JIRA_EMAIL"] == "dev@example.com"
-    assert values.details["ANANKE_JIRA_TOKEN"] == "***"  # noqa: S105 - masked sentinel
-    assert values.details["ANANKE_BITBUCKET_APP_PASSWORD"] == "***"  # noqa: S105 - masked sentinel
-    assert values.details["ANANKE_JIRA_TOKEN_CMD"] == "<configured>"  # noqa: S105
-    assert values.details["ANANKE_JIRA_BEARER_TOKEN_CMD"] == "<configured>"  # noqa: S105
-    assert values.details["ANANKE_CONFLUENCE_BEARER_TOKEN_CMD"] == "<configured>"  # noqa: S105
-    assert values.details["ANANKE_BITBUCKET_BEARER_TOKEN_CMD"] == "<configured>"  # noqa: S105
+    assert values.details["ANANKE_JIRA_TOKEN"] == "***"
+    assert values.details["ANANKE_BITBUCKET_APP_PASSWORD"] == "***"
+    assert values.details["ANANKE_JIRA_TOKEN_CMD"] == "<configured>"
+    assert values.details["ANANKE_JIRA_BEARER_TOKEN_CMD"] == "<configured>"
+    assert values.details["ANANKE_CONFLUENCE_BEARER_TOKEN_CMD"] == "<configured>"
+    assert values.details["ANANKE_BITBUCKET_BEARER_TOKEN_CMD"] == "<configured>"
 
 
 def test_configure_auth_export_zsh_snippet(tmp_path: Path) -> None:

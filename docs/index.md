@@ -4,7 +4,7 @@
 
 **Ananke Plexus** is a local-first **Agent Development Life Cycle (ADLC) control plane** — a tensegrity engineering harness that gives AI coding agents architectural context, deterministic guardrails, security gates, and verifiable delivery evidence.
 
-![System Architecture Overview](../assets/ananke_plexus_architecture_overview.png)
+![System Architecture Overview](assets/ananke_plexus_architecture_overview.png)
 
 ---
 
