@@ -1,0 +1,2063 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A local-first ADLC control plane for governed autonomous software engineering. Spec-driven development, CALM architecture, code graphs, policy gates, and verifiable evidence.">
+      
+      
+      
+        <link rel="canonical" href="https://neo-pragnya.github.io/ananke-plexus/reference/commands/">
+      
+      
+        <link rel="prev" href="../../guides/implementation-log/">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>CLI Commands - Ananke Plexus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#command-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ananke Plexus" class="md-header__button md-logo" aria-label="Ananke Plexus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ananke Plexus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI Commands
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/neo-pragnya/ananke-plexus" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    neo-pragnya/ananke-plexus
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/why-ananke/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/getting-started/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ananke Plexus" class="md-nav__button md-logo" aria-label="Ananke Plexus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Ananke Plexus
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/neo-pragnya/ananke-plexus" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    neo-pragnya/ananke-plexus
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/why-ananke/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why Ananke Plexus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/bmad/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ananke BMAD Contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Graph Intelligence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/policy-security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Engine & Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/mcp-apm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server & APM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Evaluation Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/setup-and-capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup & Capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/implementation-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke (core)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-configure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke configure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke spec
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-bmad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke bmad
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-arch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke arch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke hooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke backend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke plugin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ananke eval">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval judge
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ananke test">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-mutation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test mutation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-fuzz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test fuzz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-formal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test formal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make targets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docs-hosting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs Hosting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Language
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eval-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eval Harness API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke (core)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-configure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke configure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke spec
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-bmad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke bmad
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-arch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke arch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke hooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke backend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke plugin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ananke eval">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-eval-judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke eval judge
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ananke-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ananke test">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-mutation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test mutation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-fuzz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test fuzz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ananke-test-formal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ananke test formal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make targets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docs-hosting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs Hosting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="command-reference">Command Reference<a class="headerlink" href="#command-reference" title="Permanent link">&para;</a></h1>
+<h2 id="ananke-core">ananke (core)<a class="headerlink" href="#ananke-core" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke version</code>: print package version.</li>
+<li><code>ananke init [--project PATH]</code>: bootstrap <code>.ananke/</code> structure and baseline config.</li>
+<li><code>ananke doctor [--project PATH] [--json]</code>: run environment diagnostics.</li>
+<li><code>ananke verify [--project PATH]</code>: run baseline verification and emit evidence bundle.</li>
+<li><code>ananke serve-mcp [--project PATH] [--transport stdio|http] [--token VALUE]</code>: start MCP read-only loop over stdio or HTTP transport.</li>
+</ul>
+<hr />
+<h2 id="ananke-configure">ananke configure<a class="headerlink" href="#ananke-configure" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke configure auth [--project PATH] [--jira-... --confluence-... --bitbucket-... --mcp-http-token ...]</code>: create/update centralized adapter credentials in <code>.ananke/secrets/adapters.env</code>.<ul>
+<li>Supports command-based secret providers: <code>--jira-token-cmd</code>, <code>--confluence-token-cmd</code>, <code>--bitbucket-app-password-cmd</code>, <code>--mcp-http-token-cmd</code>.</li>
+<li>Supports bearer command providers: <code>--jira-bearer-token-cmd</code>, <code>--confluence-bearer-token-cmd</code>, <code>--bitbucket-bearer-token-cmd</code>.</li>
+<li>Supports bearer providers: <code>--jira-bearer-token</code>, <code>--confluence-bearer-token</code>, <code>--bitbucket-bearer-token</code>.</li>
+<li>Supports Bitbucket repository targeting: <code>--bitbucket-workspace</code>, <code>--bitbucket-repo</code>, <code>--bitbucket-destination</code>.</li>
+<li>Supports remote-live policy controls: <code>--remote-live-enabled true|false</code>, <code>--remote-live-services jira,bitbucket,confluence</code>.</li>
+</ul>
+</li>
+<li><code>ananke configure auth-interactive [--project PATH]</code>: prompt securely for adapter configuration; token/password fields are hidden input.</li>
+<li><code>ananke configure auth-export [--project PATH] [--shell zsh|bash|sh|fish|pwsh|cmd|docker-env]</code>: print shell or container snippet to load <code>.ananke/secrets/adapters.env</code> into current process.</li>
+<li><code>ananke configure auth-validate [--project PATH]</code>: validate required credentials for Jira/Confluence/Bitbucket adapters.</li>
+</ul>
+<hr />
+<h2 id="ananke-config">ananke config<a class="headerlink" href="#ananke-config" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke config migrate [--apply] [--project PATH]</code>: analyze or apply safe config key migrations for <code>.ananke/config.toml</code>; refuses rewrites when unknown keys are present.</li>
+</ul>
+<hr />
+<h2 id="ananke-evidence">ananke evidence<a class="headerlink" href="#ananke-evidence" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke evidence prune [--older-than 30d|12h|90m] [--apply] [--project PATH]</code>: analyze or prune old evidence run directories while skipping git-tracked evidence paths.</li>
+</ul>
+<hr />
+<h2 id="ananke-spec">ananke spec<a class="headerlink" href="#ananke-spec" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke spec create --id ID --title TEXT [--body TEXT] [--acceptance TEXT ...] [--provider speckit|native]</code>: create requirement/spec/BMAD bundle.</li>
+<li><code>ananke spec plan --feature-dir PATH [--provider speckit|native]</code>: generate implementation plan.</li>
+<li><code>ananke spec tasks --feature-dir PATH [--provider speckit|native]</code>: generate task checklist.</li>
+<li><code>ananke spec lock --feature-dir PATH</code>: write/update spec lock.</li>
+<li><code>ananke spec validate --feature-dir PATH</code>: validate required artifacts and drift.</li>
+<li><code>ananke spec diff --feature-dir PATH</code>: report lock drift.</li>
+<li><code>ananke spec converge --id ID --title TEXT [--body TEXT] [--acceptance TEXT ...] [--provider speckit|native]</code>: run end-to-end spec pipeline.</li>
+<li><code>ananke spec superpowers --id ID --title TEXT [--body TEXT] [--acceptance TEXT ...] [--provider speckit|native]</code>: converge pipeline via single high-agency command.</li>
+</ul>
+<hr />
+<h2 id="ananke-bmad">ananke bmad<a class="headerlink" href="#ananke-bmad" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke bmad compile --feature-dir PATH [--project PATH]</code>: compile BMAD contracts (behavior scenarios, model schemas, architecture contract) from a feature directory.</li>
+<li><code>ananke bmad show --feature-dir PATH [--project PATH]</code>: display compiled BMAD contract contents.</li>
+<li><code>ananke bmad trace --feature-dir PATH [--project PATH]</code>: show traceability matrix linking requirements to contracts to evidence.</li>
+<li><code>ananke bmad verify --feature-dir PATH [--project PATH]</code>: verify contracts against declared architecture and spec lock.</li>
+</ul>
+<hr />
+<h2 id="ananke-graph">ananke graph<a class="headerlink" href="#ananke-graph" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke graph build [--project PATH]</code>: build canonical code graph snapshot.</li>
+<li><code>ananke graph query --text TEXT [--project PATH]</code>: query graph nodes by name/path.</li>
+<li><code>ananke graph impact --changed-file PATH ... [--project PATH]</code>: compute impacted symbols.</li>
+<li><code>ananke graph export --format json|markdown [--project PATH]</code>: export graph snapshot.</li>
+</ul>
+<hr />
+<h2 id="ananke-arch">ananke arch<a class="headerlink" href="#ananke-arch" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke arch init [--project PATH]</code>: initialize the CALM architecture file.</li>
+<li><code>ananke arch validate [--project PATH]</code>: validate CALM structure and relationship references.</li>
+<li><code>ananke arch diff [--project PATH]</code>: compare CALM components against graph-derived component roots.</li>
+<li><code>ananke arch reconcile [--apply] [--project PATH]</code>: preview or apply missing graph components into CALM.</li>
+<li><code>ananke arch render [--project PATH]</code>: generate Markdown and Mermaid architecture output with graph overlay status.</li>
+</ul>
+<hr />
+<h2 id="ananke-policy">ananke policy<a class="headerlink" href="#ananke-policy" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke policy explain [--stage verify] [--project PATH]</code>: evaluate configured policy rules for a stage and print rule-by-rule decisions.</li>
+<li><code>ananke policy list [--project PATH] [--json]</code>: list all configured policy rules.</li>
+<li><code>ananke policy check [--project PATH]</code>: run policy checks and report gate outcomes.</li>
+<li><code>ananke policy install-pack PACK_NAME [--project PATH]</code>: install a named policy pack (e.g. <code>python-library</code>, <code>data-pipeline</code>) into <code>.ananke/policy/</code>.</li>
+</ul>
+<hr />
+<h2 id="ananke-hooks">ananke hooks<a class="headerlink" href="#ananke-hooks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke hooks install [--project PATH]</code>: install git hooks (pre-commit and pre-push) into <code>.git/hooks/</code>.</li>
+<li><code>ananke hooks uninstall [--project PATH]</code>: remove installed git hooks.</li>
+<li><code>ananke hooks status [--project PATH]</code>: show which hooks are installed and their hash.</li>
+<li><code>ananke hooks run --stage pre-commit|pre-push [--project PATH]</code>: run a hook stage manually.</li>
+</ul>
+<hr />
+<h2 id="ananke-run">ananke run<a class="headerlink" href="#ananke-run" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke run start --spec-id ID [--project PATH]</code>: start an autonomous run baseline.</li>
+<li><code>ananke run status --run-id ID [--project PATH]</code>: get run state.</li>
+<li><code>ananke run cancel --run-id ID [--project PATH]</code>: cancel run state.</li>
+<li><code>ananke run replay --run-id ID [--project PATH]</code>: replay run to READY state.</li>
+<li><code>ananke run approvals --run-id ID [--project PATH]</code>: list pending approval requests for a run.</li>
+<li><code>ananke run approve --run-id ID --approval-id ID [--project PATH]</code>: grant an approval request.</li>
+</ul>
+<hr />
+<h2 id="ananke-backend">ananke backend<a class="headerlink" href="#ananke-backend" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke backend list [--project PATH] [--json]</code>: list registered agent backends and their capabilities.</li>
+<li><code>ananke backend doctor [--backend NAME] [--project PATH]</code>: check health and prerequisites for a backend.</li>
+<li><code>ananke backend test --backend NAME [--spec-id ID] [--project PATH]</code>: run a quick capability test against a backend.</li>
+</ul>
+<hr />
+<h2 id="ananke-lifecycle">ananke lifecycle<a class="headerlink" href="#ananke-lifecycle" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke lifecycle branch --type TYPE --ticket KEY --slug TEXT [--project PATH]</code>: generate policy branch name.</li>
+<li><code>ananke lifecycle issue-transition --issue KEY --to STATE --idempotency-key KEY [--mode local|auto|remote-dry-run|remote-live] [--project PATH]</code>: transition issue.</li>
+<li><code>ananke lifecycle pr-create --title TEXT --branch NAME --idempotency-key KEY [--mode local|auto|remote-dry-run|remote-live] [--project PATH]</code>: create PR.</li>
+<li><code>ananke lifecycle worktrees [--project PATH]</code>: list isolated run worktree paths.</li>
+<li><code>ananke lifecycle confluence-upsert --space SPACE --title TITLE --content FILE --idempotency-key KEY [--mode local|auto|remote-dry-run|remote-live] [--project PATH]</code>: upsert Confluence page.</li>
+<li><code>ananke lifecycle telemetry [--project PATH]</code>: show remote adapter telemetry and circuit-breaker counters.</li>
+<li><code>ananke lifecycle evidence [--service jira|confluence|bitbucket] [--status ...] [--severity info|warning|critical] [--limit N] [--since-hours N] [--format compact|json|csv] [--aggregate] [--trend hour|day] [--csv-path PATH] [--project PATH]</code>: inspect recent remote lifecycle evidence events.</li>
+</ul>
+<hr />
+<h2 id="ananke-plugin">ananke plugin<a class="headerlink" href="#ananke-plugin" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ananke plugin list [--project PATH]</code>: discover installed entry-point plugins.</li>
+</ul>
+<hr />
+<h2 id="ananke-eval">ananke eval<a class="headerlink" href="#ananke-eval" title="Permanent link">&para;</a></h2>
+<p>The evaluation harness CLI.</p>
+<ul>
+<li><code>ananke eval run [--suite TEXT] [--case TEXT] [--trace PATH] [--output TEXT] [--project PATH] [--json]</code>: run an evaluation suite against an agent trace or output. Exit 0 = PASS/WARN, 1 = BLOCK, 2 = not found.</li>
+<li><code>ananke eval report --run RUN_ID [--format console|markdown|json|junit] [--project PATH]</code>: render evaluation report for a completed run.</li>
+<li><code>ananke eval compare --baseline BASELINE_ID --run RUN_ID [--project PATH]</code>: compare a run against an approved baseline with regression analysis.</li>
+</ul>
+<h3 id="ananke-eval-suite">ananke eval suite<a class="headerlink" href="#ananke-eval-suite" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke eval suite list [--project PATH] [--json]</code>: list eval suites found in <code>.ananke/evals/suites/</code>.</li>
+<li><code>ananke eval suite validate --path SUITE_FILE</code>: validate an eval suite JSON file.</li>
+</ul>
+<h3 id="ananke-eval-dataset">ananke eval dataset<a class="headerlink" href="#ananke-eval-dataset" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke eval dataset list [--project PATH] [--json]</code>: list datasets in <code>.ananke/evals/datasets/</code>.</li>
+<li><code>ananke eval dataset validate --path DATASET_FILE</code>: validate a dataset YAML file.</li>
+</ul>
+<h3 id="ananke-eval-baseline">ananke eval baseline<a class="headerlink" href="#ananke-eval-baseline" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke eval baseline create --run RUN_ID --id BASELINE_ID [--project PATH]</code>: promote a completed run to a named baseline.</li>
+</ul>
+<h3 id="ananke-eval-trace">ananke eval trace<a class="headerlink" href="#ananke-eval-trace" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke eval trace show --path TRACE_FILE</code>: display a trace file in readable form.</li>
+<li><code>ananke eval trace import --path TRACE_FILE [--run-id ID] [--project PATH]</code>: import a trace JSON into the evidence store.</li>
+</ul>
+<h3 id="ananke-eval-adapter">ananke eval adapter<a class="headerlink" href="#ananke-eval-adapter" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke eval adapter list [--json]</code>: list available eval adapters and their availability status.</li>
+<li><code>ananke eval adapter doctor [ADAPTER_ID] [--json]</code>: run health checks on eval adapters.</li>
+</ul>
+<h3 id="ananke-eval-judge">ananke eval judge<a class="headerlink" href="#ananke-eval-judge" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke eval judge list</code>: list registered LLM judge providers.</li>
+<li><code>ananke eval judge test [--provider local|azure|bedrock|anthropic|openai]</code>: run a connectivity test against a judge provider.</li>
+</ul>
+<hr />
+<h2 id="ananke-test">ananke test<a class="headerlink" href="#ananke-test" title="Permanent link">&para;</a></h2>
+<p>The unified quality test harness CLI.</p>
+<ul>
+<li><code>ananke test run [--profile fast|standard|strict|verification|release] [--kinds KINDS] [--project PATH] [--json]</code>: run the quality suite for the given profile.</li>
+<li><code>ananke test discover [--project PATH] [--json]</code>: discover all test files and categorise them by kind.</li>
+<li><code>ananke test list [--project PATH] [--json]</code>: list all tests that would run for the active profile.</li>
+<li><code>ananke test report --run RUN_ID [--format console|markdown|json|junit|sarif] [--project PATH]</code>: render a test run report.</li>
+</ul>
+<h3 id="ananke-test-profile">ananke test profile<a class="headerlink" href="#ananke-test-profile" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke test profile list [--json]</code>: list all built-in test profiles and their included test kinds.</li>
+<li><code>ananke test profile show PROFILE_NAME</code>: show the full configuration for a profile.</li>
+</ul>
+<h3 id="ananke-test-adapter">ananke test adapter<a class="headerlink" href="#ananke-test-adapter" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke test adapter list [--json]</code>: list all registered test adapters.</li>
+<li><code>ananke test adapter doctor [ADAPTER_ID] [--json]</code>: run health checks on test adapters.</li>
+</ul>
+<h3 id="ananke-test-mutation">ananke test mutation<a class="headerlink" href="#ananke-test-mutation" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke test mutation run [--target PATH] [--project PATH]</code>: run mutation testing via mutmut.</li>
+</ul>
+<h3 id="ananke-test-fuzz">ananke test fuzz<a class="headerlink" href="#ananke-test-fuzz" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke test fuzz run [--target PATH] [--project PATH]</code>: run fuzz testing via cargo-fuzz or equivalent.</li>
+</ul>
+<h3 id="ananke-test-formal">ananke test formal<a class="headerlink" href="#ananke-test-formal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ananke test formal run [--target PATH] [--project PATH]</code>: run formal verification via kani or equivalent.</li>
+</ul>
+<hr />
+<h2 id="apm">apm<a class="headerlink" href="#apm" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>apm list [--project PATH] [--json]</code>: list installed and active local skills.</li>
+<li><code>apm install --source PATH [--project PATH]</code>: install local skill package with manifest and lock update.</li>
+<li><code>apm activate --name NAME [--project PATH]</code>: activate an installed skill.</li>
+<li><code>apm deactivate --name NAME [--project PATH]</code>: deactivate a skill.</li>
+<li><code>apm info [--project PATH]</code>: print apm.lock details.</li>
+<li><code>apm verify [--project PATH]</code>: verify lockfile structure.</li>
+<li><code>apm resolve --ref VALUE [--project PATH]</code>: resolve skill path or installed reference.</li>
+<li><code>apm audit --manifest PATH</code>: audit manifest permissions.</li>
+<li><code>apm sandbox-check --manifest PATH [--shell CMD] [--network HOST] [--write PATH]</code>: evaluate permission decisions.</li>
+<li><code>apm import-copilot --source PATH [--project PATH]</code>: import Copilot SKILL.md assets as APM skills.</li>
+<li><code>apm bundle list --bundle PATH</code>: inspect members of an exported APM bundle archive.</li>
+<li><code>apm bundle export --name INSTALLED_NAME ... [--output PATH] [--project PATH]</code>: export installed skills into a bundle archive.</li>
+<li><code>apm bundle install --bundle PATH [--project PATH]</code>: install all members from a bundle archive.</li>
+</ul>
+<hr />
+<h2 id="make-targets">Make targets<a class="headerlink" href="#make-targets" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>make install</code>: <code>uv sync --all-extras</code>.</li>
+<li><code>make lint</code>: run Ruff checks.</li>
+<li><code>make format</code>: run Ruff formatter.</li>
+<li><code>make typecheck</code>: run mypy.</li>
+<li><code>make test</code>: run pytest.</li>
+<li><code>make verify</code>: lint + typecheck + tests.</li>
+<li><code>make build</code>: <code>uv build</code>.</li>
+<li><code>make docs-build</code>: build static MkDocs site into <code>site/</code>.</li>
+<li><code>make docs-serve</code>: run local MkDocs preview server.</li>
+<li><code>make publish-testpypi</code>: publish to TestPyPI via <code>uv publish</code>.</li>
+<li><code>make publish-pypi</code>: publish to PyPI via <code>uv publish</code>.</li>
+</ul>
+<hr />
+<h2 id="docs-hosting">Docs Hosting<a class="headerlink" href="#docs-hosting" title="Permanent link">&para;</a></h2>
+<p>GitHub Pages deploy workflow: <code>.github/workflows/docs.yml</code> — uses uv, copies <code>assets/</code> into <code>docs/</code>, then runs <code>mkdocs gh-deploy --force</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Neo Pragnya Architecture Group — Apache-2.0
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/neo-pragnya/ananke-plexus" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

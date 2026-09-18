@@ -1,0 +1,5547 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A deep architectural exploration of Ananke Plexus, a local-first Agent Development Life Cycle control plane combining specification-driven development, architecture contracts, code graphs, agent orchestration, policy gates, deterministic verification, security, and auditable evidence.
+">
+      
+      
+      
+        <link rel="canonical" href="https://neo-pragnya.github.io/ananke-plexus/Ananke%20Plexus/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Ananke Plexus — A Tensegrity Control Plane for Governed Autonomous Software Engineering - Ananke Plexus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#a-tensegrity-control-plane-for-governed-autonomous-software-engineering" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Ananke Plexus" class="md-header__button md-logo" aria-label="Ananke Plexus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ananke Plexus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ananke Plexus — A Tensegrity Control Plane for Governed Autonomous Software Engineering
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/neo-pragnya/ananke-plexus" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    neo-pragnya/ananke-plexus
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/why-ananke/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guides/getting-started/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reference/commands/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Ananke Plexus" class="md-nav__button md-logo" aria-label="Ananke Plexus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Ananke Plexus
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/neo-pragnya/ananke-plexus" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    neo-pragnya/ananke-plexus
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/why-ananke/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why Ananke Plexus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/bmad/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ananke BMAD Contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Graph Intelligence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/policy-security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Engine & Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/mcp-apm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server & APM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Evaluation Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/setup-and-capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup & Capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/implementation-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Language
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/eval-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eval Harness API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-tensegrity-control-plane-for-governed-autonomous-software-engineering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Tensegrity Control Plane for Governed Autonomous Software Engineering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-why-ananke-plexus-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌌 1. Why Ananke Plexus Exists
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🌌 1. Why Ananke Plexus Exists">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-core-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚨 The Core Problems
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 2. The Big Picture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-why-the-name-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧬 3. Why the Name Matters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧬 3. Why the Name Matters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ananke-necessity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚖️ Ananke — Necessity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plexus-the-interwoven-engineering-network" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🕸️ Plexus — The Interwoven Engineering Network
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-tensegrity-the-architectural-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗️ 4. Tensegrity: The Architectural Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-sdlc-sdd-and-adlc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 5. SDLC, SDD, and ADLC
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🤖 5. SDLC, SDD, and ADLC">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sdlc-software-development-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏭 SDLC — Software Development Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-sdd-spec-driven-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📜 6. SDD — Spec-Driven Development
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-adlc-agent-development-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 7. ADLC — Agent Development Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧠 7. ADLC — Agent Development Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sdlc-vs-sdd-vs-adlc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 SDLC vs SDD vs ADLC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-ananke-plexus-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 8. Ananke Plexus Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-the-core-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 9. The Core Runtime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧱 9. The Core Runtime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Configuration Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-the-policy-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ 10. The Policy Engine
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🛡️ 10. The Policy Engine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#policy-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-severity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gate Severity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-from-intent-to-governed-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📜 11. From Intent to Governed Specification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-specification-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 12. Specification Artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-ananke-bmad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧬 13. Ananke BMAD
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧬 13. Ananke BMAD">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗️ Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-calm-declared-architecture-as-machine-readable-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏛️ 14. CALM: Declared Architecture as Machine-Readable Truth
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-code-graph-intelligence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🕸️ 15. Code Graph Intelligence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🕸️ 15. Code Graph Intelligence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16-why-graph-context-changes-agent-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 16. Why Graph Context Changes Agent Behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17-blast-radius-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💥 17. Blast Radius Analysis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#18-context-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 18. Context Assembly
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#19-governed-agentic-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 19. Governed Agentic Execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#20-multi-agent-coordination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👥 20. Multi-Agent Coordination
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#21-resilient-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔁 21. Resilient Execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-isolated-git-worktrees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌿 22. Isolated Git Worktrees
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#23-tensile-git-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🪝 23. Tensile Git Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🪝 23. Tensile Git Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚡ Pre-Commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Post-Commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-push" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Pre-Push
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#24-progressive-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 24. Progressive Verification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧪 24. Progressive Verification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verification-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification Matrix
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#25-security-as-a-layered-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ 25. Security as a Layered System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🛡️ 25. Security as a Layered System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#26-evidence-as-a-first-class-artifact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 26. Evidence as a First-Class Artifact
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧾 26. Evidence as a First-Class Artifact">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evidence-bundle-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence Bundle Contents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#27-evidence-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔗 27. Evidence Lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#28-model-context-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔌 28. Model Context Protocol
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔌 28. Model Context Protocol">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example MCP Tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-mcp-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example MCP Resources
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#29-apm-agent-package-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 29. APM — Agent Package Manager
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📦 29. APM — Agent Package Manager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apm-responsibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APM Responsibilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-skill-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Skill Manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#30-capability-based-skill-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 30. Capability-Based Skill Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#31-pluggable-agent-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 31. Pluggable Agent Backends
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#32-enterprise-lifecycle-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏢 32. Enterprise Lifecycle Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🏢 32. Enterprise Lifecycle Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jira-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jira Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-bitbucket-github-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git / Bitbucket / GitHub Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#33-rich-pull-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📬 33. Rich Pull Requests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#34-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 34. Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 34. Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#useful-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Useful Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#35-evaluation-beyond-traditional-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 35. Evaluation Beyond Traditional Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#36-agent-specific-threat-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ 36. Agent-Specific Threat Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🛡️ 36. Agent-Specific Threat Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prompt-injection-in-repository-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧨 Prompt Injection in Repository Content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool-escalation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ Tool Escalation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-exposure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔑 Secret Exposure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-exfiltration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Network Exfiltration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependency-hallucination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Dependency Hallucination
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#37-workspace-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗂️ 37. Workspace Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#38-python-package-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐍 38. Python Package Organization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🐍 38. Python Package Organization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#package-responsibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Responsibilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#39-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 39. Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#40-main-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⌨️ 40. Main CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#41-apm-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 41. APM CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#42-quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 42. Quickstart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#43-common-usage-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 43. Common Usage Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧭 43. Common Usage Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-human-led-agent-assisted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👨‍💻 Pattern 1 — Human-Led, Agent-Assisted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-jira-to-pr-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Pattern 2 — Jira-to-PR Automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-brownfield-modification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ Pattern 3 — Brownfield Modification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-architecture-refactoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗️ Pattern 4 — Architecture Refactoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-regulated-engineering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Pattern 5 — Regulated Engineering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-6-fully-local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏠 Pattern 6 — Fully Local Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#44-who-ananke-plexus-is-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👥 44. Who Ananke Plexus Is For
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="👥 44. Who Ananke Plexus Is For">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#individual-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👨‍💻 Individual Developers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staff-and-principal-engineers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧑‍🔧 Staff and Principal Engineers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai-platform-engineers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 AI Platform Engineers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Security Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#engineering-leadership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏢 Engineering Leadership
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-and-compliance-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Audit and Compliance Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#45-the-distinction-between-a-coding-agent-and-an-engineering-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 45. The Distinction Between a Coding Agent and an Engineering Agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#46-end-to-end-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 46. End-to-End Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#47-open-ecosystem-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 47. Open Ecosystem Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#48-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ 48. Design Principles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="⚙️ 48. Design Principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏠 Local-First
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapter-driven" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔌 Adapter-Driven
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-governed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Policy-Governed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auditable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Auditable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pluggable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Pluggable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#graph-aware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🕸️ Graph-Aware
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spec-governed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📜 Spec-Governed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deterministically-verified" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Deterministically Verified
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#human-aligned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👤 Human-Aligned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#49-why-apache-20-fits-the-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚖️ 49. Why Apache-2.0 Fits the Ecosystem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#50-the-core-engineering-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 50. The Core Engineering Equation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#51-from-ai-coding-to-autonomous-engineering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 51. From AI Coding to Autonomous Engineering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#52-the-full-ananke-plexus-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌌 52. The Full Ananke Plexus Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#53-what-ananke-plexus-ultimately-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✨ 53. What Ananke Plexus Ultimately Changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#54-the-philosophy-in-one-sentence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🪐 54. The Philosophy in One Sentence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freedom-at-the-edge-necessity-at-the-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Freedom at the edge. Necessity at the core.
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h2 id="a-tensegrity-control-plane-for-governed-autonomous-software-engineering">A Tensegrity Control Plane for Governed Autonomous Software Engineering<a class="headerlink" href="#a-tensegrity-control-plane-for-governed-autonomous-software-engineering" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Freedom at the edge. Necessity at the core.</strong></p>
+</blockquote>
+<hr />
+<blockquote>
+<p>[!abstract]<br />
+<strong>Ananke Plexus</strong> is a local-first <strong>Agent Development Life Cycle (ADLC) control plane</strong> and <strong>tensegrity engineering harness</strong> for autonomous software development.</p>
+<p>It weaves together:</p>
+<ul>
+<li>
+<p>📜 <strong>Spec-Driven Development</strong></p>
+</li>
+<li>
+<p>🧱 <strong>Architecture Contracts</strong></p>
+</li>
+<li>
+<p>🕸️ <strong>Code-Graph Intelligence</strong></p>
+</li>
+<li>
+<p>🤖 <strong>Agent Orchestration</strong></p>
+</li>
+<li>
+<p>🛡️ <strong>Policy &amp; Security Gates</strong></p>
+</li>
+<li>
+<p>🧪 <strong>Deterministic Verification</strong></p>
+</li>
+<li>
+<p>🧾 <strong>Auditable Evidence</strong></p>
+</li>
+<li>
+<p>🔁 <strong>Git &amp; Enterprise Lifecycle Automation</strong></p>
+</li>
+<li>
+<p>🔌 <strong>MCP-based Agent Connectivity</strong></p>
+</li>
+<li>
+<p>📦 <strong>Reusable Agent Skills through APM</strong></p>
+</li>
+</ul>
+<p>into one governed engineering lifecycle.</p>
+</blockquote>
+<p>The underlying idea is that generative intelligence is expansive, probabilistic, and creative, while production software engineering depends on structure, boundaries, repeatability, traceability, and verifiable truth. Ananke Plexus reconciles those two forces by surrounding autonomous software agents with a <strong>living tensile system of specifications, architecture, graph context, policy, tests, and evidence</strong> rather than attempting to constrain them through a single rigid framework.</p>
+<hr />
+<h1 id="1-why-ananke-plexus-exists">🌌 1. Why Ananke Plexus Exists<a class="headerlink" href="#1-why-ananke-plexus-exists" title="Permanent link">&para;</a></h1>
+<p>Modern coding agents can already do far more than autocomplete.</p>
+<p>They can:</p>
+<ul>
+<li>
+<p>understand requirements,</p>
+</li>
+<li>
+<p>explore a repository,</p>
+</li>
+<li>
+<p>generate architecture,</p>
+</li>
+<li>
+<p>modify dozens of files,</p>
+</li>
+<li>
+<p>write tests,</p>
+</li>
+<li>
+<p>install packages,</p>
+</li>
+<li>
+<p>run commands,</p>
+</li>
+<li>
+<p>refactor dependencies,</p>
+</li>
+<li>
+<p>create commits,</p>
+</li>
+<li>
+<p>open pull requests,</p>
+</li>
+<li>
+<p>interpret failures,</p>
+</li>
+<li>
+<p>retry implementation,</p>
+</li>
+<li>
+<p>coordinate with other agents.</p>
+</li>
+</ul>
+<p>That creates an entirely different engineering problem.</p>
+<p>The central question is no longer:</p>
+<blockquote>
+<p><strong>Can an AI write code?</strong></p>
+</blockquote>
+<p>It is increasingly:</p>
+<blockquote>
+<p><strong>How do we safely allow autonomous systems to participate in software engineering without losing architectural integrity, security, traceability, or control?</strong></p>
+</blockquote>
+<p>Ananke Plexus is designed around that question.</p>
+<hr />
+<h2 id="the-core-problems">🚨 The Core Problems<a class="headerlink" href="#the-core-problems" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>What happens without structure</th>
+<th>What Ananke Plexus provides</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🌀 <strong>Agent drift</strong></td>
+<td>The implementation gradually diverges from the original requirement</td>
+<td>Specs, acceptance criteria, policies, and evidence preserve intent</td>
+</tr>
+<tr>
+<td>🧠 <strong>Context overload</strong></td>
+<td>Agents read huge repositories as undifferentiated text</td>
+<td>Code graphs provide targeted structural context</td>
+</tr>
+<tr>
+<td>🏗️ <strong>Architecture drift</strong></td>
+<td>Agents imitate existing accidental dependencies</td>
+<td>CALM expresses intended architecture and graphs reveal actual architecture</td>
+</tr>
+<tr>
+<td>🔓 <strong>Excessive autonomy</strong></td>
+<td>Agents gain broad filesystem, shell, Git, or network access</td>
+<td>Capability boundaries and policy gates</td>
+</tr>
+<tr>
+<td>🧪 <strong>Late testing</strong></td>
+<td>Problems are discovered only in CI or review</td>
+<td>Progressive local verification</td>
+</tr>
+<tr>
+<td>🛡️ <strong>Security as afterthought</strong></td>
+<td>Secrets, dependencies, or unsafe changes reach PRs</td>
+<td>Security checks integrated into the lifecycle</td>
+</tr>
+<tr>
+<td>🧾 <strong>Poor traceability</strong></td>
+<td>Nobody knows why a change exists or what proved it</td>
+<td>Evidence bundles connect intent → change → verification</td>
+</tr>
+<tr>
+<td>🕰️ <strong>Long-running context decay</strong></td>
+<td>Agent reasoning loses alignment over time</td>
+<td>Durable artifacts, graph context, checkpoints, and run state</td>
+</tr>
+<tr>
+<td>🔁 <strong>Fragile automation</strong></td>
+<td>Failed agent runs leave partial external side effects</td>
+<td>Recovery, retry, cancellation, idempotency, and state machines</td>
+</tr>
+<tr>
+<td>🏢 <strong>Enterprise distrust</strong></td>
+<td>Teams restrict autonomy because they cannot prove safety</td>
+<td>Auditable execution with deterministic gates</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="2-the-big-picture">🧭 2. The Big Picture<a class="headerlink" href="#2-the-big-picture" title="Permanent link">&para;</a></h1>
+<p>Ananke Plexus does not attempt to replace your agents, IDE, issue tracker, code graph, CI system, security tools, or model provider.</p>
+<p>It sits <strong>above and between them</strong>.</p>
+<p>It becomes the engineering control plane.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    HUMAN["👤 Human Intent&lt;br/&gt;Prompt • Jira • Epic • Requirement"]
+
+    SPEC["📜 Specification Plane&lt;br/&gt;Spec • Plan • Tasks • Acceptance Criteria"]
+    ARCH["🏗️ Architecture Plane&lt;br/&gt;CALM • Boundaries • Interfaces"]
+    GRAPH["🕸️ Intelligence Plane&lt;br/&gt;Code Graph • Dependencies • Blast Radius"]
+
+    POLICY["🛡️ Governance Plane&lt;br/&gt;Policies • Permissions • Approval Gates"]
+
+    AGENTS["🤖 Agent Execution Plane&lt;br/&gt;Copilot • Amazon Q • Kiro • Hermes • Local Models"]
+
+    VERIFY["🧪 Verification Plane&lt;br/&gt;Tests • Type Checks • SAST • SCA • Graph Review"]
+
+    EVIDENCE["🧾 Evidence Plane&lt;br/&gt;Hashes • Reports • Provenance • Audit Trail"]
+
+    DELIVERY["🚀 Engineering Lifecycle&lt;br/&gt;Git • PR • Jira • CI/CD • Release"]
+
+    HUMAN --&gt; SPEC
+    SPEC --&gt; ARCH
+    SPEC --&gt; GRAPH
+
+    ARCH --&gt; POLICY
+    GRAPH --&gt; POLICY
+
+    POLICY --&gt; AGENTS
+
+    AGENTS --&gt; VERIFY
+
+    VERIFY --&gt; EVIDENCE
+    EVIDENCE --&gt; DELIVERY
+
+    DELIVERY -. Feedback .-&gt; HUMAN</code></pre>
+<p>The system is intentionally designed around a simple principle:</p>
+<blockquote>
+<p><strong>The model proposes. The environment decides what becomes reality.</strong></p>
+</blockquote>
+<hr />
+<h1 id="3-why-the-name-matters">🧬 3. Why the Name Matters<a class="headerlink" href="#3-why-the-name-matters" title="Permanent link">&para;</a></h1>
+<p>The architecture is encoded in the name itself.</p>
+<hr />
+<h2 id="ananke-necessity">⚖️ Ananke — Necessity<a class="headerlink" href="#ananke-necessity" title="Permanent link">&para;</a></h2>
+<p>In Greek cosmology, <strong>Ananke</strong> represents necessity, inevitability, and the fundamental laws that even divine forces cannot escape.</p>
+<p>Within the framework, <strong>Ananke represents software truths that cannot be negotiated away by an agent</strong>.</p>
+<p>Examples include:</p>
+<ul>
+<li>
+<p>✅ a type contract must validate,</p>
+</li>
+<li>
+<p>✅ a test assertion must pass,</p>
+</li>
+<li>
+<p>✅ an architecture boundary must hold,</p>
+</li>
+<li>
+<p>✅ credentials must not leak,</p>
+</li>
+<li>
+<p>✅ prohibited dependencies cannot be introduced,</p>
+</li>
+<li>
+<p>✅ sensitive operations may require approval,</p>
+</li>
+<li>
+<p>✅ release artifacts must have provenance.</p>
+</li>
+</ul>
+<p>Ananke is therefore not primarily a restriction mechanism.</p>
+<p>It is the system's <strong>gravitational center of truth</strong>.</p>
+<hr />
+<h2 id="plexus-the-interwoven-engineering-network">🕸️ Plexus — The Interwoven Engineering Network<a class="headerlink" href="#plexus-the-interwoven-engineering-network" title="Permanent link">&para;</a></h2>
+<p>Software is not a directory tree.</p>
+<p>It is a network of relationships.</p>
+<p>A single function may be connected to:</p>
+<ul>
+<li>
+<p>API routes,</p>
+</li>
+<li>
+<p>services,</p>
+</li>
+<li>
+<p>tests,</p>
+</li>
+<li>
+<p>domain models,</p>
+</li>
+<li>
+<p>database tables,</p>
+</li>
+<li>
+<p>architecture components,</p>
+</li>
+<li>
+<p>requirements,</p>
+</li>
+<li>
+<p>policies,</p>
+</li>
+<li>
+<p>PRs,</p>
+</li>
+<li>
+<p>releases.</p>
+</li>
+</ul>
+<p>That interconnected structure is the <strong>Plexus</strong>.</p>
+<pre class="mermaid"><code>graph TD
+
+    REQ["📌 Requirement"]
+    SPEC["📜 Specification"]
+    BEHAVIOR["🧪 Behavior Contract"]
+    MODEL["🧱 Model Contract"]
+    ARCH["🏗️ Architecture Contract"]
+
+    MODULE["📁 Module"]
+    FUNCTION["ƒ Function"]
+    TEST["✅ Test"]
+    API["🌐 API"]
+    DB["🗄️ Database"]
+
+    POLICY["🛡️ Policy"]
+    RUN["🤖 Agent Run"]
+    COMMIT["🔀 Commit"]
+    PR["📬 Pull Request"]
+    RELEASE["📦 Release"]
+    EVIDENCE["🧾 Evidence"]
+
+    REQ --&gt; SPEC
+
+    SPEC --&gt; BEHAVIOR
+    SPEC --&gt; MODEL
+    SPEC --&gt; ARCH
+
+    ARCH --&gt; MODULE
+    MODULE --&gt; FUNCTION
+    FUNCTION --&gt; API
+    FUNCTION --&gt; DB
+    FUNCTION --&gt; TEST
+
+    POLICY --&gt; RUN
+    SPEC --&gt; RUN
+    FUNCTION --&gt; RUN
+
+    RUN --&gt; COMMIT
+    COMMIT --&gt; PR
+    PR --&gt; RELEASE
+
+    BEHAVIOR --&gt; EVIDENCE
+    MODEL --&gt; EVIDENCE
+    ARCH --&gt; EVIDENCE
+    TEST --&gt; EVIDENCE
+    RUN --&gt; EVIDENCE
+    PR --&gt; EVIDENCE
+    RELEASE --&gt; EVIDENCE</code></pre>
+<hr />
+<h1 id="4-tensegrity-the-architectural-philosophy">🏗️ 4. Tensegrity: The Architectural Philosophy<a class="headerlink" href="#4-tensegrity-the-architectural-philosophy" title="Permanent link">&para;</a></h1>
+<p>Traditional governance often behaves like a wall:</p>
+<pre class="mermaid"><code>flowchart LR
+    A["🤖 Agent"] --&gt; B["🧱 Restriction"]
+    B --&gt; C["❌ Blocked"]</code></pre>
+<p>Ananke Plexus instead uses a <strong>tensegrity model</strong>.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    EDGE["🌌 Creative Agentic Horizon&lt;br/&gt;Ideas • Exploration • Reasoning • Autonomy"]
+
+    PLEXUS["🕸️ Plexus&lt;br/&gt;Specs • Graphs • Context • Architecture • Policies"]
+
+    CORE["⚖️ Ananke&lt;br/&gt;Contracts • Tests • Security • Evidence"]
+
+    EDGE --&gt; PLEXUS
+    PLEXUS --&gt; CORE
+
+    CORE -. Stabilizes .-&gt; EDGE</code></pre>
+<p>The agent remains creative at the edge.</p>
+<p>The middle provides context and structural awareness.</p>
+<p>The core protects invariants.</p>
+<p>That relationship allows the system to support <strong>more autonomy precisely because stronger constraints exist where they matter</strong>.</p>
+<hr />
+<blockquote>
+<p>[!figure] Core concept<br />
+![[ananke_plexus_governed_software_architecture.png]]</p>
+</blockquote>
+<hr />
+<h1 id="5-sdlc-sdd-and-adlc">🤖 5. SDLC, SDD, and ADLC<a class="headerlink" href="#5-sdlc-sdd-and-adlc" title="Permanent link">&para;</a></h1>
+<p>Understanding Ananke requires separating three related concepts.</p>
+<hr />
+<h2 id="sdlc-software-development-lifecycle">🏭 SDLC — Software Development Lifecycle<a class="headerlink" href="#sdlc-software-development-lifecycle" title="Permanent link">&para;</a></h2>
+<p>Traditional SDLC describes how software moves from idea to production.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    PLAN["📋 Planning"]
+    REQ["📜 Requirements"]
+    DESIGN["🏗️ System Design"]
+    IMPLEMENT["💻 Implementation"]
+    TEST["🧪 Testing &amp; QA"]
+    DEPLOY["🚀 Deployment"]
+    MAINT["🔧 Maintenance"]
+    EVAL["📊 Evaluation"]
+
+    PLAN --&gt; REQ --&gt; DESIGN --&gt; IMPLEMENT --&gt; TEST --&gt; DEPLOY --&gt; MAINT --&gt; EVAL
+    EVAL --&gt; PLAN</code></pre>
+<p>The principal execution actor is traditionally the <strong>human engineering team</strong>.</p>
+<hr />
+<h1 id="6-sdd-spec-driven-development">📜 6. SDD — Spec-Driven Development<a class="headerlink" href="#6-sdd-spec-driven-development" title="Permanent link">&para;</a></h1>
+<p>Spec-Driven Development changes what becomes authoritative.</p>
+<p>Instead of:</p>
+<blockquote>
+<p>Prompt → Code</p>
+</blockquote>
+<p>the lifecycle becomes:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    CONST["📖 Constitution"]
+    SPEC["📝 Specify"]
+    CLARIFY["💬 Clarify"]
+    PLAN["🧭 Plan"]
+    TASKS["📋 Tasks"]
+    ANALYZE["🔍 Analyze"]
+    IMPL["💻 Implement"]
+    VERIFY["✅ Verify Against Spec"]
+    SHIP["🚀 Ship"]
+
+    CONST --&gt; SPEC
+    SPEC --&gt; CLARIFY
+    CLARIFY --&gt; PLAN
+    PLAN --&gt; TASKS
+    TASKS --&gt; ANALYZE
+    ANALYZE --&gt; IMPL
+    IMPL --&gt; VERIFY
+    VERIFY --&gt; SHIP
+
+    VERIFY -. Requirement mismatch .-&gt; SPEC</code></pre>
+<p>The specification becomes the durable source of truth.</p>
+<hr />
+<h1 id="7-adlc-agent-development-lifecycle">🧠 7. ADLC — Agent Development Lifecycle<a class="headerlink" href="#7-adlc-agent-development-lifecycle" title="Permanent link">&para;</a></h1>
+<p>Agentic systems introduce new lifecycle concerns.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    GOAL["🎯 Goal Definition"]
+    PRD["📜 Product Spec / PRD"]
+    SKILLS["🛠️ Skills &amp; Tools"]
+    ORCH["🤖 Agent Orchestration"]
+    CODE["💻 Autonomous Coding"]
+    TEST["🧪 Autonomous Testing"]
+    HUMAN["👤 Human Evaluation"]
+    DEPLOY["🚀 Deployment"]
+    MONITOR["📊 Monitoring"]
+    LOOP["🔁 Goal Loop"]
+
+    GOAL --&gt; PRD
+    PRD --&gt; SKILLS
+    SKILLS --&gt; ORCH
+    ORCH --&gt; CODE
+    CODE --&gt; TEST
+    TEST --&gt; HUMAN
+    HUMAN --&gt; DEPLOY
+    DEPLOY --&gt; MONITOR
+    MONITOR --&gt; LOOP
+    LOOP --&gt; GOAL</code></pre>
+<p>ADLC introduces explicit concerns around:</p>
+<ul>
+<li>
+<p>🤖 agent identity,</p>
+</li>
+<li>
+<p>🧠 context construction,</p>
+</li>
+<li>
+<p>🛠️ tool availability,</p>
+</li>
+<li>
+<p>🔐 permissions,</p>
+</li>
+<li>
+<p>🔄 recovery,</p>
+</li>
+<li>
+<p>🧾 execution traces,</p>
+</li>
+<li>
+<p>👤 human steering,</p>
+</li>
+<li>
+<p>📊 agent evaluation.</p>
+</li>
+</ul>
+<hr />
+<h2 id="sdlc-vs-sdd-vs-adlc">🔍 SDLC vs SDD vs ADLC<a class="headerlink" href="#sdlc-vs-sdd-vs-adlc" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>SDLC</th>
+<th>SDD</th>
+<th>ADLC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary driver</td>
+<td>Human process</td>
+<td>Specification</td>
+<td>Agent + human execution</td>
+</tr>
+<tr>
+<td>Main source of truth</td>
+<td>Documents / code</td>
+<td>Specification</td>
+<td>Specifications + policies + execution artifacts</td>
+</tr>
+<tr>
+<td>Planning</td>
+<td>Often upfront</td>
+<td>Spec-derived</td>
+<td>Iterative and agent-assisted</td>
+</tr>
+<tr>
+<td>Implementation</td>
+<td>Human-led</td>
+<td>Human or agent</td>
+<td>Agent-autonomous or hybrid</td>
+</tr>
+<tr>
+<td>Testing</td>
+<td>Stage or pipeline</td>
+<td>Spec-derived</td>
+<td>Continuous</td>
+</tr>
+<tr>
+<td>Context management</td>
+<td>Human cognition</td>
+<td>Spec artifacts</td>
+<td>Explicit context assembly</td>
+</tr>
+<tr>
+<td>Tool permissions</td>
+<td>Usually implicit</td>
+<td>Usually external</td>
+<td>First-class</td>
+</tr>
+<tr>
+<td>Retry / recovery</td>
+<td>Human-driven</td>
+<td>Not central</td>
+<td>Core concern</td>
+</tr>
+<tr>
+<td>Traceability</td>
+<td>Tickets + Git</td>
+<td>Spec → Code</td>
+<td>Intent → Agent → Code → Evidence</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>Organizational process</td>
+<td>Contract-oriented</td>
+<td>Machine-enforced</td>
+</tr>
+<tr>
+<td>Adaptability</td>
+<td>Project-dependent</td>
+<td>Spec regeneration</td>
+<td>Continuous feedback loop</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<blockquote>
+<p>[!figure] Why ADLC matters<br />
+![[why_adlc_matters_governed_autonomous_development.png]]</p>
+</blockquote>
+<hr />
+<h1 id="8-ananke-plexus-architecture">🧩 8. Ananke Plexus Architecture<a class="headerlink" href="#8-ananke-plexus-architecture" title="Permanent link">&para;</a></h1>
+<p>The system follows a <strong>core + ports + adapters</strong> architecture.</p>
+<p>The stable center contains Ananke's semantics.</p>
+<p>External tooling remains replaceable.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    subgraph Entry["👤 User &amp; System Entrypoints"]
+        CLI["⌨️ ananke CLI"]
+        APMCLI["📦 apm CLI"]
+        HOOKS["🪝 Git Hooks"]
+        MCPCLIENT["🔌 IDE / MCP Clients"]
+        CI["⚙️ CI/CD"]
+    end
+
+    subgraph Core["⚖️ Ananke Plexus Core"]
+        CONFIG["⚙️ Config Manager"]
+        POLICY["🛡️ Policy Engine"]
+        EXEC["🤖 Execution Director"]
+        STORE["🗃️ Artifact Store"]
+        TELEMETRY["📊 Telemetry &amp; Audit"]
+        PERM["🔐 Permission Boundary"]
+        STATE["🔁 Run State Machine"]
+    end
+
+    subgraph Domain["🧠 Domain Subsystems"]
+        SPECKIT["📜 Spec / SDD"]
+        CALM["🏗️ CALM Architecture"]
+        GRAPH["🕸️ Graph Intelligence"]
+        APM["📦 APM"]
+        VERIFY["🧪 Verification"]
+        SECURITY["🛡️ Security"]
+        EVIDENCE["🧾 Evidence"]
+    end
+
+    subgraph Adapters["🔌 Integration Adapters"]
+        JIRA["Jira"]
+        SCM["GitHub / Bitbucket"]
+        GRAPHIFY["Graphifyy"]
+        CRG["Code Review Graph"]
+        COPILOT["GitHub Copilot"]
+        Q["Amazon Q"]
+        KIRO["Kiro"]
+        HERMES["Hermes"]
+        LOCAL["Local Models"]
+        SEMGREP["Semgrep"]
+        TRIVY["Trivy"]
+        GITLEAKS["Gitleaks"]
+    end
+
+    Entry --&gt; Core
+    Core --&gt; Domain
+    Domain --&gt; Adapters
+
+    Adapters -. Results / Context .-&gt; Domain
+    Domain -. Evidence / State .-&gt; Core
+    Core -. Feedback .-&gt; Entry</code></pre>
+<hr />
+<blockquote>
+<p>[!figure] System architecture<br />
+![[ananke_plexus_architecture_overview.png]]</p>
+</blockquote>
+<hr />
+<h1 id="9-the-core-runtime">🧱 9. The Core Runtime<a class="headerlink" href="#9-the-core-runtime" title="Permanent link">&para;</a></h1>
+<p>The Ananke core is deliberately model-agnostic.</p>
+<p>It is responsible for durable engineering semantics rather than LLM reasoning.</p>
+<hr />
+<h2 id="configuration-manager">⚙️ Configuration Manager<a class="headerlink" href="#configuration-manager" title="Permanent link">&para;</a></h2>
+<p>Configuration determines:</p>
+<ul>
+<li>
+<p>active integrations,</p>
+</li>
+<li>
+<p>selected model backend,</p>
+</li>
+<li>
+<p>enabled policies,</p>
+</li>
+<li>
+<p>graph provider,</p>
+</li>
+<li>
+<p>verification profile,</p>
+</li>
+<li>
+<p>lifecycle connector behavior,</p>
+</li>
+<li>
+<p>evidence retention,</p>
+</li>
+<li>
+<p>telemetry.</p>
+</li>
+</ul>
+<p>Configuration can be resolved from:</p>
+<pre class="mermaid"><code>flowchart TB
+
+    DEFAULT["Package Defaults"]
+    GLOBAL["User Configuration"]
+    PROJECT["Project Configuration"]
+    ENV["Environment Variables"]
+    CLI["CLI Overrides"]
+
+    DEFAULT --&gt; RESOLVE["⚙️ Effective Configuration"]
+    GLOBAL --&gt; RESOLVE
+    PROJECT --&gt; RESOLVE
+    ENV --&gt; RESOLVE
+    CLI --&gt; RESOLVE</code></pre>
+<hr />
+<h1 id="10-the-policy-engine">🛡️ 10. The Policy Engine<a class="headerlink" href="#10-the-policy-engine" title="Permanent link">&para;</a></h1>
+<p>Prompts are not policies.</p>
+<p>An instruction such as:</p>
+<blockquote>
+<p>"Please don't modify infrastructure."</p>
+</blockquote>
+<p>is advisory.</p>
+<p>A policy such as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">policy</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">protect-infrastructure</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"infra/**"</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">".github/workflows/**"</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">permissions</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">read</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">write</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deny</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">enforcement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hard</span>
+</code></pre></div>
+<p>is enforceable.</p>
+<hr />
+<h2 id="policy-categories">Policy Categories<a class="headerlink" href="#policy-categories" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📁 Filesystem</td>
+<td>restrict read/write paths</td>
+</tr>
+<tr>
+<td>🌐 Network</td>
+<td>approved destinations only</td>
+</tr>
+<tr>
+<td>🛠️ Tool usage</td>
+<td>allow / deny commands</td>
+</tr>
+<tr>
+<td>🔀 Git</td>
+<td>prohibit force-push</td>
+</tr>
+<tr>
+<td>🏗️ Architecture</td>
+<td>prevent invalid dependencies</td>
+</tr>
+<tr>
+<td>📦 Dependencies</td>
+<td>require package approval</td>
+</tr>
+<tr>
+<td>⚖️ Licensing</td>
+<td>deny incompatible licenses</td>
+</tr>
+<tr>
+<td>🧾 Evidence</td>
+<td>require evidence before merge</td>
+</tr>
+<tr>
+<td>👤 Approval</td>
+<td>require human confirmation</td>
+</tr>
+<tr>
+<td>💰 Resource budgets</td>
+<td>token / time / tool limits</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="gate-severity">Gate Severity<a class="headerlink" href="#gate-severity" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    CHECK["Policy Finding"]
+
+    INFO["ℹ️ INFO"]
+    WARN["⚠️ WARN"]
+    REVIEW["👤 REVIEW"]
+    FAIL["🛑 FAIL"]
+
+    CHECK --&gt; INFO
+    CHECK --&gt; WARN
+    CHECK --&gt; REVIEW
+    CHECK --&gt; FAIL</code></pre>
+<p>The objective is not to block everything.</p>
+<p>It is to <strong>match control intensity to risk</strong>.</p>
+<hr />
+<h1 id="11-from-intent-to-governed-specification">📜 11. From Intent to Governed Specification<a class="headerlink" href="#11-from-intent-to-governed-specification" title="Permanent link">&para;</a></h1>
+<p>Everything starts from intent.</p>
+<p>Ananke can accept:</p>
+<ul>
+<li>
+<p>Jira stories,</p>
+</li>
+<li>
+<p>epics,</p>
+</li>
+<li>
+<p>issue text,</p>
+</li>
+<li>
+<p>natural-language requirements,</p>
+</li>
+<li>
+<p>existing specifications.</p>
+</li>
+</ul>
+<p>Intent is progressively transformed into durable artifacts.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    INTENT["🎯 Intent"]
+    CONSTITUTION["📖 Constitution"]
+    SPEC["📜 Specification"]
+    CLARIFY["💬 Clarification"]
+    PLAN["🧭 Plan"]
+    TASKS["📋 Tasks"]
+    ANALYZE["🔍 Risk Analysis"]
+    IMPLEMENT["💻 Implementation"]
+    VERIFY["✅ Verification"]
+    PR["📬 PR + Evidence"]
+
+    INTENT --&gt; CONSTITUTION
+    CONSTITUTION --&gt; SPEC
+    SPEC --&gt; CLARIFY
+    CLARIFY --&gt; PLAN
+    PLAN --&gt; TASKS
+    TASKS --&gt; ANALYZE
+    ANALYZE --&gt; IMPLEMENT
+    IMPLEMENT --&gt; VERIFY
+    VERIFY --&gt; PR</code></pre>
+<hr />
+<blockquote>
+<p>[!figure] Intent to implementation<br />
+![[from_intent_to_implementation.png]]</p>
+</blockquote>
+<hr />
+<h1 id="12-specification-artifacts">📚 12. Specification Artifacts<a class="headerlink" href="#12-specification-artifacts" title="Permanent link">&para;</a></h1>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>intent.md</code></td>
+<td>Captures originating intent</td>
+</tr>
+<tr>
+<td><code>constitution.md</code></td>
+<td>Defines project-wide principles</td>
+</tr>
+<tr>
+<td><code>spec.md</code></td>
+<td>Defines expected behavior and scope</td>
+</tr>
+<tr>
+<td><code>plan.md</code></td>
+<td>Defines technical approach</td>
+</tr>
+<tr>
+<td><code>data-model.md</code></td>
+<td>Defines model / schema design</td>
+</tr>
+<tr>
+<td><code>research.md</code></td>
+<td>Captures relevant research</td>
+</tr>
+<tr>
+<td><code>tasks.md</code></td>
+<td>Converts plans into executable tasks</td>
+</tr>
+<tr>
+<td><code>risk.md</code></td>
+<td>Records identified risk</td>
+</tr>
+<tr>
+<td><code>*.calm.yaml</code></td>
+<td>Defines architecture</td>
+</tr>
+<tr>
+<td>Evidence records</td>
+<td>Record verification and execution</td>
+</tr>
+</tbody>
+</table>
+<p>The core relationship is:</p>
+<pre class="mermaid"><code>flowchart TB
+
+    INTENT["Intent"]
+    SPEC["Specification"]
+    PLAN["Plan"]
+    TASKS["Tasks"]
+    CODE["Code"]
+    PROOF["Evidence"]
+
+    INTENT --&gt; SPEC
+    SPEC --&gt; PLAN
+    PLAN --&gt; TASKS
+    TASKS --&gt; CODE
+    CODE --&gt; PROOF
+
+    PROOF -. Validation .-&gt; SPEC</code></pre>
+<hr />
+<h1 id="13-ananke-bmad">🧬 13. Ananke BMAD<a class="headerlink" href="#13-ananke-bmad" title="Permanent link">&para;</a></h1>
+<p>Within Ananke Plexus, <strong>BMAD</strong> means:</p>
+<blockquote>
+<p><strong>Behavior — Model — Architecture Driven Development</strong></p>
+</blockquote>
+<p>These represent three distinct forms of truth.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    SPEC["📜 Specification"]
+
+    BEHAVIOR["🧪 Behavior&lt;br/&gt;What must happen?"]
+    MODEL["🧱 Model&lt;br/&gt;What structures exist?"]
+    ARCH["🏗️ Architecture&lt;br/&gt;How may they interact?"]
+
+    IMPLEMENT["💻 Implementation"]
+
+    SPEC --&gt; BEHAVIOR
+    SPEC --&gt; MODEL
+    SPEC --&gt; ARCH
+
+    BEHAVIOR --&gt; IMPLEMENT
+    MODEL --&gt; IMPLEMENT
+    ARCH --&gt; IMPLEMENT
+
+    IMPLEMENT --&gt;|"Tests"| BEHAVIOR
+    IMPLEMENT --&gt;|"Schema Validation"| MODEL
+    IMPLEMENT --&gt;|"Graph Reconciliation"| ARCH</code></pre>
+<hr />
+<h2 id="behavior">🧪 Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
+<p>Behavior is expressed through:</p>
+<ul>
+<li>
+<p>tests,</p>
+</li>
+<li>
+<p>acceptance criteria,</p>
+</li>
+<li>
+<p>expected outcomes,</p>
+</li>
+<li>
+<p>invariants,</p>
+</li>
+<li>
+<p>integration scenarios.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">Feature:</span><span class="nf"> Payment webhook idempotency</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nf">  </span><span class="k">Scenario:</span><span class="nf"> Duplicate payment notification</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">    Given </span><span class="nf">a previously processed payment event</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nf">    </span><span class="k">When </span><span class="nf">the same webhook is received again</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nf">    </span><span class="k">Then </span><span class="nf">exactly one ledger entry exists</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nf">    </span><span class="k">And </span><span class="nf">the endpoint returns a successful response</span>
+</code></pre></div>
+<hr />
+<h2 id="model">🧱 Model<a class="headerlink" href="#model" title="Permanent link">&para;</a></h2>
+<p>Models define structural expectations.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">PaymentCompletedPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">transaction_id</span><span class="p">:</span> <span class="n">UUID</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">customer_id</span><span class="p">:</span> <span class="n">UUID</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">amount</span><span class="p">:</span> <span class="n">Decimal</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">currency</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">occurred_at</span><span class="p">:</span> <span class="n">datetime</span>
+</code></pre></div>
+<p>Models may represent:</p>
+<ul>
+<li>
+<p>API payloads,</p>
+</li>
+<li>
+<p>domain entities,</p>
+</li>
+<li>
+<p>events,</p>
+</li>
+<li>
+<p>tool interfaces,</p>
+</li>
+<li>
+<p>configuration objects,</p>
+</li>
+<li>
+<p>agent messages.</p>
+</li>
+</ul>
+<hr />
+<h2 id="architecture">🏗️ Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<p>Architecture defines valid relationships.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    API["🌐 API"]
+    APP["⚙️ Application Service"]
+    DOMAIN["🧠 Domain"]
+    REPO["🗄️ Repository"]
+
+    API --&gt; APP
+    APP --&gt; DOMAIN
+    DOMAIN --&gt; REPO</code></pre>
+<p>Ananke can detect when implementation introduces forbidden shortcuts.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    API["🌐 API"]
+    DB["🗄️ Database"]
+
+    API -. "❌ prohibited direct dependency" .-&gt; DB</code></pre>
+<hr />
+<h1 id="14-calm-declared-architecture-as-machine-readable-truth">🏛️ 14. CALM: Declared Architecture as Machine-Readable Truth<a class="headerlink" href="#14-calm-declared-architecture-as-machine-readable-truth" title="Permanent link">&para;</a></h1>
+<p>Code represents the architecture that exists.</p>
+<p>CALM represents the architecture that is intended.</p>
+<p>That distinction is fundamental.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    DECLARED["🏗️ Declared Architecture&lt;br/&gt;CALM"]
+
+    RECON["⚖️ Ananke Reconciliation"]
+
+    OBSERVED["🕸️ Observed Architecture&lt;br/&gt;Code Graph"]
+
+    ALIGNED["✅ Aligned"]
+    DRIFT["⚠️ Architecture Drift"]
+    UNKNOWN["❓ Undeclared Relationship"]
+
+    DECLARED --&gt; RECON
+    OBSERVED --&gt; RECON
+
+    RECON --&gt; ALIGNED
+    RECON --&gt; DRIFT
+    RECON --&gt; UNKNOWN</code></pre>
+<p>CALM models can describe:</p>
+<ul>
+<li>
+<p>components,</p>
+</li>
+<li>
+<p>interfaces,</p>
+</li>
+<li>
+<p>boundaries,</p>
+</li>
+<li>
+<p>protocols,</p>
+</li>
+<li>
+<p>flows,</p>
+</li>
+<li>
+<p>controls,</p>
+</li>
+<li>
+<p>relationships.</p>
+</li>
+</ul>
+<hr />
+<h1 id="15-code-graph-intelligence">🕸️ 15. Code Graph Intelligence<a class="headerlink" href="#15-code-graph-intelligence" title="Permanent link">&para;</a></h1>
+<p>Repository files are storage units.</p>
+<p>They are not necessarily the most useful reasoning units.</p>
+<p>Ananke treats code as a graph of semantic relationships.</p>
+<hr />
+<h2 id="node-types">Node Types<a class="headerlink" href="#node-types" title="Permanent link">&para;</a></h2>
+<p>Possible graph nodes include:</p>
+<ul>
+<li>
+<p>📁 packages,</p>
+</li>
+<li>
+<p>📄 modules,</p>
+</li>
+<li>
+<p>🧱 classes,</p>
+</li>
+<li>
+<p>ƒ functions,</p>
+</li>
+<li>
+<p>🔧 methods,</p>
+</li>
+<li>
+<p>🧬 types,</p>
+</li>
+<li>
+<p>🌐 API endpoints,</p>
+</li>
+<li>
+<p>🗃️ database entities,</p>
+</li>
+<li>
+<p>🧪 tests,</p>
+</li>
+<li>
+<p>🏗️ architecture components,</p>
+</li>
+<li>
+<p>📜 requirements.</p>
+</li>
+</ul>
+<hr />
+<h2 id="edge-types">Edge Types<a class="headerlink" href="#edge-types" title="Permanent link">&para;</a></h2>
+<p>Typical relationships include:</p>
+<ul>
+<li>
+<p><code>IMPORTS</code>,</p>
+</li>
+<li>
+<p><code>CALLS</code>,</p>
+</li>
+<li>
+<p><code>EXTENDS</code>,</p>
+</li>
+<li>
+<p><code>IMPLEMENTS</code>,</p>
+</li>
+<li>
+<p><code>USES_TYPE</code>,</p>
+</li>
+<li>
+<p><code>TESTED_BY</code>,</p>
+</li>
+<li>
+<p><code>READS</code>,</p>
+</li>
+<li>
+<p><code>WRITES</code>,</p>
+</li>
+<li>
+<p><code>EXPOSES</code>,</p>
+</li>
+<li>
+<p><code>BELONGS_TO</code>,</p>
+</li>
+<li>
+<p><code>SATISFIES_REQUIREMENT</code>.</p>
+</li>
+</ul>
+<hr />
+<h1 id="16-why-graph-context-changes-agent-behavior">💡 16. Why Graph Context Changes Agent Behavior<a class="headerlink" href="#16-why-graph-context-changes-agent-behavior" title="Permanent link">&para;</a></h1>
+<p>Without graph intelligence:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    AGENT["🤖 Agent"]
+    REPO["📚 Entire Repository"]
+    CONTEXT["🧠 Huge Text Context"]
+
+    AGENT --&gt; REPO
+    REPO --&gt; CONTEXT</code></pre>
+<p>With graph intelligence:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    AGENT["🤖 Agent"]
+    QUERY["🔍 Graph Query"]
+    GRAPH["🕸️ Code Graph"]
+    SUBGRAPH["🎯 Relevant Subgraph"]
+    CONTEXT["🧠 Focused Context"]
+
+    AGENT --&gt; QUERY
+    QUERY --&gt; GRAPH
+    GRAPH --&gt; SUBGRAPH
+    SUBGRAPH --&gt; CONTEXT
+    CONTEXT --&gt; AGENT</code></pre>
+<p>The objective is not merely fewer tokens.</p>
+<p>It is <strong>better context selection</strong>.</p>
+<hr />
+<h1 id="17-blast-radius-analysis">💥 17. Blast Radius Analysis<a class="headerlink" href="#17-blast-radius-analysis" title="Permanent link">&para;</a></h1>
+<p>Suppose:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="o">...</span>
+</code></pre></div>
+<p>changes.</p>
+<p>Ananke can traverse structural relationships.</p>
+<pre class="mermaid"><code>graph TD
+
+    AUTH["🔴 authenticate()&lt;br/&gt;CHANGED"]
+
+    REQUIRE["🟠 require_auth()"]
+    LOGIN["🟠 login()"]
+    ROUTE["🟡 protected_route()"]
+    API["🟡 login_route()"]
+
+    TESTAUTH["🟢 test_auth()"]
+    TESTLOGIN["🟢 test_login()"]
+
+    UTIL["⚪ unrelated_utils.py"]
+
+    REQUIRE --&gt; AUTH
+    LOGIN --&gt; AUTH
+
+    ROUTE --&gt; REQUIRE
+    API --&gt; LOGIN
+
+    AUTH --&gt; TESTAUTH
+    LOGIN --&gt; TESTLOGIN</code></pre>
+<p>This provides direct answers to questions such as:</p>
+<ul>
+<li>
+<p>What may break?</p>
+</li>
+<li>
+<p>Which tests matter?</p>
+</li>
+<li>
+<p>What architecture components are involved?</p>
+</li>
+<li>
+<p>Which routes rely on the changed symbol?</p>
+</li>
+<li>
+<p>Which reviewers should inspect the change?</p>
+</li>
+</ul>
+<hr />
+<blockquote>
+<p>[!figure] Code graph intelligence<br />
+![[code_graph_intelligence_infographic.png]]</p>
+</blockquote>
+<hr />
+<h1 id="18-context-assembly">🧠 18. Context Assembly<a class="headerlink" href="#18-context-assembly" title="Permanent link">&para;</a></h1>
+<p>Code context is only one type of context.</p>
+<p>Ananke assembles several context layers before agent execution.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    SPEC["📜 Specification"]
+    ARCH["🏗️ Architecture"]
+    GRAPH["🕸️ Code Graph"]
+    POLICY["🛡️ Policies"]
+    SKILLS["🧰 Skills"]
+    HISTORY["🧾 Run History"]
+
+    ASSEMBLER["🧠 Context Assembler"]
+
+    SPEC --&gt; ASSEMBLER
+    ARCH --&gt; ASSEMBLER
+    GRAPH --&gt; ASSEMBLER
+    POLICY --&gt; ASSEMBLER
+    SKILLS --&gt; ASSEMBLER
+    HISTORY --&gt; ASSEMBLER
+
+    ASSEMBLER --&gt; AGENT["🤖 Agent"]</code></pre>
+<p>This means an agent receives not merely:</p>
+<blockquote>
+<p>"Here are some files."</p>
+</blockquote>
+<p>It receives:</p>
+<blockquote>
+<p>"Here is the requirement, the architecture, the relevant code neighborhood, applicable policy, available tools, and the evidence from previous steps."</p>
+</blockquote>
+<p>That is a fundamentally richer engineering environment.</p>
+<hr />
+<h1 id="19-governed-agentic-execution">🤖 19. Governed Agentic Execution<a class="headerlink" href="#19-governed-agentic-execution" title="Permanent link">&para;</a></h1>
+<p>Agentic execution follows a controlled lifecycle.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    START["🎯 Story / Prompt / Spec"]
+    ISO["🌿 Isolated Branch / Worktree"]
+    CTX["🧠 Context Assembly"]
+    PLAN["🧭 Agent Plan"]
+    CODE["💻 Code / Refactor"]
+    HOOK["🪝 Hook Checks"]
+    VERIFY["🧪 Verification"]
+    PR["📬 Pull Request"]
+    HUMAN["👤 Review / Approval"]
+    MERGE["🚀 Merge / Release"]
+
+    START --&gt; ISO
+    ISO --&gt; CTX
+    CTX --&gt; PLAN
+    PLAN --&gt; CODE
+    CODE --&gt; HOOK
+    HOOK --&gt; VERIFY
+    VERIFY --&gt; PR
+    PR --&gt; HUMAN
+    HUMAN --&gt; MERGE
+
+    VERIFY -. failure .-&gt; PLAN</code></pre>
+<hr />
+<blockquote>
+<p>[!figure] Governed agentic execution<br />
+![[governed_agentic_execution_pipeline.png]]</p>
+</blockquote>
+<hr />
+<h1 id="20-multi-agent-coordination">👥 20. Multi-Agent Coordination<a class="headerlink" href="#20-multi-agent-coordination" title="Permanent link">&para;</a></h1>
+<p>Ananke supports specialized roles without requiring every workflow to be multi-agent.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    DIRECTOR["🎛️ Execution Director"]
+
+    PLAN["🎯 Planner"]
+    ARCH["🏗️ Architect"]
+    CODER["💻 Coder"]
+    REVIEW["🔍 Reviewer"]
+    VERIFY["🧪 Verifier"]
+    DOC["📚 Documentation Agent"]
+
+    POLICY["🛡️ Shared Policy"]
+    CONTEXT["🧠 Shared Context"]
+    ARTIFACTS["🧾 Shared Artifacts"]
+
+    DIRECTOR --&gt; PLAN
+    DIRECTOR --&gt; ARCH
+    DIRECTOR --&gt; CODER
+    DIRECTOR --&gt; REVIEW
+    DIRECTOR --&gt; VERIFY
+    DIRECTOR --&gt; DOC
+
+    POLICY --&gt; DIRECTOR
+    CONTEXT --&gt; DIRECTOR
+    ARTIFACTS --&gt; DIRECTOR</code></pre>
+<p>All agents operate inside the same:</p>
+<ul>
+<li>
+<p>policies,</p>
+</li>
+<li>
+<p>graph context,</p>
+</li>
+<li>
+<p>specification,</p>
+</li>
+<li>
+<p>architecture,</p>
+</li>
+<li>
+<p>evidence model.</p>
+</li>
+</ul>
+<hr />
+<h1 id="21-resilient-execution">🔁 21. Resilient Execution<a class="headerlink" href="#21-resilient-execution" title="Permanent link">&para;</a></h1>
+<p>Long-running agent workflows must assume failure.</p>
+<p>Ananke therefore uses a stateful execution model.</p>
+<pre class="mermaid"><code>stateDiagram-v2
+
+    [*] --&gt; Created
+    Created --&gt; ContextReady
+    ContextReady --&gt; Planning
+    Planning --&gt; Executing
+
+    Executing --&gt; Verifying
+
+    Verifying --&gt; Completed: all gates pass
+    Verifying --&gt; Recovering: recoverable failure
+    Verifying --&gt; AwaitingApproval: approval required
+    Verifying --&gt; Failed: hard failure
+
+    Recovering --&gt; Planning
+    AwaitingApproval --&gt; Executing: approved
+    AwaitingApproval --&gt; Cancelled: rejected
+
+    Executing --&gt; Cancelled: cancelled
+    Failed --&gt; [*]
+    Completed --&gt; [*]
+    Cancelled --&gt; [*]</code></pre>
+<p>Execution controls include:</p>
+<ul>
+<li>
+<p>🔐 permission scopes,</p>
+</li>
+<li>
+<p>🛠️ tool allowlists,</p>
+</li>
+<li>
+<p>👤 approval gates,</p>
+</li>
+<li>
+<p>🔁 retries,</p>
+</li>
+<li>
+<p>↩️ rollback,</p>
+</li>
+<li>
+<p>🛑 cancellation,</p>
+</li>
+<li>
+<p>🔑 idempotency keys,</p>
+</li>
+<li>
+<p>🧾 structured run logs.</p>
+</li>
+</ul>
+<hr />
+<h1 id="22-isolated-git-worktrees">🌿 22. Isolated Git Worktrees<a class="headerlink" href="#22-isolated-git-worktrees" title="Permanent link">&para;</a></h1>
+<p>An autonomous agent should not need to operate directly in the developer's active workspace.</p>
+<p>Runs can execute in isolated Git worktrees.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    REPO["Git Repository"]
+
+    MAIN["🌿 Main Working Tree"]
+    USER["👨‍💻 Developer Tree"]
+
+    RUN1["🤖 Agent Worktree&lt;br/&gt;RUN-001"]
+    RUN2["🤖 Agent Worktree&lt;br/&gt;RUN-002"]
+    RUN3["🤖 Agent Worktree&lt;br/&gt;RUN-003"]
+
+    REPO --&gt; MAIN
+    REPO --&gt; USER
+    REPO --&gt; RUN1
+    REPO --&gt; RUN2
+    REPO --&gt; RUN3</code></pre>
+<p>Benefits include:</p>
+<ul>
+<li>
+<p>parallel execution,</p>
+</li>
+<li>
+<p>cleaner attribution,</p>
+</li>
+<li>
+<p>easier cancellation,</p>
+</li>
+<li>
+<p>safer experimentation,</p>
+</li>
+<li>
+<p>reproducible execution environments.</p>
+</li>
+</ul>
+<hr />
+<h1 id="23-tensile-git-hooks">🪝 23. Tensile Git Hooks<a class="headerlink" href="#23-tensile-git-hooks" title="Permanent link">&para;</a></h1>
+<p>Git hooks form one of the closest governance surfaces to actual development.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    EDIT["✍️ Edit"]
+    PRECOMMIT["🪝 Pre-Commit"]
+    COMMIT["🔀 Commit"]
+    POST["🔄 Post-Commit"]
+    PREPUSH["🛡️ Pre-Push"]
+    PUSH["⬆️ Push"]
+    CI["⚙️ CI"]
+
+    EDIT --&gt; PRECOMMIT
+    PRECOMMIT --&gt; COMMIT
+    COMMIT --&gt; POST
+    POST --&gt; PREPUSH
+    PREPUSH --&gt; PUSH
+    PUSH --&gt; CI</code></pre>
+<hr />
+<h2 id="pre-commit">⚡ Pre-Commit<a class="headerlink" href="#pre-commit" title="Permanent link">&para;</a></h2>
+<p>Fast checks can include:</p>
+<ul>
+<li>
+<p>formatting validation,</p>
+</li>
+<li>
+<p>linting,</p>
+</li>
+<li>
+<p>type validation,</p>
+</li>
+<li>
+<p>staged secret detection,</p>
+</li>
+<li>
+<p>schema validation,</p>
+</li>
+<li>
+<p>lightweight policy checks.</p>
+</li>
+</ul>
+<hr />
+<h2 id="post-commit">🔍 Post-Commit<a class="headerlink" href="#post-commit" title="Permanent link">&para;</a></h2>
+<p>Post-commit activity focuses on non-destructive refresh tasks such as:</p>
+<ul>
+<li>
+<p>graph cache updates,</p>
+</li>
+<li>
+<p>local derived-state refresh,</p>
+</li>
+<li>
+<p>execution metadata.</p>
+</li>
+</ul>
+<hr />
+<h2 id="pre-push">🛡️ Pre-Push<a class="headerlink" href="#pre-push" title="Permanent link">&para;</a></h2>
+<p>Deeper local checks can include:</p>
+<ul>
+<li>
+<p>unit tests,</p>
+</li>
+<li>
+<p>integration tests,</p>
+</li>
+<li>
+<p>graph review,</p>
+</li>
+<li>
+<p>architecture validation,</p>
+</li>
+<li>
+<p>SAST,</p>
+</li>
+<li>
+<p>dependency auditing,</p>
+</li>
+<li>
+<p>license checks.</p>
+</li>
+</ul>
+<hr />
+<h1 id="24-progressive-verification">🧪 24. Progressive Verification<a class="headerlink" href="#24-progressive-verification" title="Permanent link">&para;</a></h1>
+<p>Not every check belongs at the same point in the lifecycle.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    CODE["💻 Change"]
+
+    FAST["⚡ Pre-Commit&lt;br/&gt;Fast Feedback"]
+    DEEP["🔍 Pre-Push&lt;br/&gt;Deep Local Verification"]
+    CI["🏭 CI / Release&lt;br/&gt;Full Assurance"]
+    RELEASE["🚀 Release"]
+
+    CODE --&gt; FAST
+    FAST --&gt; DEEP
+    DEEP --&gt; CI
+    CI --&gt; RELEASE</code></pre>
+<hr />
+<h2 id="verification-matrix">Verification Matrix<a class="headerlink" href="#verification-matrix" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Typical checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>⚡ Pre-commit</td>
+<td>format, lint, types, secrets, schemas</td>
+</tr>
+<tr>
+<td>🔍 Pre-push</td>
+<td>tests, graph review, SAST, dependency audit, licenses</td>
+</tr>
+<tr>
+<td>🏭 CI</td>
+<td>full test matrix, container scans, SBOM, provenance, signing</td>
+</tr>
+<tr>
+<td>🚀 Release</td>
+<td>artifact integrity, attestation, deployment policy</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="25-security-as-a-layered-system">🛡️ 25. Security as a Layered System<a class="headerlink" href="#25-security-as-a-layered-system" title="Permanent link">&para;</a></h1>
+<p>Ananke does not reduce "security" to one scanner.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    CHANGE["💻 Code Change"]
+
+    SECRET["🔑 Secrets Detection"]
+    SAST["🛡️ Static Analysis"]
+    DEPS["📦 Dependency Audit"]
+    LICENSE["⚖️ License Check"]
+    CONTAINER["📦 Container Scan"]
+    POLICY["📜 Policy"]
+    SBOM["📑 SBOM"]
+    PROV["🔏 Provenance"]
+
+    CHANGE --&gt; SECRET
+    CHANGE --&gt; SAST
+    CHANGE --&gt; DEPS
+    CHANGE --&gt; LICENSE
+    CHANGE --&gt; CONTAINER
+
+    SECRET --&gt; POLICY
+    SAST --&gt; POLICY
+    DEPS --&gt; POLICY
+    LICENSE --&gt; POLICY
+    CONTAINER --&gt; POLICY
+
+    POLICY --&gt; SBOM
+    SBOM --&gt; PROV</code></pre>
+<hr />
+<h2 id="example-tooling">Example Tooling<a class="headerlink" href="#example-tooling" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Typical integration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python quality</td>
+<td>Ruff</td>
+</tr>
+<tr>
+<td>Typing</td>
+<td>mypy / Pyright</td>
+</tr>
+<tr>
+<td>Secrets</td>
+<td>Gitleaks</td>
+</tr>
+<tr>
+<td>SAST</td>
+<td>Semgrep</td>
+</tr>
+<tr>
+<td>Dependency CVEs</td>
+<td>pip-audit / Trivy</td>
+</tr>
+<tr>
+<td>Container scanning</td>
+<td>Trivy</td>
+</tr>
+<tr>
+<td>Workflow validation</td>
+<td>actionlint / zizmor</td>
+</tr>
+<tr>
+<td>Code scanning</td>
+<td>CodeQL</td>
+</tr>
+<tr>
+<td>Licensing</td>
+<td>license auditing</td>
+</tr>
+<tr>
+<td>SBOM</td>
+<td>CycloneDX / equivalent tooling</td>
+</tr>
+<tr>
+<td>Provenance</td>
+<td>build attestations</td>
+</tr>
+</tbody>
+</table>
+<p>The key difference is that Ananke <strong>coordinates and interprets</strong> these tools rather than attempting to replace them.</p>
+<hr />
+<h1 id="26-evidence-as-a-first-class-artifact">🧾 26. Evidence as a First-Class Artifact<a class="headerlink" href="#26-evidence-as-a-first-class-artifact" title="Permanent link">&para;</a></h1>
+<p>This is one of the most important Ananke concepts.</p>
+<p>Every meaningful engineering run produces evidence.</p>
+<hr />
+<h2 id="evidence-bundle-contents">Evidence Bundle Contents<a class="headerlink" href="#evidence-bundle-contents" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Evidence</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📜 Spec hash</td>
+<td>exact requirement version</td>
+</tr>
+<tr>
+<td>🧭 Plan hash</td>
+<td>exact execution plan</td>
+</tr>
+<tr>
+<td>📋 Task list</td>
+<td>canonical executed work</td>
+</tr>
+<tr>
+<td>🏗️ CALM delta</td>
+<td>architecture change</td>
+</tr>
+<tr>
+<td>🕸️ Graph delta</td>
+<td>structural code change</td>
+</tr>
+<tr>
+<td>🧪 Test results</td>
+<td>behavioral proof</td>
+</tr>
+<tr>
+<td>🛡️ Scanner reports</td>
+<td>security evidence</td>
+</tr>
+<tr>
+<td>📦 Dependency report</td>
+<td>supply-chain state</td>
+</tr>
+<tr>
+<td>🔀 Git metadata</td>
+<td>commit / branch / PR identity</td>
+</tr>
+<tr>
+<td>⏱️ Timestamps</td>
+<td>execution chronology</td>
+</tr>
+<tr>
+<td>🔐 Checksums</td>
+<td>artifact integrity</td>
+</tr>
+<tr>
+<td>👤 Approvals</td>
+<td>human governance</td>
+</tr>
+<tr>
+<td>🔧 Tool versions</td>
+<td>reproducibility</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="27-evidence-lineage">🔗 27. Evidence Lineage<a class="headerlink" href="#27-evidence-lineage" title="Permanent link">&para;</a></h1>
+<pre class="mermaid"><code>graph TD
+
+    INTENT["🎯 Intent"]
+    SPEC["📜 Spec Hash"]
+    PLAN["🧭 Plan Hash"]
+    TASKS["📋 Tasks"]
+    COMMIT["🔀 Commit"]
+
+    TEST["🧪 Test Results"]
+    GRAPH["🕸️ Graph Delta"]
+    ARCH["🏗️ Architecture Delta"]
+    SECURITY["🛡️ Security Results"]
+
+    PR["📬 Pull Request"]
+    RELEASE["📦 Release"]
+    EVIDENCE["🧾 Evidence Bundle"]
+
+    INTENT --&gt; SPEC
+    SPEC --&gt; PLAN
+    PLAN --&gt; TASKS
+    TASKS --&gt; COMMIT
+
+    COMMIT --&gt; TEST
+    COMMIT --&gt; GRAPH
+    COMMIT --&gt; ARCH
+    COMMIT --&gt; SECURITY
+
+    TEST --&gt; EVIDENCE
+    GRAPH --&gt; EVIDENCE
+    ARCH --&gt; EVIDENCE
+    SECURITY --&gt; EVIDENCE
+
+    EVIDENCE --&gt; PR
+    PR --&gt; RELEASE</code></pre>
+<p>The result is traceability from:</p>
+<blockquote>
+<p><strong>Why did we build this?</strong></p>
+</blockquote>
+<p>all the way to:</p>
+<blockquote>
+<p><strong>Which artifact was released, and what proved it was safe?</strong></p>
+</blockquote>
+<hr />
+<blockquote>
+<p>[!figure] Security, verification, and evidence<br />
+![[verifiable_pipeline_for_autonomous_engineering.png]]</p>
+</blockquote>
+<hr />
+<h1 id="28-model-context-protocol">🔌 28. Model Context Protocol<a class="headerlink" href="#28-model-context-protocol" title="Permanent link">&para;</a></h1>
+<p>MCP allows external development agents to use Ananke as a common engineering intelligence surface.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    COPILOT["GitHub Copilot"]
+    Q["Amazon Q"]
+    KIRO["Kiro"]
+    LOCAL["Local Agent"]
+    FUTURE["Future Agent"]
+
+    MCP["🔌 MCP"]
+
+    ANANKE["⚖️ Ananke Plexus"]
+
+    COPILOT --&gt; MCP
+    Q --&gt; MCP
+    KIRO --&gt; MCP
+    LOCAL --&gt; MCP
+    FUTURE --&gt; MCP
+
+    MCP --&gt; ANANKE</code></pre>
+<hr />
+<h2 id="example-mcp-tools">Example MCP Tools<a class="headerlink" href="#example-mcp-tools" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>get_code_graph_context(symbol)
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>get_change_blast_radius(path)
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>get_active_spec(feature)
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>validate_calm_architecture()
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>run_verification(profile)
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>get_policy_decision(action)
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>build_evidence_summary()
+</code></pre></div>
+<hr />
+<h2 id="example-mcp-resources">Example MCP Resources<a class="headerlink" href="#example-mcp-resources" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ananke://specs/PROJ-101
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>ananke://architecture/system
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>ananke://graph/symbol/PaymentService
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>ananke://runs/latest
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>ananke://policies/effective
+</code></pre></div>
+<p>The critical architectural advantage is:</p>
+<blockquote>
+<p>Each agent does not need to independently reinvent repository intelligence.</p>
+</blockquote>
+<p>Ananke becomes the common governed interface.</p>
+<hr />
+<h1 id="29-apm-agent-package-manager">📦 29. APM — Agent Package Manager<a class="headerlink" href="#29-apm-agent-package-manager" title="Permanent link">&para;</a></h1>
+<p>Agent capabilities themselves become packages.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    DISCOVER["🔍 Discover"]
+    INSTALL["📦 Install"]
+    VERIFY["🛡️ Verify"]
+    ACTIVATE["✅ Activate"]
+    EXECUTE["🤖 Execute"]
+    AUDIT["🧾 Audit"]
+
+    DISCOVER --&gt; INSTALL
+    INSTALL --&gt; VERIFY
+    VERIFY --&gt; ACTIVATE
+    ACTIVATE --&gt; EXECUTE
+    EXECUTE --&gt; AUDIT</code></pre>
+<hr />
+<h2 id="apm-responsibilities">APM Responsibilities<a class="headerlink" href="#apm-responsibilities" title="Permanent link">&para;</a></h2>
+<p>APM manages:</p>
+<ul>
+<li>
+<p>🧠 prompts,</p>
+</li>
+<li>
+<p>🛠️ tools,</p>
+</li>
+<li>
+<p>🧩 skills,</p>
+</li>
+<li>
+<p>🛡️ policies,</p>
+</li>
+<li>
+<p>📜 schemas,</p>
+</li>
+<li>
+<p>🧪 tests,</p>
+</li>
+<li>
+<p>🔐 capabilities,</p>
+</li>
+<li>
+<p>📦 bundles.</p>
+</li>
+</ul>
+<hr />
+<h2 id="example-skill-manifest">Example Skill Manifest<a class="headerlink" href="#example-skill-manifest" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graph-reviewer</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.0</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="no">Performs graph-aware impact review for repository changes.</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">inputs</span><span class="p">:</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">schemas/input.json</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="nt">outputs</span><span class="p">:</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">schemas/output.json</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="nt">capabilities</span><span class="p">:</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">  </span><span class="nt">filesystem</span><span class="p">:</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">    </span><span class="nt">read</span><span class="p">:</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"src/**"</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"tests/**"</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">  </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="nt">tools</span><span class="p">:</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graph.query</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graph.blast_radius</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="nt">policies</span><span class="p">:</span>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no-write-access</span>
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="nt">tests</span><span class="p">:</span>
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/contract.yaml</span>
+</code></pre></div>
+<hr />
+<h1 id="30-capability-based-skill-security">🔐 30. Capability-Based Skill Security<a class="headerlink" href="#30-capability-based-skill-security" title="Permanent link">&para;</a></h1>
+<p>Two skills need not receive equal permissions.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    SKILL["📦 Skill"]
+
+    FS["📁 Filesystem Permissions"]
+    NET["🌐 Network Permissions"]
+    GIT["🔀 Git Permissions"]
+    TOOLS["🛠️ Tool Permissions"]
+    APPROVAL["👤 Approval Requirements"]
+
+    SKILL --&gt; FS
+    SKILL --&gt; NET
+    SKILL --&gt; GIT
+    SKILL --&gt; TOOLS
+    SKILL --&gt; APPROVAL</code></pre>
+<p>A documentation skill may be allowed to write only <code>docs/**</code>.</p>
+<p>A release skill may require Git tagging and release-network access.</p>
+<p>The skill itself declares its requested capabilities.</p>
+<p>Ananke decides whether they are allowed.</p>
+<hr />
+<h1 id="31-pluggable-agent-backends">🧰 31. Pluggable Agent Backends<a class="headerlink" href="#31-pluggable-agent-backends" title="Permanent link">&para;</a></h1>
+<p>Ananke remains backend-independent.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    ANANKE["⚖️ Ananke Execution Director"]
+
+    PORT["🔌 Agent Backend Port"]
+
+    COPILOT["GitHub Copilot"]
+    AMAZONQ["Amazon Q"]
+    KIRO["Kiro"]
+    HERMES["Hermes"]
+    LOCAL["Local Models"]
+
+    ANANKE --&gt; PORT
+
+    PORT --&gt; COPILOT
+    PORT --&gt; AMAZONQ
+    PORT --&gt; KIRO
+    PORT --&gt; HERMES
+    PORT --&gt; LOCAL</code></pre>
+<p>A backend advertises capabilities such as:</p>
+<ul>
+<li>
+<p>code generation,</p>
+</li>
+<li>
+<p>chat,</p>
+</li>
+<li>
+<p>tool calling,</p>
+</li>
+<li>
+<p>autonomous loop support,</p>
+</li>
+<li>
+<p>streaming,</p>
+</li>
+<li>
+<p>structured output,</p>
+</li>
+<li>
+<p>context limits.</p>
+</li>
+</ul>
+<p>The Ananke core does not need to change when a backend changes.</p>
+<hr />
+<h1 id="32-enterprise-lifecycle-integration">🏢 32. Enterprise Lifecycle Integration<a class="headerlink" href="#32-enterprise-lifecycle-integration" title="Permanent link">&para;</a></h1>
+<p>Engineering work does not exist only inside Git.</p>
+<p>Ananke connects requirements, implementation, review, and release.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    JIRA["📋 Jira Story"]
+    SPEC["📜 Ananke Spec"]
+    RUN["🤖 Governed Agent Run"]
+    GIT["🔀 Git Change"]
+    PR["📬 Pull Request"]
+    EVIDENCE["🧾 Evidence"]
+    JIRAUPDATE["📋 Jira Verification Update"]
+
+    JIRA --&gt; SPEC
+    SPEC --&gt; RUN
+    RUN --&gt; GIT
+    GIT --&gt; PR
+    PR --&gt; EVIDENCE
+    EVIDENCE --&gt; JIRAUPDATE</code></pre>
+<hr />
+<h2 id="jira-integration">Jira Integration<a class="headerlink" href="#jira-integration" title="Permanent link">&para;</a></h2>
+<p>Ananke can use Jira to:</p>
+<ul>
+<li>
+<p>load stories,</p>
+</li>
+<li>
+<p>read acceptance criteria,</p>
+</li>
+<li>
+<p>associate specs,</p>
+</li>
+<li>
+<p>create subtasks,</p>
+</li>
+<li>
+<p>transition workflow states,</p>
+</li>
+<li>
+<p>post verification summaries,</p>
+</li>
+<li>
+<p>attach evidence.</p>
+</li>
+</ul>
+<hr />
+<h2 id="git-bitbucket-github-integration">Git / Bitbucket / GitHub Integration<a class="headerlink" href="#git-bitbucket-github-integration" title="Permanent link">&para;</a></h2>
+<p>Source-control integration covers:</p>
+<ul>
+<li>
+<p>branch creation,</p>
+</li>
+<li>
+<p>worktrees,</p>
+</li>
+<li>
+<p>commits,</p>
+</li>
+<li>
+<p>PR creation,</p>
+</li>
+<li>
+<p>PR descriptions,</p>
+</li>
+<li>
+<p>review metadata,</p>
+</li>
+<li>
+<p>merge state.</p>
+</li>
+</ul>
+<hr />
+<h1 id="33-rich-pull-requests">📬 33. Rich Pull Requests<a class="headerlink" href="#33-rich-pull-requests" title="Permanent link">&para;</a></h1>
+<p>An Ananke-generated PR is designed to explain the change structurally.</p>
+<p>Typical sections include:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gu">## Requirement</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="gu">## Specification</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="gu">## Behavioral Contract</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="gu">## Architecture Delta</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="gu">## Code Graph Impact</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="gu">## Tests</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="gu">## Security</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="gu">## Policy Decisions</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="gu">## Residual Risk</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="gu">## Evidence</span>
+</code></pre></div>
+<p>This converts the PR from:</p>
+<blockquote>
+<p>"Here is code."</p>
+</blockquote>
+<p>into:</p>
+<blockquote>
+<p>"Here is the requirement, implementation impact, verification, and proof."</p>
+</blockquote>
+<hr />
+<h1 id="34-observability">📊 34. Observability<a class="headerlink" href="#34-observability" title="Permanent link">&para;</a></h1>
+<p>Autonomous software development is itself a distributed system.</p>
+<p>It should therefore be observable.</p>
+<pre class="mermaid"><code>sequenceDiagram
+
+    participant U as 👤 User
+    participant A as ⚖️ Ananke
+    participant G as 🕸️ Graph
+    participant M as 🤖 Model
+    participant V as 🧪 Verification
+    participant E as 🧾 Evidence
+
+    U-&gt;&gt;A: Start run
+    A-&gt;&gt;G: Retrieve relevant context
+    G--&gt;&gt;A: Subgraph
+    A-&gt;&gt;M: Execute task
+    M--&gt;&gt;A: Proposed change
+    A-&gt;&gt;V: Verify
+    V--&gt;&gt;A: Results
+    A-&gt;&gt;E: Persist run evidence
+    E--&gt;&gt;A: Evidence bundle
+    A--&gt;&gt;U: Result + proof</code></pre>
+<hr />
+<h2 id="useful-metrics">Useful Metrics<a class="headerlink" href="#useful-metrics" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🎯 Run success rate</td>
+<td>overall reliability</td>
+</tr>
+<tr>
+<td>🔁 Recovery rate</td>
+<td>execution resilience</td>
+</tr>
+<tr>
+<td>⏱️ Execution latency</td>
+<td>productivity</td>
+</tr>
+<tr>
+<td>🧪 Verification failure rate</td>
+<td>change quality</td>
+</tr>
+<tr>
+<td>🏗️ Architecture drift</td>
+<td>architectural health</td>
+</tr>
+<tr>
+<td>🛡️ Policy violations</td>
+<td>governance pressure</td>
+</tr>
+<tr>
+<td>👤 Approval frequency</td>
+<td>autonomy maturity</td>
+</tr>
+<tr>
+<td>🧠 Context size</td>
+<td>reasoning efficiency</td>
+</tr>
+<tr>
+<td>📁 Files changed</td>
+<td>scope discipline</td>
+</tr>
+<tr>
+<td>♻️ Rework loops</td>
+<td>planning quality</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="35-evaluation-beyond-traditional-testing">🎯 35. Evaluation Beyond Traditional Testing<a class="headerlink" href="#35-evaluation-beyond-traditional-testing" title="Permanent link">&para;</a></h1>
+<p>Not every property of agent behavior is a unit test.</p>
+<p>Ananke separates <strong>deterministic verification</strong> from <strong>semantic evaluation</strong>.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    RESULT["🤖 Agent Result"]
+
+    DET["🧪 Deterministic Verification"]
+    SEM["🧠 Semantic Evaluation"]
+
+    TEST["Tests"]
+    SCHEMA["Schemas"]
+    POLICY["Policies"]
+    ARCH["Architecture"]
+
+    RUBRIC["Rubrics"]
+    QUALITY["Explanation Quality"]
+    COVERAGE["Requirement Coverage"]
+
+    RESULT --&gt; DET
+    RESULT --&gt; SEM
+
+    DET --&gt; TEST
+    DET --&gt; SCHEMA
+    DET --&gt; POLICY
+    DET --&gt; ARCH
+
+    SEM --&gt; RUBRIC
+    SEM --&gt; QUALITY
+    SEM --&gt; COVERAGE</code></pre>
+<p>The governing principle is:</p>
+<blockquote>
+<p><strong>Use deterministic checks wherever truth is computable. Use semantic judgment only where judgment is actually required.</strong></p>
+</blockquote>
+<hr />
+<h1 id="36-agent-specific-threat-model">🛡️ 36. Agent-Specific Threat Model<a class="headerlink" href="#36-agent-specific-threat-model" title="Permanent link">&para;</a></h1>
+<p>Autonomous engineering introduces unique risks.</p>
+<hr />
+<h2 id="prompt-injection-in-repository-content">🧨 Prompt Injection in Repository Content<a class="headerlink" href="#prompt-injection-in-repository-content" title="Permanent link">&para;</a></h2>
+<p>Repository content is treated as <strong>untrusted input</strong>.</p>
+<p>A README, issue, comment, or source file should not be capable of overriding Ananke's runtime controls.</p>
+<hr />
+<h2 id="tool-escalation">🛠️ Tool Escalation<a class="headerlink" href="#tool-escalation" title="Permanent link">&para;</a></h2>
+<p>Agents cannot assume permission to run arbitrary commands.</p>
+<pre class="mermaid"><code>flowchart LR
+
+    AGENT["🤖 Agent Requests Tool"]
+    POLICY["🛡️ Policy Evaluation"]
+
+    ALLOW["✅ Allow"]
+    APPROVE["👤 Require Approval"]
+    DENY["🛑 Deny"]
+
+    AGENT --&gt; POLICY
+
+    POLICY --&gt; ALLOW
+    POLICY --&gt; APPROVE
+    POLICY --&gt; DENY</code></pre>
+<hr />
+<h2 id="secret-exposure">🔑 Secret Exposure<a class="headerlink" href="#secret-exposure" title="Permanent link">&para;</a></h2>
+<p>Filesystem permission controls determine whether agents may read:</p>
+<ul>
+<li>
+<p><code>.env</code>,</p>
+</li>
+<li>
+<p>cloud credentials,</p>
+</li>
+<li>
+<p>SSH keys,</p>
+</li>
+<li>
+<p>CI tokens,</p>
+</li>
+<li>
+<p>signing keys.</p>
+</li>
+</ul>
+<hr />
+<h2 id="network-exfiltration">🌐 Network Exfiltration<a class="headerlink" href="#network-exfiltration" title="Permanent link">&para;</a></h2>
+<p>Network permissions are evaluated independently.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    DATA["📁 Local Data"]
+    AGENT["🤖 Agent"]
+    NETWORK["🌐 Network"]
+
+    DATA --&gt; AGENT
+
+    AGENT --&gt; GUARD["🛡️ Network Guard"]
+
+    GUARD --&gt;|"Approved"| NETWORK
+    GUARD --&gt;|"Denied"| BLOCK["🛑 Block"]</code></pre>
+<hr />
+<h2 id="dependency-hallucination">📦 Dependency Hallucination<a class="headerlink" href="#dependency-hallucination" title="Permanent link">&para;</a></h2>
+<p>New packages can be checked for:</p>
+<ul>
+<li>
+<p>existence,</p>
+</li>
+<li>
+<p>approved registries,</p>
+</li>
+<li>
+<p>vulnerabilities,</p>
+</li>
+<li>
+<p>licenses,</p>
+</li>
+<li>
+<p>organizational allowlists.</p>
+</li>
+</ul>
+<hr />
+<h1 id="37-workspace-model">🗂️ 37. Workspace Model<a class="headerlink" href="#37-workspace-model" title="Permanent link">&para;</a></h1>
+<p>Ananke uses <code>.ananke/</code> as the local control-plane workspace.</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+<th style="text-align: right;">Version controlled?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.ananke/config.yaml</code></td>
+<td>project configuration</td>
+<td style="text-align: right;">✅</td>
+</tr>
+<tr>
+<td><code>.ananke/constitution.md</code></td>
+<td>engineering principles</td>
+<td style="text-align: right;">✅</td>
+</tr>
+<tr>
+<td><code>.ananke/specs/</code></td>
+<td>specifications</td>
+<td style="text-align: right;">✅</td>
+</tr>
+<tr>
+<td><code>.ananke/architecture/</code></td>
+<td>CALM architecture</td>
+<td style="text-align: right;">✅</td>
+</tr>
+<tr>
+<td><code>.ananke/policies/</code></td>
+<td>governance policies</td>
+<td style="text-align: right;">✅</td>
+</tr>
+<tr>
+<td><code>.ananke/skills/</code></td>
+<td>local skills</td>
+<td style="text-align: right;">✅</td>
+</tr>
+<tr>
+<td><code>.ananke/graph/</code></td>
+<td>derived graph cache</td>
+<td style="text-align: right;">Usually ❌</td>
+</tr>
+<tr>
+<td><code>.ananke/runs/</code></td>
+<td>local execution state</td>
+<td style="text-align: right;">Usually ❌</td>
+</tr>
+<tr>
+<td><code>.ananke/evidence/</code></td>
+<td>evidence records</td>
+<td style="text-align: right;">Policy-dependent</td>
+</tr>
+<tr>
+<td><code>.ananke/worktrees/</code></td>
+<td>autonomous run worktrees</td>
+<td style="text-align: right;">❌</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="38-python-package-organization">🐍 38. Python Package Organization<a class="headerlink" href="#38-python-package-organization" title="Permanent link">&para;</a></h1>
+<p>The package is modular rather than monolithic.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    ROOT["ananke.plexus"]
+
+    CLI["cli"]
+    CORE["core"]
+    CONTRACT["contracts"]
+    POLICY["policy"]
+    VERIFY["verification"]
+    EVIDENCE["evidence"]
+    EXEC["execution"]
+    GRAPH["graph"]
+    ARCH["architecture"]
+    HOOKS["hooks"]
+    MCP["mcp"]
+    APM["apm"]
+    PORTS["ports"]
+    INTEGRATIONS["integrations"]
+
+    ROOT --&gt; CLI
+    ROOT --&gt; CORE
+    ROOT --&gt; CONTRACT
+    ROOT --&gt; POLICY
+    ROOT --&gt; VERIFY
+    ROOT --&gt; EVIDENCE
+    ROOT --&gt; EXEC
+    ROOT --&gt; GRAPH
+    ROOT --&gt; ARCH
+    ROOT --&gt; HOOKS
+    ROOT --&gt; MCP
+    ROOT --&gt; APM
+    ROOT --&gt; PORTS
+    ROOT --&gt; INTEGRATIONS</code></pre>
+<hr />
+<h2 id="package-responsibilities">Package Responsibilities<a class="headerlink" href="#package-responsibilities" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ananke.plexus.core</code></td>
+<td>configuration, state, events, artifacts</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.contracts</code></td>
+<td>specification, BMAD, schemas</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.policy</code></td>
+<td>governance decisions</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.execution</code></td>
+<td>run lifecycle and orchestration</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.graph</code></td>
+<td>graph abstraction and intelligence</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.architecture</code></td>
+<td>CALM and architecture reconciliation</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.verification</code></td>
+<td>tests and quality gates</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.evidence</code></td>
+<td>provenance and evidence bundles</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.hooks</code></td>
+<td>Git lifecycle automation</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.mcp</code></td>
+<td>MCP server interface</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.apm</code></td>
+<td>agent package management</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.ports</code></td>
+<td>adapter interfaces</td>
+</tr>
+<tr>
+<td><code>ananke.plexus.integrations</code></td>
+<td>external providers</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="39-installation">📦 39. Installation<a class="headerlink" href="#39-installation" title="Permanent link">&para;</a></h1>
+<p>Install the CLI with <code>uv</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>ananke-plexus
+</code></pre></div>
+<p>or:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span>ananke-plexus
+</code></pre></div>
+<p>Initialize a project:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>ananke<span class="w"> </span>init
+</code></pre></div>
+<p>Inspect environment health:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>ananke<span class="w"> </span>doctor
+</code></pre></div>
+<hr />
+<h1 id="40-main-cli">⌨️ 40. Main CLI<a class="headerlink" href="#40-main-cli" title="Permanent link">&para;</a></h1>
+<p>The <code>ananke</code> command operates the engineering lifecycle.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ananke init</code></td>
+<td>initialize Ananke in a repository</td>
+</tr>
+<tr>
+<td><code>ananke doctor</code></td>
+<td>inspect environment and integrations</td>
+</tr>
+<tr>
+<td><code>ananke spec create</code></td>
+<td>create a specification</td>
+</tr>
+<tr>
+<td><code>ananke spec validate</code></td>
+<td>validate specification contracts</td>
+</tr>
+<tr>
+<td><code>ananke arch render</code></td>
+<td>render architecture diagrams</td>
+</tr>
+<tr>
+<td><code>ananke arch validate</code></td>
+<td>reconcile architecture</td>
+</tr>
+<tr>
+<td><code>ananke graph update</code></td>
+<td>update code graph</td>
+</tr>
+<tr>
+<td><code>ananke graph query</code></td>
+<td>query repository relationships</td>
+</tr>
+<tr>
+<td><code>ananke graph review</code></td>
+<td>perform structural impact review</td>
+</tr>
+<tr>
+<td><code>ananke policy check</code></td>
+<td>evaluate governance policy</td>
+</tr>
+<tr>
+<td><code>ananke verify</code></td>
+<td>run verification</td>
+</tr>
+<tr>
+<td><code>ananke evidence show</code></td>
+<td>inspect evidence</td>
+</tr>
+<tr>
+<td><code>ananke hooks install</code></td>
+<td>install lifecycle hooks</td>
+</tr>
+<tr>
+<td><code>ananke run</code></td>
+<td>execute a governed engineering run</td>
+</tr>
+<tr>
+<td><code>ananke serve-mcp</code></td>
+<td>expose Ananke over MCP</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="41-apm-cli">📦 41. APM CLI<a class="headerlink" href="#41-apm-cli" title="Permanent link">&para;</a></h1>
+<p><code>apm</code> manages reusable agent capabilities.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>apm<span class="w"> </span>search<span class="w"> </span>graph-review
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>apm<span class="w"> </span>install<span class="w"> </span>graph-review
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>apm<span class="w"> </span>verify<span class="w"> </span>graph-review
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>apm<span class="w"> </span>activate<span class="w"> </span>graph-review
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>apm<span class="w"> </span>list
+</code></pre></div>
+<hr />
+<h1 id="42-quickstart">🚀 42. Quickstart<a class="headerlink" href="#42-quickstart" title="Permanent link">&para;</a></h1>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>ananke-plexus
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nb">cd</span><span class="w"> </span>my-project
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>ananke<span class="w"> </span>init<span class="w"> </span>--backend<span class="w"> </span>copilot
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>ananke<span class="w"> </span>doctor
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>ananke<span class="w"> </span>spec<span class="w"> </span>create<span class="w"> </span>PROJ-101
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>ananke<span class="w"> </span>graph<span class="w"> </span>update
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>ananke<span class="w"> </span>verify<span class="w"> </span>--security<span class="w"> </span>--bmad
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>ananke<span class="w"> </span>run<span class="w"> </span>.ananke/specs/PROJ-101/spec.md
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>ananke<span class="w"> </span>serve-mcp
+</code></pre></div>
+<hr />
+<blockquote>
+<p>[!figure] Open ecosystem and getting started<br />
+![[open_ecosystem_getting_started.png]]</p>
+</blockquote>
+<hr />
+<h1 id="43-common-usage-patterns">🧭 43. Common Usage Patterns<a class="headerlink" href="#43-common-usage-patterns" title="Permanent link">&para;</a></h1>
+<p>Ananke does not require full autonomy.</p>
+<p>Teams can choose how much autonomy they want.</p>
+<hr />
+<h2 id="pattern-1-human-led-agent-assisted">👨‍💻 Pattern 1 — Human-Led, Agent-Assisted<a class="headerlink" href="#pattern-1-human-led-agent-assisted" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    HUMAN["👤 Human Specifies"]
+    AGENT["🤖 Agent Implements"]
+    ANANKE["⚖️ Ananke Verifies"]
+    REVIEW["👤 Human Reviews"]
+
+    HUMAN --&gt; AGENT
+    AGENT --&gt; ANANKE
+    ANANKE --&gt; REVIEW</code></pre>
+<p>Good for teams beginning adoption.</p>
+<hr />
+<h2 id="pattern-2-jira-to-pr-automation">🤖 Pattern 2 — Jira-to-PR Automation<a class="headerlink" href="#pattern-2-jira-to-pr-automation" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    JIRA["📋 Jira Story"]
+    SPEC["📜 Spec"]
+    GRAPH["🕸️ Graph Context"]
+    AGENT["🤖 Agent"]
+    VERIFY["🧪 Verify"]
+    PR["📬 PR"]
+    JIRA2["📋 Update Jira"]
+
+    JIRA --&gt; SPEC
+    SPEC --&gt; GRAPH
+    GRAPH --&gt; AGENT
+    AGENT --&gt; VERIFY
+    VERIFY --&gt; PR
+    PR --&gt; JIRA2</code></pre>
+<p>Useful for well-defined work.</p>
+<hr />
+<h2 id="pattern-3-brownfield-modification">🛠️ Pattern 3 — Brownfield Modification<a class="headerlink" href="#pattern-3-brownfield-modification" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    EXISTING["📚 Existing Code"]
+    GRAPH["🕸️ Blast Radius"]
+    DELTA["📜 Delta Spec"]
+    ARCH["🏗️ Architecture Check"]
+    CODE["💻 Targeted Change"]
+    TEST["🧪 Targeted Tests"]
+
+    EXISTING --&gt; GRAPH
+    GRAPH --&gt; DELTA
+    DELTA --&gt; ARCH
+    ARCH --&gt; CODE
+    CODE --&gt; TEST</code></pre>
+<p>Especially valuable in large existing repositories.</p>
+<hr />
+<h2 id="pattern-4-architecture-refactoring">🏗️ Pattern 4 — Architecture Refactoring<a class="headerlink" href="#pattern-4-architecture-refactoring" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    CALM["🏗️ Desired CALM Architecture"]
+    GRAPH["🕸️ Observed Graph"]
+    DIFF["⚖️ Architecture Delta"]
+    MIGRATION["🧭 Migration Tasks"]
+    REFACTOR["💻 Refactor"]
+    RECONCILE["✅ Reconcile"]
+
+    CALM --&gt; DIFF
+    GRAPH --&gt; DIFF
+
+    DIFF --&gt; MIGRATION
+    MIGRATION --&gt; REFACTOR
+    REFACTOR --&gt; RECONCILE</code></pre>
+<hr />
+<h2 id="pattern-5-regulated-engineering">🔐 Pattern 5 — Regulated Engineering<a class="headerlink" href="#pattern-5-regulated-engineering" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    SPEC["📜 Specification"]
+    AGENT["🤖 Agent"]
+    POLICY["🛡️ Strong Policy"]
+    SECURITY["🔐 Security Gates"]
+    APPROVAL["👤 Human Approval"]
+    EVIDENCE["🧾 Evidence"]
+    RELEASE["🚀 Release"]
+
+    SPEC --&gt; AGENT
+    AGENT --&gt; POLICY
+    POLICY --&gt; SECURITY
+    SECURITY --&gt; APPROVAL
+    APPROVAL --&gt; EVIDENCE
+    EVIDENCE --&gt; RELEASE</code></pre>
+<hr />
+<h2 id="pattern-6-fully-local-development">🏠 Pattern 6 — Fully Local Development<a class="headerlink" href="#pattern-6-fully-local-development" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+
+    CODE["💻 Local Code"]
+    GRAPH["🕸️ Local Graph"]
+    SPEC["📜 Local Specs"]
+    MODEL["🤖 Local Model"]
+    VERIFY["🧪 Local Verification"]
+    EVIDENCE["🧾 Local Evidence"]
+
+    CODE --&gt; GRAPH
+    SPEC --&gt; MODEL
+    GRAPH --&gt; MODEL
+    MODEL --&gt; VERIFY
+    VERIFY --&gt; EVIDENCE</code></pre>
+<p>Local-first remains a first-class architecture.</p>
+<hr />
+<h1 id="44-who-ananke-plexus-is-for">👥 44. Who Ananke Plexus Is For<a class="headerlink" href="#44-who-ananke-plexus-is-for" title="Permanent link">&para;</a></h1>
+<hr />
+<h2 id="individual-developers">👨‍💻 Individual Developers<a class="headerlink" href="#individual-developers" title="Permanent link">&para;</a></h2>
+<p>For an individual developer, Ananke provides:</p>
+<ul>
+<li>
+<p>targeted repository context,</p>
+</li>
+<li>
+<p>better coding-agent discipline,</p>
+</li>
+<li>
+<p>automatic verification,</p>
+</li>
+<li>
+<p>safer autonomous edits.</p>
+</li>
+</ul>
+<p>For them:</p>
+<blockquote>
+<p><strong>Ananke is a powerful engineering harness around a coding agent.</strong></p>
+</blockquote>
+<hr />
+<h2 id="staff-and-principal-engineers">🧑‍🔧 Staff and Principal Engineers<a class="headerlink" href="#staff-and-principal-engineers" title="Permanent link">&para;</a></h2>
+<p>They gain:</p>
+<ul>
+<li>
+<p>architecture enforcement,</p>
+</li>
+<li>
+<p>dependency visibility,</p>
+</li>
+<li>
+<p>blast-radius analysis,</p>
+</li>
+<li>
+<p>maintainability controls.</p>
+</li>
+</ul>
+<p>For them:</p>
+<blockquote>
+<p><strong>Ananke turns architecture from documentation into executable constraints.</strong></p>
+</blockquote>
+<hr />
+<h2 id="ai-platform-engineers">🤖 AI Platform Engineers<a class="headerlink" href="#ai-platform-engineers" title="Permanent link">&para;</a></h2>
+<p>They gain:</p>
+<ul>
+<li>
+<p>common agent interfaces,</p>
+</li>
+<li>
+<p>MCP,</p>
+</li>
+<li>
+<p>model abstraction,</p>
+</li>
+<li>
+<p>skill packaging,</p>
+</li>
+<li>
+<p>policy enforcement,</p>
+</li>
+<li>
+<p>observability.</p>
+</li>
+</ul>
+<p>For them:</p>
+<blockquote>
+<p><strong>Ananke is an agent engineering control plane.</strong></p>
+</blockquote>
+<hr />
+<h2 id="security-teams">🔐 Security Teams<a class="headerlink" href="#security-teams" title="Permanent link">&para;</a></h2>
+<p>They gain:</p>
+<ul>
+<li>
+<p>tool permissioning,</p>
+</li>
+<li>
+<p>secret protection,</p>
+</li>
+<li>
+<p>network governance,</p>
+</li>
+<li>
+<p>evidence,</p>
+</li>
+<li>
+<p>dependency policy,</p>
+</li>
+<li>
+<p>provenance.</p>
+</li>
+</ul>
+<p>For them:</p>
+<blockquote>
+<p><strong>Ananke is a security boundary around software agents.</strong></p>
+</blockquote>
+<hr />
+<h2 id="engineering-leadership">🏢 Engineering Leadership<a class="headerlink" href="#engineering-leadership" title="Permanent link">&para;</a></h2>
+<p>They gain:</p>
+<ul>
+<li>
+<p>governed autonomy,</p>
+</li>
+<li>
+<p>measurable execution,</p>
+</li>
+<li>
+<p>standardization,</p>
+</li>
+<li>
+<p>traceability,</p>
+</li>
+<li>
+<p>greater confidence in AI adoption.</p>
+</li>
+</ul>
+<p>For them:</p>
+<blockquote>
+<p><strong>Ananke creates the conditions under which more autonomy can safely be granted.</strong></p>
+</blockquote>
+<hr />
+<h2 id="audit-and-compliance-teams">🧾 Audit and Compliance Teams<a class="headerlink" href="#audit-and-compliance-teams" title="Permanent link">&para;</a></h2>
+<p>They gain lineage:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    REQ["Requirement"]
+    SPEC["Specification"]
+    CODE["Change"]
+    TEST["Verification"]
+    APPROVAL["Approval"]
+    RELEASE["Release"]
+
+    REQ --&gt; SPEC --&gt; CODE --&gt; TEST --&gt; APPROVAL --&gt; RELEASE</code></pre>
+<p>For them:</p>
+<blockquote>
+<p><strong>Ananke is a traceability and evidence system.</strong></p>
+</blockquote>
+<hr />
+<h1 id="45-the-distinction-between-a-coding-agent-and-an-engineering-agent">🧠 45. The Distinction Between a Coding Agent and an Engineering Agent<a class="headerlink" href="#45-the-distinction-between-a-coding-agent-and-an-engineering-agent" title="Permanent link">&para;</a></h1>
+<p>A coding agent primarily manipulates code.</p>
+<p>An engineering agent must understand and respect the entire environment around the code.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    CODING["💻 Coding Agent"]
+
+    ENGINEERING["🧠 Engineering Agent"]
+
+    SPEC["📜 Requirements"]
+    ARCH["🏗️ Architecture"]
+    GRAPH["🕸️ Dependencies"]
+    POLICY["🛡️ Policy"]
+    TESTS["🧪 Tests"]
+    SECURITY["🔐 Security"]
+    EVIDENCE["🧾 Evidence"]
+
+    CODING --&gt; ENGINEERING
+
+    SPEC --&gt; ENGINEERING
+    ARCH --&gt; ENGINEERING
+    GRAPH --&gt; ENGINEERING
+    POLICY --&gt; ENGINEERING
+    TESTS --&gt; ENGINEERING
+    SECURITY --&gt; ENGINEERING
+    EVIDENCE --&gt; ENGINEERING</code></pre>
+<p>Ananke Plexus exists primarily to enable this transition.</p>
+<hr />
+<h1 id="46-end-to-end-example">🎯 46. End-to-End Example<a class="headerlink" href="#46-end-to-end-example" title="Permanent link">&para;</a></h1>
+<p>Consider:</p>
+<blockquote>
+<p><strong>PROJ-101 — Add idempotent processing to the payment webhook.</strong></p>
+</blockquote>
+<p>The complete Ananke flow looks like this:</p>
+<pre class="mermaid"><code>sequenceDiagram
+
+    participant J as 📋 Jira
+    participant A as ⚖️ Ananke
+    participant S as 📜 Specification
+    participant G as 🕸️ Code Graph
+    participant M as 🤖 Agent
+    participant V as 🧪 Verification
+    participant E as 🧾 Evidence
+    participant P as 📬 Pull Request
+
+    J-&gt;&gt;A: PROJ-101
+    A-&gt;&gt;S: Create / load spec
+    S--&gt;&gt;A: Behavior + Model + Architecture contracts
+
+    A-&gt;&gt;G: Find affected code
+    G--&gt;&gt;A: Webhook, services, repository, tests
+
+    A-&gt;&gt;M: Execute task with context + policies
+    M--&gt;&gt;A: Proposed implementation
+
+    A-&gt;&gt;V: Run verification
+    V--&gt;&gt;A: Tests + architecture + security results
+
+    A-&gt;&gt;E: Build evidence bundle
+    E--&gt;&gt;A: Verified evidence
+
+    A-&gt;&gt;P: Create PR with context + proof
+    P--&gt;&gt;J: Verification summary</code></pre>
+<p>The review conversation changes from:</p>
+<blockquote>
+<p>"The AI generated this. Does it look okay?"</p>
+</blockquote>
+<p>to:</p>
+<blockquote>
+<p>"This implementation satisfies specification X, affects these graph nodes, preserves these architecture constraints, passes these tests and security checks, and produced this evidence."</p>
+</blockquote>
+<p>That is the difference Ananke is trying to create.</p>
+<hr />
+<h1 id="47-open-ecosystem-philosophy">🌐 47. Open Ecosystem Philosophy<a class="headerlink" href="#47-open-ecosystem-philosophy" title="Permanent link">&para;</a></h1>
+<p>Ananke deliberately does not require one vendor.</p>
+<pre class="mermaid"><code>flowchart TB
+
+    ANANKE["⚖️ Ananke Plexus"]
+
+    AGENTPORT["🤖 Agent Port"]
+    GRAPHPORT["🕸️ Graph Port"]
+    TRACKERPORT["📋 Tracker Port"]
+    SCMPORT["🔀 SCM Port"]
+    SCANNERPORT["🛡️ Scanner Port"]
+
+    COPILOT["Copilot"]
+    Q["Amazon Q"]
+    KIRO["Kiro"]
+    HERMES["Hermes"]
+    LOCAL["Local Models"]
+
+    GRAPHIFYY["Graphifyy"]
+    CRG["Code Review Graph"]
+
+    JIRA["Jira"]
+
+    GH["GitHub"]
+    BB["Bitbucket"]
+
+    SEMGREP["Semgrep"]
+    TRIVY["Trivy"]
+
+    ANANKE --&gt; AGENTPORT
+    ANANKE --&gt; GRAPHPORT
+    ANANKE --&gt; TRACKERPORT
+    ANANKE --&gt; SCMPORT
+    ANANKE --&gt; SCANNERPORT
+
+    AGENTPORT --&gt; COPILOT
+    AGENTPORT --&gt; Q
+    AGENTPORT --&gt; KIRO
+    AGENTPORT --&gt; HERMES
+    AGENTPORT --&gt; LOCAL
+
+    GRAPHPORT --&gt; GRAPHIFYY
+    GRAPHPORT --&gt; CRG
+
+    TRACKERPORT --&gt; JIRA
+
+    SCMPORT --&gt; GH
+    SCMPORT --&gt; BB
+
+    SCANNERPORT --&gt; SEMGREP
+    SCANNERPORT --&gt; TRIVY</code></pre>
+<p>Tools will change.</p>
+<p>Models will change.</p>
+<p>IDEs will change.</p>
+<p>The governance model should survive those changes.</p>
+<hr />
+<h1 id="48-design-principles">⚙️ 48. Design Principles<a class="headerlink" href="#48-design-principles" title="Permanent link">&para;</a></h1>
+<p>Ananke Plexus is built around a small number of architectural principles.</p>
+<hr />
+<h2 id="local-first">🏠 Local-First<a class="headerlink" href="#local-first" title="Permanent link">&para;</a></h2>
+<p>Code, specs, graph state, verification, and evidence can remain local.</p>
+<hr />
+<h2 id="adapter-driven">🔌 Adapter-Driven<a class="headerlink" href="#adapter-driven" title="Permanent link">&para;</a></h2>
+<p>External tools integrate through stable capability contracts.</p>
+<hr />
+<h2 id="policy-governed">🛡️ Policy-Governed<a class="headerlink" href="#policy-governed" title="Permanent link">&para;</a></h2>
+<p>Agents operate within explicit permissions.</p>
+<hr />
+<h2 id="auditable">🧾 Auditable<a class="headerlink" href="#auditable" title="Permanent link">&para;</a></h2>
+<p>Important actions produce durable evidence.</p>
+<hr />
+<h2 id="pluggable">🧩 Pluggable<a class="headerlink" href="#pluggable" title="Permanent link">&para;</a></h2>
+<p>Models, graph engines, trackers, and scanners are replaceable.</p>
+<hr />
+<h2 id="graph-aware">🕸️ Graph-Aware<a class="headerlink" href="#graph-aware" title="Permanent link">&para;</a></h2>
+<p>Repository intelligence is structural rather than purely textual.</p>
+<hr />
+<h2 id="spec-governed">📜 Spec-Governed<a class="headerlink" href="#spec-governed" title="Permanent link">&para;</a></h2>
+<p>Intent is stored in durable artifacts rather than transient prompts.</p>
+<hr />
+<h2 id="deterministically-verified">🧪 Deterministically Verified<a class="headerlink" href="#deterministically-verified" title="Permanent link">&para;</a></h2>
+<p>Where truth can be computed, models do not decide it.</p>
+<hr />
+<h2 id="human-aligned">👤 Human-Aligned<a class="headerlink" href="#human-aligned" title="Permanent link">&para;</a></h2>
+<p>Human review remains available exactly where judgment is required.</p>
+<hr />
+<h1 id="49-why-apache-20-fits-the-ecosystem">⚖️ 49. Why Apache-2.0 Fits the Ecosystem<a class="headerlink" href="#49-why-apache-20-fits-the-ecosystem" title="Permanent link">&para;</a></h1>
+<p>Ananke Plexus uses the <strong>Apache License 2.0</strong>.</p>
+<p>That matches the architecture well.</p>
+<p>The project is intended to support:</p>
+<ul>
+<li>
+<p>open-source extension,</p>
+</li>
+<li>
+<p>enterprise adoption,</p>
+</li>
+<li>
+<p>commercial integration,</p>
+</li>
+<li>
+<p>proprietary adapters,</p>
+</li>
+<li>
+<p>community skills,</p>
+</li>
+<li>
+<p>private deployments.</p>
+</li>
+</ul>
+<p>A permissive license encourages the ecosystem to expand without forcing downstream organizations to adopt Ananke's licensing model for unrelated proprietary systems.</p>
+<hr />
+<h1 id="50-the-core-engineering-equation">🧠 50. The Core Engineering Equation<a class="headerlink" href="#50-the-core-engineering-equation" title="Permanent link">&para;</a></h1>
+<p>The Ananke philosophy can be summarized as:</p>
+<p>Safe Autonomy∝Agent Capability×Context Quality×Verification Strength×Governance Quality\text{Safe Autonomy} \propto \text{Agent Capability} \times \text{Context Quality} \times \text{Verification Strength} \times \text{Governance Quality}</p>
+<p>This is why simply improving the model is not enough.</p>
+<p>A more capable model with:</p>
+<ul>
+<li>
+<p>poor context,</p>
+</li>
+<li>
+<p>weak policies,</p>
+</li>
+<li>
+<p>no testing,</p>
+</li>
+<li>
+<p>no architecture understanding,</p>
+</li>
+</ul>
+<p>may simply create mistakes <strong>faster</strong>.</p>
+<hr />
+<h1 id="51-from-ai-coding-to-autonomous-engineering">🚀 51. From AI Coding to Autonomous Engineering<a class="headerlink" href="#51-from-ai-coding-to-autonomous-engineering" title="Permanent link">&para;</a></h1>
+<p>The industry transition can be viewed as:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    AUTO["⌨️ Autocomplete"]
+    GEN["💻 Code Generation"]
+    CODER["🤖 Coding Agent"]
+    REPO["🧠 Repository Agent"]
+    ENG["🏗️ Engineering Agent"]
+    AUTOENG["🚀 Autonomous Engineering System"]
+
+    AUTO --&gt; GEN
+    GEN --&gt; CODER
+    CODER --&gt; REPO
+    REPO --&gt; ENG
+    ENG --&gt; AUTOENG</code></pre>
+<p>Each stage increases capability.</p>
+<p>Each stage also increases required governance.</p>
+<p>Ananke Plexus is designed for the right half of this evolution.</p>
+<hr />
+<h1 id="52-the-full-ananke-plexus-model">🌌 52. The Full Ananke Plexus Model<a class="headerlink" href="#52-the-full-ananke-plexus-model" title="Permanent link">&para;</a></h1>
+<pre class="mermaid"><code>flowchart TB
+
+    HUMAN["👤 Human Intent"]
+
+    subgraph SDD["📜 Specification-Driven Development"]
+        CONST["Constitution"]
+        SPEC["Specification"]
+        PLAN["Plan"]
+        TASK["Tasks"]
+    end
+
+    subgraph BMAD["🧬 BMAD Contracts"]
+        B["Behavior"]
+        M["Model"]
+        A["Architecture"]
+    end
+
+    subgraph PLEXUS["🕸️ Plexus Intelligence"]
+        CALM["CALM"]
+        GRAPH["Code Graph"]
+        CONTEXT["Context Assembly"]
+        SKILLS["APM Skills"]
+    end
+
+    subgraph GOVERN["🛡️ Governance"]
+        POLICY["Policy Engine"]
+        PERMISSION["Permission Boundary"]
+        APPROVAL["Approval Gates"]
+    end
+
+    subgraph EXEC["🤖 Agent Execution"]
+        DIRECTOR["Execution Director"]
+        AGENT["Agent Backend"]
+        TOOLS["Tools"]
+        RECOVERY["Recovery"]
+    end
+
+    subgraph VERIFY["🧪 Verification"]
+        TEST["Tests"]
+        TYPE["Type Contracts"]
+        ARCHCHECK["Architecture"]
+        SECURITY["Security"]
+        LICENSE["Licenses"]
+    end
+
+    subgraph PROOF["🧾 Evidence"]
+        RUNLOG["Run Logs"]
+        HASHES["Artifact Hashes"]
+        REPORTS["Reports"]
+        PROVENANCE["Provenance"]
+    end
+
+    subgraph DELIVERY["🚀 Delivery"]
+        GIT["Git"]
+        PR["Pull Request"]
+        TICKET["Jira"]
+        RELEASE["Release"]
+    end
+
+    HUMAN --&gt; CONST
+    CONST --&gt; SPEC
+    SPEC --&gt; PLAN
+    PLAN --&gt; TASK
+
+    SPEC --&gt; B
+    SPEC --&gt; M
+    SPEC --&gt; A
+
+    A --&gt; CALM
+
+    B --&gt; CONTEXT
+    M --&gt; CONTEXT
+    CALM --&gt; CONTEXT
+    GRAPH --&gt; CONTEXT
+    SKILLS --&gt; CONTEXT
+
+    CONTEXT --&gt; DIRECTOR
+
+    POLICY --&gt; DIRECTOR
+    PERMISSION --&gt; DIRECTOR
+    APPROVAL --&gt; DIRECTOR
+
+    DIRECTOR --&gt; AGENT
+    AGENT --&gt; TOOLS
+    TOOLS --&gt; RECOVERY
+    RECOVERY -. retry .-&gt; DIRECTOR
+
+    AGENT --&gt; TEST
+    AGENT --&gt; TYPE
+    AGENT --&gt; ARCHCHECK
+    AGENT --&gt; SECURITY
+    AGENT --&gt; LICENSE
+
+    TEST --&gt; RUNLOG
+    TYPE --&gt; REPORTS
+    ARCHCHECK --&gt; REPORTS
+    SECURITY --&gt; REPORTS
+    LICENSE --&gt; REPORTS
+
+    RUNLOG --&gt; PROVENANCE
+    HASHES --&gt; PROVENANCE
+    REPORTS --&gt; PROVENANCE
+
+    PROVENANCE --&gt; GIT
+    GIT --&gt; PR
+    PR --&gt; TICKET
+    PR --&gt; RELEASE</code></pre>
+<hr />
+<h1 id="53-what-ananke-plexus-ultimately-changes">✨ 53. What Ananke Plexus Ultimately Changes<a class="headerlink" href="#53-what-ananke-plexus-ultimately-changes" title="Permanent link">&para;</a></h1>
+<p>The most important transformation is conceptual.</p>
+<p>Without a governed ADLC:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    PROMPT["💬 Prompt"]
+    AI["🤖 AI"]
+    CODE["💻 Code"]
+    HUMAN["👤 Hope + Review"]
+
+    PROMPT --&gt; AI
+    AI --&gt; CODE
+    CODE --&gt; HUMAN</code></pre>
+<p>With Ananke Plexus:</p>
+<pre class="mermaid"><code>flowchart LR
+
+    INTENT["🎯 Intent"]
+    SPEC["📜 Specification"]
+    ARCH["🏗️ Architecture"]
+    GRAPH["🕸️ Context"]
+    POLICY["🛡️ Policy"]
+    AGENT["🤖 Agent"]
+    VERIFY["🧪 Verification"]
+    EVIDENCE["🧾 Evidence"]
+    DELIVERY["🚀 Delivery"]
+
+    INTENT --&gt; SPEC
+    SPEC --&gt; ARCH
+    ARCH --&gt; GRAPH
+    GRAPH --&gt; POLICY
+    POLICY --&gt; AGENT
+    AGENT --&gt; VERIFY
+    VERIFY --&gt; EVIDENCE
+    EVIDENCE --&gt; DELIVERY</code></pre>
+<p>The agent is no longer the sole center of the system.</p>
+<p>It becomes one powerful participant in a larger engineering structure.</p>
+<hr />
+<h1 id="54-the-philosophy-in-one-sentence">🪐 54. The Philosophy in One Sentence<a class="headerlink" href="#54-the-philosophy-in-one-sentence" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Ananke Plexus transforms autonomous coding from a sequence of probabilistic model actions into a specification-driven, architecture-aware, graph-grounded, policy-governed, deterministically verified, and auditable software engineering lifecycle.</strong></p>
+</blockquote>
+<p>And its philosophy can be reduced even further:</p>
+<blockquote>
+<h1 id="freedom-at-the-edge-necessity-at-the-core"><strong>Freedom at the edge. Necessity at the core.</strong><a class="headerlink" href="#freedom-at-the-edge-necessity-at-the-core" title="Permanent link">&para;</a></h1>
+</blockquote>
+<p>The objective is not to make autonomous agents less capable.</p>
+<p>It is to build a strong enough <strong>Plexus</strong> around them that we can safely allow them to become <strong>more capable</strong>.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Neo Pragnya Architecture Group — Apache-2.0
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/neo-pragnya/ananke-plexus" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
