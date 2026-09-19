@@ -136,7 +136,7 @@ jobs:
             --trusted-publishing always
 
       - name: Publish to TestPyPI (token fallback)
-        if: ${{ steps.publish_oidc.outcome == 'failure' && (env.UV_PUBLISH_TOKEN_TESTPYPI != '' || env.TEST_PYPI_API_TOKEN != '') }}
+        if: ${{ steps.publish_oidc.conclusion == 'failure' && (env.UV_PUBLISH_TOKEN_TESTPYPI != '' || env.TEST_PYPI_API_TOKEN != '') }}
         run: |
           TOKEN="${UV_PUBLISH_TOKEN_TESTPYPI:-$TEST_PYPI_API_TOKEN}"
           uv publish \
@@ -144,7 +144,7 @@ jobs:
             --token "$TOKEN"
 
       - name: Fail if OIDC and token publish both unavailable
-        if: ${{ steps.publish_oidc.outcome == 'failure' && env.UV_PUBLISH_TOKEN_TESTPYPI == '' && env.TEST_PYPI_API_TOKEN == '' }}
+        if: ${{ steps.publish_oidc.conclusion == 'failure' && env.UV_PUBLISH_TOKEN_TESTPYPI == '' && env.TEST_PYPI_API_TOKEN == '' }}
         run: |
           echo "Trusted publishing failed and no TestPyPI token secret is configured."
           echo "Set UV_PUBLISH_TOKEN_TESTPYPI or TEST_PYPI_API_TOKEN in repository secrets, or fix TestPyPI Trusted Publisher claims."

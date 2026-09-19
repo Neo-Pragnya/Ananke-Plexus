@@ -10,6 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.5] — 2026-09-18
+
+### Fixed
+
+- Release/TestPyPI publish guard logic now checks `steps.publish_oidc.conclusion` instead of `steps.publish_oidc.outcome`, preventing false workflow failures after successful OIDC publish.
+
+---
+
 ## [0.2.4] — 2026-09-18
 
 ### Fixed
