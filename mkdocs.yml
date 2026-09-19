@@ -9,6 +9,8 @@ copyright: Copyright &copy; 2026 Neo Pragnya Architecture Group — Apache-2.0
 
 theme:
   name: material
+  logo: assets/branding/ananke-logo.png
+  favicon: assets/branding/ananke-logo.png
   palette:
     - scheme: default
       primary: indigo

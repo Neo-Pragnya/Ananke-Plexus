@@ -70,10 +70,12 @@ make publish-pypi
 3. Commit, push, then tag:
 
 ```bash
+VERSION="$(uv run python -c 'from ananke.plexus.version import __version__; print(__version__)')"
+
 git add src/ananke/plexus/version.py CHANGELOG.md
-git commit -m "chore: release v0.1.0"
-git tag v0.1.0
-git push origin main v0.1.0
+git commit -m "chore: release v$VERSION"
+git tag "v$VERSION"
+git push origin main "v$VERSION"
 ```
 
 The workflows run in this order:

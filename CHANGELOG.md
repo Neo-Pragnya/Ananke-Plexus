@@ -10,6 +10,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.6] — 2026-09-18
+
+### Added
+
+- Introduced canonical branding logo assets under `assets/branding/` and `docs/assets/branding/`.
+
+### Changed
+
+- Updated README hero section to include the project logo.
+- Configured MkDocs Material `logo` and `favicon` to use the Ananke branding asset.
+- Updated release command examples in README and docs to derive `VERSION` dynamically from `src/ananke/plexus/version.py` instead of hardcoded tag values.
+- Aligned documentation token guidance with UV publish token variables for local fallback publishing.
+
+---
+
 ## [0.2.5] — 2026-09-18
 
 ### Fixed

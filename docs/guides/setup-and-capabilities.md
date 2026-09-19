@@ -221,7 +221,7 @@ Use when publishing directly from your machine.
 
 ```bash
 cp .env.example .env
-# update TESTPYPI_TWINE_PASSWORD and TWINE_PASSWORD
+# update UV_PUBLISH_TOKEN and UV_PUBLISH_TOKEN_TESTPYPI
 bash scripts/publish_local_testpypi.sh
 bash scripts/publish_local_pypi.sh
 ```
@@ -231,10 +231,12 @@ bash scripts/publish_local_pypi.sh
 Use when publishing through CI with OIDC (recommended).
 
 ```bash
-# bump src/ananke/plexus/version.py
+VERSION="$(uv run python -c 'from ananke.plexus.version import __version__; print(__version__)')"
+
+# bump src/ananke/plexus/version.py before this
 git add .
-git commit -m "release: v0.1.0"
-git tag v0.1.0
+git commit -m "release: v$VERSION"
+git tag "v$VERSION"
 git push origin main --tags
 ```
 
@@ -243,9 +245,9 @@ git push origin main --tags
 ## Token update checklist
 
 1. Open `.env`.
-2. Set `TWINE_PASSWORD` to your PyPI token.
-3. Set `TESTPYPI_TWINE_PASSWORD` to your TestPyPI token.
-4. Keep `TWINE_USERNAME` and `TESTPYPI_TWINE_USERNAME` as `__token__`.
+2. Set `UV_PUBLISH_TOKEN` to your PyPI token.
+3. Set `UV_PUBLISH_TOKEN_TESTPYPI` to your TestPyPI token.
+4. For CI fallback, add matching GitHub environment secrets (`pypi` and `testpypi`).
 5. Never commit `.env`.
 
 ## Next capability milestones

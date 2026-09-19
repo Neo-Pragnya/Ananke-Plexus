@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/branding/ananke-logo.png" alt="Ananke Plexus Logo" width="260" />
+
 # Ananke Plexus
 
 ### *Freedom at the edge. Necessity at the core.*
@@ -936,16 +938,16 @@ Ananke Plexus uses **uv** for builds and **PyPI OIDC Trusted Publishing** — no
 ### Release workflow (CI path)
 
 ```bash
-# 1. Bump version
-vim src/ananke/plexus/version.py  # e.g. __version__ = "0.1.0"
+# 1. Bump version in src/ananke/plexus/version.py and update CHANGELOG.md
 
-# 2. Update CHANGELOG.md
+# 2. Resolve release version dynamically from source
+VERSION="$(uv run python -c 'from ananke.plexus.version import __version__; print(__version__)')"
 
 # 3. Commit, tag, push
 git add src/ananke/plexus/version.py CHANGELOG.md
-git commit -m "chore: release v0.1.0"
-git tag v0.1.0
-git push origin main v0.1.0
+git commit -m "chore: release v$VERSION"
+git tag "v$VERSION"
+git push origin main "v$VERSION"
 ```
 
 The GitHub workflows run automatically:
@@ -964,7 +966,7 @@ build (uv build + twine check)
 
 ```bash
 cp .env.example .env
-# Set UV_PUBLISH_TOKEN in .env
+# Set UV_PUBLISH_TOKEN + UV_PUBLISH_TOKEN_TESTPYPI in .env
 
 make publish-testpypi   # TestPyPI first
 make publish-pypi       # production PyPI (includes trivy gate)
