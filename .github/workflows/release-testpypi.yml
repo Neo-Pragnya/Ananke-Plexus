@@ -135,29 +135,10 @@ jobs:
         with:
           version: "latest"
 
-      - name: Publish to TestPyPI (OIDC Trusted Publishing)
-        id: publish_oidc
-        continue-on-error: true
-        run: |
-          uv publish \
-            --publish-url https://test.pypi.org/legacy/ \
-            --trusted-publishing always
-
-      - name: Publish to TestPyPI (token fallback)
-        if: ${{ steps.publish_oidc.outcome == 'failure' }}
+      - name: Publish to TestPyPI
         env:
-          UV_PUBLISH_TOKEN_TESTPYPI: ${{ secrets.UV_PUBLISH_TOKEN_TESTPYPI }}
-          TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN_TESTPYPI }}
         run: |
-          echo "OIDC Trusted Publishing failed. This usually means the TestPyPI trusted publisher is missing or mismatched."
-          echo "Expected publisher match: repository=Neo-Pragnya/Ananke-Plexus, workflow=.github/workflows/release-testpypi.yml, environment=testpypi."
-          echo "If the publisher is configured, verify the exact environment and workflow path on TestPyPI."
-          TOKEN="${UV_PUBLISH_TOKEN_TESTPYPI:-$TEST_PYPI_API_TOKEN}"
-          if [ -z "$TOKEN" ]; then
-            echo "Trusted publishing failed and no TestPyPI token secret is configured."
-            echo "Set UV_PUBLISH_TOKEN_TESTPYPI or TEST_PYPI_API_TOKEN in the testpypi environment secrets."
-            exit 1
-          fi
           uv publish \
             --publish-url https://test.pypi.org/legacy/ \
-            --token "$TOKEN"
+            --trusted-publishing if-necessary
