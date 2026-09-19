@@ -10,6 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.7] — 2026-09-18
+
+### Fixed
+
+- Release/TestPyPI workflows now trigger token fallback when OIDC trusted publishing fails by checking `steps.publish_oidc.outcome == 'failure'`.
+
+---
+
 ## [0.2.6] — 2026-09-18
 
 ### Added
