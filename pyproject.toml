@@ -137,8 +137,29 @@ test-automation = [
 test-all = [
   "ananke-plexus[test-python,test-bdd,test-property,test-api,test-snapshot]",
 ]
+registry-fast = [
+  "blake3>=1.0",
+]
+registry-zstd = [
+  "zstandard>=0.22",
+]
+registry-signing = [
+  "cryptography>=42",
+]
+registry-watch = [
+  "watchfiles>=0.21",
+]
+registry-analytics = [
+  "duckdb>=1.0",
+]
+registry-validate = [
+  "jsonschema>=4.23",
+]
+registry = [
+  "ananke-plexus[registry-fast,registry-zstd,registry-validate,registry-signing,registry-watch]",
+]
 all = [
-  "ananke-plexus[mcp,telemetry,jira,security,docs,eval-enterprise,test-python]",
+  "ananke-plexus[mcp,telemetry,jira,security,docs,eval-enterprise,test-python,registry]",
 ]
 
 [project.urls]
@@ -153,6 +174,13 @@ apm = "ananke.plexus.apm.cli:app"
 
 [tool.hatch.version]
 path = "src/ananke/plexus/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/README.md",
+  "/src/ananke",
+  "/assets/**",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ananke"]
@@ -188,7 +216,9 @@ ignore = ["B008", "E501"]
 # S314: XML parsing in tests is our own generated output, not untrusted input
 # S105: false positive — "PASS" is a status-code string, not a password
 # B017: tests intentionally catch broad Exception at boundaries
-"tests/**/*.py" = ["S101", "S603", "S604", "S607", "S314", "S105", "B017"]
+# S311: seeded random.Random drives property-style tests, never crypto
+# S608: test-only SQL built from literal column names
+"tests/**/*.py" = ["S101", "S603", "S604", "S607", "S314", "S105", "S106", "B017", "S311", "S608"]
 # S604: BackendCapabilities(shell=True) is a Pydantic field, not subprocess
 # S607: all subprocess calls use static commands; shutil.which used for full path
 "src/ananke/plexus/backends/adapters/*.py" = ["S604", "S607"]
@@ -216,6 +246,8 @@ ignore = ["B008", "E501"]
 "src/ananke/plexus/evals/datasets/loader.py" = ["S110"]
 # S311: sampling for statistical confidence intervals, not crypto
 "src/ananke/plexus/evals/regression/statistics.py" = ["S311"]
+# S704: Markup wraps output of the safe Markdown renderer / SVG generator (both escape their input)
+"src/ananke/plexus/registry/docsgen/render.py" = ["S704"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -239,6 +271,17 @@ module = [
   "yaml",
   "opentelemetry",
   "opentelemetry.*",
+  # optional registry accelerators (the registry works without any of them)
+  "jsonschema",
+  "jsonschema.*",
+  "blake3",
+  "zstandard",
+  "duckdb",
+  "cryptography",
+  "cryptography.*",
+  "watchfiles",
+  "compression",
+  "compression.*",
 ]
 ignore_missing_imports = true
 

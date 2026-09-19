@@ -59,6 +59,19 @@ Default transport is **stdio** (for IDE integration). HTTP transport binds to lo
 | `ananke.run.status` | Get run state |
 | `ananke.evidence.get` | Retrieve evidence bundle manifest |
 
+## Registry tools (read-only)
+
+Agents discover skills and agents through the same registry the CLI uses. These tools never mutate the registry and are available without `--allow-mutations`.
+
+| Tool | Description |
+|---|---|
+| `registry_search` | Search artifacts (`query`, `kind`, `capability`, `runtime`, `trust`, `channel`, `limit` ≤ 100) |
+| `registry_get_skill` | Full record for a skill (`ref`, optional `version`) |
+| `registry_get_agent` | Full record for an agent (`ref`, optional `version`) |
+| `registry_resolve` | Policy-aware resolution with explanation |
+| `registry_compare_versions` | Capability / permission / schema diff between two versions |
+| `registry_list_capabilities` | Capabilities offered across the registry |
+
 ## Mutation tools (requires `--allow-mutations`)
 
 | Tool | Description |
@@ -86,6 +99,8 @@ ananke://policy/baseline       — specific pack content
 ananke://evidence/index        — list of evidence runs
 ananke://run/<id>/evidence     — specific run manifest
 ananke://run/index             — list of all runs
+ananke://registry/skills       — registered skills (read-only)
+ananke://registry/agents       — registered agents (read-only)
 ```
 
 ## MCP prompts
@@ -112,6 +127,21 @@ flowchart LR
     ACTIVATE --> EXECUTE["🤖 Execute"]
     EXECUTE --> AUDIT["🧾 Audit"]
 ```
+
+### Registry-backed APM
+
+APM is the package-manager UX over the [Skill & Agent Registry](registry.md). Besides the legacy local-directory flow below, it resolves, installs and activates *registry* versions:
+
+```bash
+apm search graph
+apm install core/graph-review@^1 --activate     # resolves the dependency graph
+apm info core/graph-review
+apm lock && apm upgrade --dry-run
+apm link ../dev-copy && apm unlink core/graph-review
+apm publish ./skills/graph-review --dry-run
+```
+
+Installed layout: `.ananke/skills/installed/<ns>.<name>@<version>/`; activation state is recorded in `.ananke/activation.toml`, and `apm.lock` entries carry `origin = "registry"` (or `registry-dependency`). The APM sandbox blocks skills from reading `.ananke/secrets/**` and `config.local.toml`.
 
 ### Package types
 

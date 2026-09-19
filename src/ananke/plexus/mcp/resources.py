@@ -17,12 +17,16 @@ _STATIC_RESOURCES = [
 
 
 def list_resources() -> list[str]:
-    return list(_STATIC_RESOURCES)
+    return [*_STATIC_RESOURCES, "ananke://registry/skills", "ananke://registry/agents"]
 
 
 def list_dynamic_resources(repository_root: Path) -> list[str]:
     """Discover per-spec, per-run, and per-policy resources from the workspace."""
-    resources = list(_STATIC_RESOURCES)
+    resources = list_resources()
+
+    from ananke.plexus.registry.mcp_interface import list_registry_resources
+
+    resources += [u for u in list_registry_resources(repository_root) if u not in resources]
 
     specs_root = repository_root / ".ananke" / "specs"
     if specs_root.exists():
@@ -45,6 +49,11 @@ def list_dynamic_resources(repository_root: Path) -> list[str]:
 
 
 def read_resource(repository_root: Path, resource_uri: str) -> str:
+    if resource_uri.startswith("ananke://registry/"):
+        from ananke.plexus.registry.mcp_interface import read_registry_resource
+
+        return read_registry_resource(repository_root, resource_uri)
+
     if resource_uri == "ananke://project/status":
         config = repository_root / ".ananke" / "config.toml"
         return config.read_text(encoding="utf-8") if config.exists() else "project not initialized"

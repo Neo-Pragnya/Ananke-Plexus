@@ -3550,7 +3550,7 @@ The laws governing that flow are Ananke.
 
 # 61. Implementation Status Checklist (Living)
 
-Status date: 2026-09-16 (updated session 4 — uv/trivy, env files, release hardening)
+Status date: 2026-09-19 (updated session 5 — Skill & Agent Registry, Epic O)
 
 Purpose:
 - track what is already implemented in this repository,
@@ -3628,6 +3628,20 @@ Legend:
 - [x] `ananke evidence prune --older-than 30d` (with dry-run/apply safety)
 - [x] `ananke config migrate` (analysis/apply, unknown-key fail-safe)
 - [x] remaining command taxonomy in Section 28
+- [x] `ananke registry init|learn|register|unregister|inspect|show|list|search|diff|resolve`
+- [x] `ananke registry promote|yank|unyank|deprecate|quarantine|release-quarantine|alias`
+- [x] `ananke registry activate|deactivate|translate|lock|verify-lock|publish|link|unlink|evidence`
+- [x] `ananke registry verify|doctor|export|import|backup|restore|gc|rebuild-index|snapshot|events`
+- [x] `ananke registry report|analytics|duplicates|recommend|watch|schema|policy|serve|benchmark`
+- [x] `ananke registry key generate|trust|revoke|list`, `sign`, `signatures`
+- [x] `ananke registry remote list|search|pull` (pull-only federation)
+- [x] `ananke registry analytics query` (spec §146 questions), `registry search --semantic`, `registry watch --backend`
+- [x] `ananke registry docs build|dump`
+- [x] `ananke skill list|show|search|register|resolve|versions|activate`
+- [x] `ananke agent list|show|search|register|resolve|versions|activate`
+- [x] `ananke sync` (`--lock`, `--update`, `--runtime`, `--mode`, `--activate`, `--release`, `--dry-run`)
+- [x] `apm search|install REF|activate REF|info REF|lock|upgrade|link|unlink|publish` (registry-backed; legacy local flow preserved)
+- [x] `ananke eval …` and `ananke test …` (see Epic N and the testing harness)
 
 ## 61.3 Implemented Vertical Slice (Section 56)
 
@@ -3800,6 +3814,49 @@ Legend:
 - [x] M8a docs hosting (GitHub Pages workflow)
 - [x] M9 Scorecard integration
 
+### Epic O — Skill & Agent Registry (Debug-Specs/ANANKE_PLEXUS_SKILL_AGENT_REGISTRY_SPEC.md)
+
+Implemented in Python (`src/ananke/plexus/registry/`); the Rust core, `redb` and `tantivy` are not implemented (see the O-gap items below).
+
+- [x] O1 canonical models, artifact kinds, URIs, lifecycle/trust/channel enums (`models.py`)
+- [x] O2 SemVer 2.0 (lenient normalization, ranges, prerelease) (`semver.py`)
+- [x] O3 SQLite authoritative store — WAL, foreign keys, immutability and append-only triggers, schema version + migrations (`store.py`)
+- [x] O4 content-addressed store — read-only blobs, verify-on-read, deterministic payload tar (`cas.py`, `payload.py`)
+- [x] O5 registration service — immutable versions, conflict rejection (`VERSION_CONTENT_CONFLICT`), version suggestion, dependency-cycle rejection (`registry.py`, `diff.py`)
+- [x] O6 provenance, licence, trust, compatibility, security metadata; aliases, deprecate, yank, quarantine (`registry.py`)
+- [x] O7 trust promotion workflow + quality gate (`quality.py`); enterprise approval and namespace publishers (`policy.py`)
+- [x] O8 lexical search — FTS5 with Python fallback, query DSL, capability/runtime/trust/channel/licence filters (`search.py`)
+- [x] O9 resolver — rule pipeline + `ananke.registry.rules` plugin group, backtracking dependency solver, modes, explanations (`resolver.py`)
+- [x] O10 lockfile — deterministic TOML, verify-lock, registry snapshot (`lockfile.py`)
+- [x] O11 importers — manifest (incl. legacy `ananke-skill.toml`), filesystem, Python (static), Rust (static), MCP (snapshot; stdio/http gated), git, archive, framework AST scan (`importers/`)
+- [x] O12 dynamic introspection sandbox + plugin protocol; gated by policy and CLI override (`introspect.py`)
+- [x] O13 `learn` workflow — dry-run, diagnostics (never guess), identity matching, duplicate detection, interactive mode (`learn.py`, `duplicates.py`)
+- [x] O14 APM integration — install/materialize, activation profile, runtime translation, `ananke sync`, path overrides/dev links, `apm.lock` origin tracking (`activation.py`, `sync.py`, `translate.py`, `apm/cli.py`)
+- [x] O15 static documentation generator — multi-page, single-file dump with CSP hashes, search index, SVG diagrams, version selector/history/compare, incremental build (`docsgen/`)
+- [x] O16 read-only HTTP server and JSON schemas (`server.py`, `schemas.py`)
+- [x] O17 MCP interface — `registry_search`, `registry_get_skill`, `registry_get_agent`, `registry_resolve`, `registry_compare_versions`, `registry_list_capabilities`; resources `ananke://registry/skills|agents` (`mcp_interface.py`)
+- [x] O18 events — DB audit log + event bus (`events.py`); watcher — native (`notify` via `watchfiles`) or polling (`watcher.py`)
+- [x] O19 operations — portable export/import, backup/restore, verify/doctor, dry-run-first GC, reports, analytics JSONL (+ DuckDB export) (`portable.py`, `verify.py`, `gc.py`, `reports.py`)
+- [x] O20 evidence integration — `registry-capabilities.json` in bundles when `ananke.lock` exists (`evidence.py`)
+- [x] O21 security — secret scanning (reject/redact/warn), path-traversal/symlink/archive checks, git `ext::`/argument-injection blocks, gated network/dynamic execution, sanitized HTML with CSP, read-only server
+- [x] O22 optional extras — `registry`, `registry-fast`, `registry-zstd`, `registry-validate`, `registry-signing`, `registry-watch`, `registry-analytics`; runs with none installed
+- [x] O23 tests — ~500 unit tests across semver, core, resolver, importers, learn, docs, activation/sync, portable/ops, interfaces, CLI, extras (seeded randomized property-style tests)
+- [x] O24 documentation — `docs/concepts/registry.md`, `docs/guides/registry-guide.md`, `docs/reference/registry.md`; CLI, architecture, MCP/APM, configuration, index, getting-started pages updated
+- [x] O25 signatures — Ed25519 over `URI + payload digest`, trusted keys in policy, computed (never self-asserted) verification, revocation, `key`/`sign`/`signatures` CLI, `artifact_signatures` (schema v2), export/import round trip (`signing.py`, `ed25519.py`)
+- [x] O26 pull-only federation — `remote list|search|pull`, https-only/no-redirect/size-capped client, bearer-token server auth, digest verification, local re-validation, no inherited trust (`remote.py`, `server.py`, `sources.py`)
+- [x] O27 optional similarity search — policy-gated, local deterministic embedder, `ananke.registry.embedders` plugin group with remote-consent gate (`semantic.py`)
+- [x] O28 native file watching — `watchfiles` (Rust `notify`) backend with polling fallback (`watcher.py`)
+- [x] O29 analytics questions — spec §146 on DuckDB or SQLite with identical SQL (`reports.py`)
+- [x] O30 benchmarks with regression tracking (spec §132, §170) — `registry benchmark` (`bench.py`)
+- [x] O31 fuzz targets (spec §169) — version/requirement parsers, query DSL, manifests, portable import, archive extraction, path handling, Markdown sanitizer (`tests/unit/test_registry_fuzz.py`); found and fixed unwrapped import errors
+- [x] O32 testing-harness quality gate enforces `coverage_threshold`, `mutation_score_threshold`, `max_duration_seconds`; invalid `.ananke/quality.yaml` fails closed
+- [x] O-zstd `tar.zst` via the optional `zstandard` extra (bounded output) with gzip fallback; Python 3.14 `compression.zstd` path is present but untested here
+- [ ] O-gap Rust core `ananke-registry-core` / PyO3 bindings (spec §61–§67; acceptance #40 "Rust and Python APIs" is met for Python only) — needs a Rust toolchain, maturin wheels and CI matrix
+- [ ] O-gap `redb` metadata cache (spec §10) — a SQLite-backed `KVCache` is used instead
+- [ ] O-gap `tantivy` search index (spec §13) — FTS5 with a Python fallback is used
+- [~] O-gap performance — `docs_incremental` misses the 100 ms goal on large registries (documentation model is rebuilt per run); all other §132 goals are met at 500 artifacts on the reference machine
+- [~] O-gap semantic search quality — the built-in embedder is lexical-morphological, not neural; real embeddings need a plugin
+
 ## 61.6 Governance Rule: Preserve Full Ideation Scope
 
 To ensure all ideated features are implemented over time:
@@ -3810,6 +3867,9 @@ To ensure all ideated features are implemented over time:
 4. New features must not remove prior commitments without an ADR update.
 
 ## 61.7 Immediate Next Milestones to Maintain Full Coverage
+
+**Completed 2026-09-19 session 5:**
+- [x] Epic O Skill & Agent Registry (Python implementation, signatures, federation, similarity search, native watcher, analytics, benchmarks, fuzzing; see 61.5 for the remaining Rust items)
 
 **Completed 2026-09-16 session 1:**
 - [x] A1, A5, C9, C10, Epic G (G1–G7), H3, H4, I10, J7, K1, K2, L4
@@ -4054,3 +4114,137 @@ eval-enterprise = ["mlflow", "opentelemetry-api", "opentelemetry-sdk"]
 - `docs/concepts/evaluation.md` — evaluation philosophy, ADLC placement, evaluator catalog
 - `docs/reference/eval-harness.md` — API reference, configuration, CLI examples
 
+
+---
+
+## Epic O — Skill & Agent Registry
+
+Source specification: `Debug-Specs/ANANKE_PLEXUS_SKILL_AGENT_REGISTRY_SPEC.md`. The registry makes skills, agents, tools, workflows, evaluators, prompts, policies, bundles and runtime profiles **durable, inspectable, versioned engineering artifacts**. Frameworks expose capabilities, importers learn them, the registry normalizes them, versions preserve history, policy determines trust, the resolver chooses compatible artifacts, APM materializes and activates them, documentation makes them understandable, and evidence records exactly what ran.
+
+### Design Principles
+
+- **Discovery, trust and resolution are separate.** `learn` never grants trust; registration only yields `discovered`, `unknown` or `restricted`; promotion runs the quality gate.
+- **Immutable versions.** A version's payload, manifest, version and creation time never change (DB triggers). Trust, channel and lifecycle are separate mutable state with an append-only audit log.
+- **Content-addressed.** Blobs are SHA-256 addressed, read-only and verified on read; payload archives are deterministic.
+- **Never guess.** Missing metadata is reported as a diagnostic, never fabricated; a name-only identity match is a suggestion, not a merge.
+- **Static before dynamic.** Importers inspect metadata and source without executing it. Network and dynamic execution require policy *and* an explicit CLI override (`allow_cli_override` can be disabled).
+- **Deterministic and explainable.** Same registry, policy and requirements yield the same resolution, the same `ananke.lock`, and a `✓/✗` explanation.
+- **Local-first and offline.** No network or optional accelerator is required.
+- **Read-only exposure.** The HTTP server and MCP tools cannot mutate the registry.
+
+### O1 — Artifact Model
+
+Module: `registry/models.py`
+
+- `ArtifactKind` — `skill | agent | tool | workflow | evaluator | prompt | policy | bundle | runtime-profile`
+- URI `ananke://<kind>/<namespace>/<name>@<version>`
+- `LifecycleStatus` — `active | deprecated | yanked | quarantined | archived`
+- `TrustStatus` — `unknown | discovered | verified | approved | restricted | quarantined`
+- Channels — `stable | candidate | beta | canary | deprecated | quarantined` plus custom
+- Manifest sections — identity, runtime/compatibility, capabilities, inputs/outputs, permissions, dependencies (skills/tools/agents), provenance, licence, security, model requirements, instructions
+
+### O2 — Storage
+
+- SQLite (WAL, foreign keys, busy timeout) is authoritative: `artifacts`, `artifact_versions`, dependencies, aliases, `registry_events`, FTS index, schema version.
+- Triggers enforce immutability of `payload_sha256`, `manifest_json`, `version`, `created_at` and append-only `registry_events`.
+- Content-addressed blobs at `blobs/sha256/<aa>/<hex>`; deterministic payload tar embedding canonical `ananke.registry.json`.
+- Layout under `.ananke/registry/` (project) or the user registry home.
+
+### O3 — Registration and Lifecycle
+
+- Same version + different content ⇒ `VERSION_CONTENT_CONFLICT` with a diff and a suggested SemVer bump; `--version auto` applies it.
+- Dependency cycles rejected. Namespace publisher governance from policy.
+- `promote` (quality gate → verified → approved), `yank`/`unyank`, `deprecate` (with replacement), `quarantine`/`release-quarantine`, aliases.
+
+### O4 — Import ("Learn")
+
+Two-stage `Candidate` → `finalize` model with diagnostics. Importers: Ananke manifest (incl. legacy `ananke-skill.toml`), filesystem (`SKILL.md`, `skill.yaml`, `manifest.yaml`, `AGENT.md`…), Python package (entry points `ananke.skills`/`ananke.agents`, static), Rust crate (static), MCP (saved `tools/list`; stdio/http gated), git (safe clone, `ext::` blocked), archive (safe extraction), framework AST scan (never imports), dynamic sandbox (isolated subprocess, no network, scrubbed env, limits, JSON-only output) with an importer plugin protocol.
+
+### O5 — Diff and Versioning
+
+Capability, permission, schema, dependency and metadata diffs with a suggested SemVer. **Permission expansion is security-significant even when the API is compatible.**
+
+### O6 — Resolver
+
+Rule pipeline (Lifecycle, Prerelease, Channel, Trust, License, Security, Quality, Compatibility, EnterpriseApproval) plus plugin group `ananke.registry.rules`; backtracking dependency solver; ranking (adjust, trust, channel, semver); modes `highest-compatible | highest-approved | lowest-compatible | stable-only | exact | locked`; lock pins (strict/prefer); path overrides bypass rules and are marked dirty.
+
+### O7 — Lockfile and Sync
+
+Deterministic TOML `ananke.lock` (no timestamps). `ananke sync` reads `[tool.ananke.agent|skills|overrides]`, `.ananke/registry/overrides.toml` and registry-origin `apm.lock` entries; `--release` forbids path/dev entries; `verify-lock` checks presence, digest and quarantine.
+
+### O8 — Activation and APM
+
+Registered ≠ installed ≠ activated. Materialization to `.ananke/skills/installed/<ns>.<name>@<ver>`, activation profile `.ananke/activation.toml`, runtime translation, legacy `apm.lock` kept in sync with `origin = registry | registry-dependency`. The APM sandbox blocks skills from `.ananke/secrets/**` and `config.local.toml`.
+
+### O9 — Documentation Generator
+
+Deterministic, incremental (`.build-cache.json`) multi-page static HTML via jinja2 (autoescape), pre-rendered SVG diagrams, sanitized Markdown, CSP without inline scripts, per-artifact version selector (latest approved / latest stable / all), version history with BREAKING markers, compare pages, capability matrix, search index JSON, and a single-file offline dump with CSP hashes.
+
+### O10 — Interfaces
+
+- HTTP (`ananke registry serve`, read-only, loopback default) and JSON schemas (`ananke registry schema`).
+- MCP tools `registry_search`, `registry_get_skill`, `registry_get_agent`, `registry_resolve`, `registry_compare_versions`, `registry_list_capabilities`; resources `ananke://registry/skills`, `ananke://registry/agents`.
+- Python API `Registry`, `Resolver`, `learn`, `sync` (`ananke.plexus.registry`); cached `Ananke.registry` property.
+
+### O11 — Operations
+
+Portable export/import (checksums, collision aborts, policy checks, hardened against malformed archives), backup/restore, `verify`/`doctor`, GC (dry-run default; retains locked and evidence-referenced blobs), rebuild-index, reports (licences, deprecated, …), analytics (JSONL; DuckDB or SQLite question engine), duplicate detection, recommendations, native or polling watcher, benchmarks with regression tracking.
+
+### O12 — Security
+
+Secret scanning with `reject | redact | warn` modes; path-traversal, symlink and archive-bomb checks; git argument-injection blocking; never construct shell commands from untrusted strings (`shell=False`, static arg lists); HTML escaping and CSP; secrets never in registry records, evidence, prompts or trace attributes; enterprise preset disables CLI overrides for network/dynamic gates.
+
+### O12a — Signatures
+
+Ed25519 over `ananke-registry-signature-v1 \n <version URI> \n sha256:<payload digest>`. `verified` is **computed** against the policy's `[signing.trusted_keys]` (and revocations) on every read and is never taken from a manifest, archive or database column. `require_signature` gates promotion and resolution. Private keys stay in an operator-controlled `0600` file (never in registry, policy, events or evidence); signing needs `registry-signing`, verification is dependency-free (pure-Python RFC 8032, cross-checked against OpenSSL in tests).
+
+### O12b — Federation
+
+Remote registries are **pull-only**: resolution never touches the network. `remote pull` is policy-gated (`[remote_sources]` or an allowed CLI override), https-only (loopback http for development), refuses redirects, caps sizes, reads its bearer token from an environment variable named in policy, verifies advertised digests, re-runs local import validation, and imports as `discovered`/`candidate` (trust is never inherited). The server can require a bearer token and refuses non-loopback binds without one; quarantined versions are never distributed.
+
+### O12c — Optional Similarity Search (spec §14)
+
+Off by default (`[semantic] enabled`). Deterministic local feature-hashing embedder; entry-point group `ananke.registry.embedders` for real models; remote embedders need `allow_remote`. Vectors are derived cache entries keyed by embedded text — never authoritative, never exported.
+
+### O13 — Evidence
+
+When `ananke.lock` exists, evidence bundles include `registry-capabilities.json`: agent, each skill's URI, exact version and payload digest, registry snapshot and lockfile hash.
+
+### O14 — Optional Extras
+
+```toml
+registry-fast = ["blake3>=1.0"]
+registry-zstd = ["zstandard>=0.22"]
+registry-validate = ["jsonschema>=4.23"]
+registry-analytics = ["duckdb>=1.0"]
+registry = ["ananke-plexus[registry-fast,registry-zstd,registry-validate]"]
+```
+
+The registry runs with none installed (gzip, SHA-256, structural validation, JSONL analytics).
+
+### O15 — Acceptance Criteria Status (spec §171)
+
+| # | Criterion | Status |
+|---|---|---|
+| 1–7 | init, SQLite, CAS, register skills/agents, multiple immutable versions, conflict rejection | ✅ |
+| 8–10 | SemVer resolution, lockfiles, agent skill dependency graphs | ✅ |
+| 11–14 | provenance, licences, trust, compatibility tracking | ✅ |
+| 15–20 | Ananke manifests, filesystem, static Python, MCP (gated), importer plugins, sandboxed dynamic | ✅ |
+| 21–24 | lexical search, filters, diffs, explainable resolution | ✅ |
+| 25–28 | multi-page HTML, single-file dump, version histories, dependency graphs | ✅ |
+| 29–30 | APM install/lock/activate, MCP query | ✅ |
+| 31–36 | export/import, verify, rebuild, safe GC, audit events | ✅ |
+| 37 | quality/security checks before promotion | ✅ (including signature verification) |
+| 38–39 | offline; runs without DuckDB/Tantivy/redb | ✅ |
+| 40 | Rust and Python APIs | 🟡 Python only; Rust core not implemented |
+
+### O16 — Known Gaps (tracked in §61.5)
+
+Rust core (`ananke-registry-core`, PyO3), `redb`, `tantivy`, plus the `docs_incremental` performance goal. Each gap has a working Python implementation and is *not* out of scope (see §61.6). Everything else in the original gap list (signatures, federation, semantic search, native watcher, DuckDB analytics, benchmarks, fuzz targets, zstd) is implemented.
+
+### O17 — Documentation
+
+- `docs/concepts/registry.md` — model, trust, resolver, security
+- `docs/guides/registry-guide.md` — hands-on tour
+- `docs/reference/registry.md` — CLI, manifest, policy, HTTP/MCP/Python API
+- `docs/concepts/testing.md`, `docs/reference/test-harness.md` — testing harness (verification plane), including quality-gate thresholds

@@ -48,12 +48,18 @@ def run_quality_suite(
         The completed run with all results.
     """
     from ananke.plexus.testing.adapters import default_adapters
+    from ananke.plexus.testing.adapters.pytest import PytestAdapter
     from ananke.plexus.testing.context import TestContext
     from ananke.plexus.testing.discovery import discover_tests
+    from ananke.plexus.testing.policy.thresholds import load_quality_config
     from ananke.plexus.testing.runner import TestRunner
     from ananke.plexus.testing.selection import select_tests
 
     effective_adapters = adapters if adapters is not None else default_adapters()
+    if load_quality_config(project_root).coverage_threshold is not None:
+        for adapter in effective_adapters:
+            if isinstance(adapter, PytestAdapter):
+                adapter.collect_coverage = True
     effective_run_id = run_id or str(uuid.uuid4())
 
     ctx = TestContext(

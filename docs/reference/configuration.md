@@ -7,6 +7,12 @@
 | `.ananke/config.toml` | Project configuration | ✅ |
 | `.ananke/config.local.toml` | Local overrides | ❌ (gitignored) |
 | `.ananke/secrets/adapters.env` | Credential store | ❌ |
+| `.ananke/registry/policy.toml` | Registry policy (trust, licences, secrets, network/dynamic gates, resolver defaults) — see [Registry Reference](registry.md#policy-anankeregistrypolicytoml) | ✅ |
+| `.ananke/registry/overrides.toml` | Local path overrides for `ananke sync` | ✅ |
+| `.ananke/activation.toml` | Active skills/agents profile written by activation | ✅ |
+| `ananke.lock` | Deterministic resolved-capability lockfile | ✅ |
+| `pyproject.toml` `[tool.ananke.agent]`, `[tool.ananke.skills]`, `[tool.ananke.overrides]` | Capabilities the project consumes | ✅ |
+| `.ananke/registry/registry.sqlite3`, `blobs/` | Registry database and content-addressed store | ❌ (generated) |
 
 ## Precedence (highest wins)
 

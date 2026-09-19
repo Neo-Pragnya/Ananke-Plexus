@@ -32,6 +32,17 @@ This guide gives you an operational setup for building and shipping `ananke-plex
   - `ananke lifecycle worktrees`
   - `ananke plugin list`
   - `ananke verify`
+- Skill & Agent Registry (see [Registry Guide](registry-guide.md)):
+  - `ananke registry init | learn | register | inspect | show | list | search | diff | resolve`
+  - `ananke registry promote | yank | deprecate | quarantine | alias`
+  - `ananke registry activate | translate | lock | verify-lock | publish | link`
+  - `ananke registry export | import | backup | restore | verify | doctor | gc | report | analytics`
+  - `ananke registry docs build | dump`, `ananke registry serve | watch | schema | policy | benchmark`
+  - `ananke registry key generate | trust | revoke | list`, `sign`, `signatures`
+  - `ananke registry remote list | search | pull`, `analytics query`, `search --semantic`
+  - `ananke skill ...`, `ananke agent ...`, `ananke sync`
+- Evaluation harness: `ananke eval run | list | ...` ([details](../concepts/evaluation.md))
+- Testing harness: `ananke test run | discover | report | profile | adapter | mutation | fuzz | formal` ([details](../concepts/testing.md))
 - Spec providers:
   - `speckit` adapter (invokes `specify` or `spec-kit` if installed)
   - `native` provider fallback
@@ -46,6 +57,7 @@ This guide gives you an operational setup for building and shipping `ananke-plex
   - `apm audit --manifest PATH`
   - `apm sandbox-check --manifest PATH ...`
   - `apm import-copilot --source PATH`
+  - Registry-backed: `apm search`, `apm install REF`, `apm activate REF`, `apm info REF`, `apm lock`, `apm upgrade`, `apm link`, `apm unlink`, `apm publish`
 - Local-first workspace assets:
   - `.ananke/config.toml`
   - `.ananke/config.local.toml`
@@ -53,6 +65,8 @@ This guide gives you an operational setup for building and shipping `ananke-plex
   - `.ananke/secrets/adapters.env` (chmod 600)
   - `.ananke/policy/default.toml`
   - `.ananke/architecture/system.calm.json`
+  - `.ananke/registry/` (registry.sqlite3, blobs/, policy.toml, docs/, exports/, backups/)
+  - `.ananke/activation.toml`, `ananke.lock`
 - Evidence output:
   - `.ananke/evidence/<run-id>/run.json`
   - `.ananke/evidence/<run-id>/manifest.json`
@@ -74,6 +88,20 @@ This guide gives you an operational setup for building and shipping `ananke-plex
 - Graphifyy/code-review-graph adapters: planned next phase
 - Lifecycle idempotency store and local transition/PR simulation: implemented baseline
 - Isolated run worktree folder lifecycle: implemented baseline
+
+## Optional extras
+
+| Extra | Adds |
+|---|---|
+| `registry` | `registry-fast` (`blake3`), `registry-zstd` (`.tar.zst`), `registry-validate` (jsonschema), `registry-signing`, `registry-watch` |
+| `registry-signing` | `cryptography` — Ed25519 signing (verifying needs nothing) |
+| `registry-watch` | `watchfiles` — native file events for `registry watch` |
+| `registry-analytics` | DuckDB analytics engine and `registry.duckdb` (optional, not in `registry`) |
+| `eval-enterprise` | Enterprise eval harness dependencies |
+| `test-python`, `test-bdd`, `test-property`, `test-api`, `test-snapshot`, `test-mutation`, `test-contract`, `test-automation`, `test-all` | Test-harness engines |
+| `all` | `mcp`, `telemetry`, `jira`, `security`, `docs`, `eval-enterprise`, `test-python`, `registry` |
+
+The registry works with none of these installed; each accelerator falls back to a pure-Python path (gzip instead of zstd, SHA-256 without blake3, structural checks without jsonschema).
 
 ## Local development commands
 

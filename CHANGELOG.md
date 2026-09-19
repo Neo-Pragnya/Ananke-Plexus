@@ -10,6 +10,47 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.0] — 2026-09-19
+
+### Added
+
+- **Skill & Agent Registry (Epic O)** — `ananke.plexus.registry`: SQLite + content-addressed store with immutable versions, trust/channel/lifecycle state, FTS5 search, SemVer, deterministic payloads and audit events.
+- Importers for Ananke manifests, plain directories, Python packages, Rust crates, MCP servers, git, archives, framework AST scans and a gated sandboxed dynamic scan.
+- Policy-aware, explainable resolver with backtracking dependency solving; deterministic `ananke.lock`.
+- CLI: `ananke registry …`, `ananke skill …`, `ananke agent …`, `ananke sync`; registry-backed `apm search/install/activate/info/lock/upgrade/link/unlink/publish` (legacy local flow preserved).
+- Activation profile (`.ananke/activation.toml`), runtime translation, portable export/import, backup/restore, verify/doctor, GC, reports, analytics, watcher, read-only HTTP server, JSON schemas.
+- Static documentation generator (offline, incremental, CSP-safe single-file dump).
+- MCP tools `registry_search`, `registry_get_skill`, `registry_get_agent`, `registry_resolve`, `registry_compare_versions`, `registry_list_capabilities` and resources `ananke://registry/skills|agents`.
+- Evidence bundles include `registry-capabilities.json` when `ananke.lock` exists.
+- Optional extras `registry`, `registry-fast`, `registry-zstd`, `registry-validate`, `registry-analytics`.
+- Documentation: registry concept/guide/reference, testing concept/reference, updated CLI, architecture, MCP/APM and configuration pages.
+- **Signatures** — Ed25519 over `URI + payload digest`; trusted keys in policy; `ananke registry key|sign|signatures`; verification is pure-Python (cross-checked against OpenSSL), signing needs `registry-signing`. Schema migration v2 adds `artifact_signatures` (automatic, with backup).
+- **Pull-only federation** — `ananke registry remote list|search|pull`; policy-gated, https-only, no redirects, digest-verified, re-validated on import, arrives as `discovered`. `registry serve --token-env` adds bearer auth and refuses non-loopback binds without it; `GET /api/v1/bundle`.
+- **Similarity search** — optional, policy-gated `search --semantic` with a deterministic local embedder and an `ananke.registry.embedders` plugin group.
+- **Native file watching** — `registry watch --backend auto|native|poll` using `watchfiles` (Rust `notify`) when the `registry-watch` extra is installed.
+- **Analytics questions** — `ananke registry analytics query` (six spec questions; identical SQL on DuckDB and SQLite).
+- **Benchmarks and fuzzing** — `ananke registry benchmark` with baseline/regression tracking; seeded fuzz targets for every untrusted-input parser.
+- **Testing harness** — the quality gate now enforces `coverage_threshold`, `mutation_score_threshold` and `max_duration_seconds`; `ananke test run` applies the gate; `.ananke/quality.yaml` is validated (invalid config exits 2 instead of being ignored).
+- Extras `registry-signing`, `registry-watch`.
+
+### Changed
+
+- `provenance.signature.verified` is no longer honoured from manifests, archives or the database: it is always recomputed. `require_signature` is enforced at promotion and resolution (previously a manifest could self-assert `verified: true`, and registration-time enforcement could not be satisfied legitimately).
+- Enabled remote registries no longer make `open_sources` raise; they are pull-only and never used for resolution.
+- `ananke test run --json` now exits `1` when the gate blocks.
+
+### Fixed
+
+- Portable import no longer leaks `zlib.error`/`UnicodeDecodeError`/`KeyError` on corrupt or hostile archives; every failure is a registry error and nothing is written. Decompression output is bounded for zstd. (Found by the new fuzz targets.)
+- Docs generator computes relative links without querying the working directory.
+
+### Not yet implemented
+
+- Rust core (`ananke-registry-core`, PyO3), `redb` and `tantivy` accelerators — these need a Rust toolchain and build/CI work.
+- The `docs_incremental` benchmark misses the spec's 100 ms goal on large registries (the documentation model is rebuilt for every run).
+
+---
+
 ## [0.2.9] — 2026-09-18
 
 ### Fixed

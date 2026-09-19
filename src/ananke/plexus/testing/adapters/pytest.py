@@ -13,8 +13,32 @@ from ananke.plexus.testing.models.result import TestResult
 from ananke.plexus.testing.models.test import TestDefinition, TestKind, TestStatus
 
 
+def read_coverage_percent(path: Path) -> float | None:
+    """Total line coverage (0-100) from a ``coverage json`` / ``pytest-cov`` report, if present."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return float(data["totals"]["percent_covered"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 class PytestAdapter:
     adapter_id = "pytest"
+
+    def __init__(self, collect_coverage: bool = False, coverage_source: str | None = None) -> None:
+        # Coverage is opt-in: it slows the run and needs pytest-cov. The quality gate turns it on
+        # when a ``coverage_threshold`` is configured.
+        self.collect_coverage = collect_coverage
+        self.coverage_source = coverage_source
+
+    @staticmethod
+    def _cov_available() -> bool:
+        try:
+            import pytest_cov  # type: ignore[import-untyped]  # noqa: F401
+
+            return True
+        except ImportError:
+            return False
 
     def available(self) -> bool:
         try:
@@ -84,6 +108,12 @@ class PytestAdapter:
         if use_json:
             json_report_path.parent.mkdir(parents=True, exist_ok=True)
             args += ["--json-report", f"--json-report-file={json_report_path}"]
+        cov_path = project_root / ".ananke" / "tmp" / "coverage.json"
+        cov_requested = self.collect_coverage and self._cov_available()
+        if cov_requested:
+            cov_path.parent.mkdir(parents=True, exist_ok=True)
+            cov_path.unlink(missing_ok=True)
+            args += [f"--cov={self.coverage_source or '.'}", f"--cov-report=json:{cov_path}"]
         try:
             proc = subprocess.run(
                 args,
@@ -123,9 +153,15 @@ class PytestAdapter:
         duration = (ended - started).total_seconds() * 1000
 
         if use_json and json_report_path.exists():
-            return self._parse_json_report(json_report_path, started, ended, duration)
-
-        return self._parse_stdout(proc.stdout, proc.returncode, started, ended, duration)
+            results = self._parse_json_report(json_report_path, started, ended, duration)
+        else:
+            results = self._parse_stdout(proc.stdout, proc.returncode, started, ended, duration)
+        if cov_requested:
+            percent = read_coverage_percent(cov_path)
+            if percent is not None:
+                for result in results:
+                    result.metrics["coverage_percent"] = percent
+        return results
 
     def _parse_json_report(
         self,

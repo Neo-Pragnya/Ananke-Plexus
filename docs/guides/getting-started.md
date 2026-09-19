@@ -32,6 +32,9 @@ pip install "ananke-plexus[jira]"
 # OpenTelemetry
 pip install "ananke-plexus[telemetry]"
 
+# Skill & agent registry accelerators (zstd, jsonschema, blake3)
+pip install "ananke-plexus[registry]"
+
 # All extras
 pip install "ananke-plexus[all]"
 ```
@@ -179,6 +182,20 @@ Add to your IDE's MCP configuration:
 ```
 
 Your agent can now query `ananke://spec/PROJ-101`, `ananke://graph/snapshot`, and use tools like `ananke.graph.impact`.
+
+---
+
+## Register and resolve skills and agents
+
+```bash
+ananke registry init
+ananke registry learn ./skills/graph-review
+ananke registry promote core/graph-review@1.0.0 --trust approved --channel stable
+ananke registry resolve core/graph-review@^1 --explain
+ananke sync --activate       # writes ananke.lock and activates what it locks
+```
+
+See the [Registry Guide](registry-guide.md) for the full tour.
 
 ---
 

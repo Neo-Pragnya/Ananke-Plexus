@@ -204,13 +204,43 @@ The unified quality test harness CLI.
 
 ---
 
+## ananke registry
+
+Full reference: [Registry Reference](registry.md). Every command accepts `--project PATH` and `--user`.
+
+- `ananke registry init [--policy default|enterprise]`: create the registry and policy file.
+- `ananke registry learn SOURCE [--kind --namespace --name --version X|auto --license --channel --allow-dynamic --allow-network --plugin --dry-run --force --interactive --json]`: discover a source (path, `python:`, `rust:`, `mcp:`, `mcp-stdio:`, `mcp-http:`, `git:`, archive, `framework:`, `dynamic:`) and register new immutable versions.
+- `ananke registry register PATH`, `unregister REF [--purge]`, `inspect REF | --source SRC [--report FILE.html]`, `show REF`, `list [REF] [--versions]`, `search [QUERY] [--kind --runtime --trust --channel --capability --tag --license]`.
+- `ananke registry diff A B`: capability/permission/schema/dependency diff with suggested SemVer.
+- `ananke registry resolve REF [--runtime --mode --explain]`: policy-aware resolution with explanations.
+- `ananke registry promote REF [--channel --trust --reviewed-by --run-tests --skip-gate]`, `yank`, `unyank`, `deprecate [--replacement]`, `quarantine`, `release-quarantine`, `alias set|list|remove`.
+- `ananke registry activate|deactivate REF`, `translate REF --runtime RT`.
+- `ananke registry lock [REFS…]`, `verify-lock [PATH]`, `publish PATH`, `link PATH`, `unlink REF`, `evidence`.
+- `ananke registry verify`, `doctor`, `export`, `import`, `backup`, `restore`, `gc [--apply]`, `rebuild-index`, `snapshot`, `events`.
+- `ananke registry report NAME`, `analytics build`, `duplicates`, `recommend CAPABILITY`, `watch [--once]`, `schema [NAME]`, `policy show|init`.
+- `ananke registry docs build [--single-file]`, `docs dump -o FILE`, `serve [--host --port --token-env NAME]`.
+- Signing: `key generate|trust|revoke|list`, `sign REF --key FILE`, `signatures REF`.
+- Federation (pull-only): `remote list`, `remote search QUERY`, `remote pull REF [--no-deps --dry-run --allow-network]`.
+- Search & insight: `search --semantic` (policy-gated), `analytics query [QUESTION]`, `watch --backend auto|native|poll`, `benchmark [--size --save-baseline --baseline]`.
+
+## ananke skill / ananke agent
+
+- `ananke skill|agent list [--versions]`, `show REF`, `search [QUERY]`, `register PATH`, `resolve REF [--explain]`, `versions REF`, `activate REF`.
+- `ananke agent search [--skill S] [--runtime R] [--capability C]`: agents that compose a skill or provide a capability.
+
+## ananke sync
+
+- `ananke sync [--lock PATH --update --runtime --mode --activate --release --dry-run]`: resolve `[tool.ananke.agent]` / `[tool.ananke.skills]` (and APM-installed requirements) and write `ananke.lock`.
+
 ## apm
 
 - `apm list [--project PATH] [--json]`: list installed and active local skills.
-- `apm install --source PATH [--project PATH]`: install local skill package with manifest and lock update.
-- `apm activate --name NAME [--project PATH]`: activate an installed skill.
+- `apm install --source PATH [--project PATH]`: install local skill package with manifest and lock update (legacy).
+- `apm install REF [--activate --allow-prerelease --runtime]`: resolve from the registry and install the dependency graph.
+- `apm search QUERY`, `apm lock [--update]`, `apm upgrade [--dry-run]`, `apm link PATH`, `apm unlink REF`, `apm publish PATH`.
+- `apm activate REF | --name NAME [--project PATH]`: activate a registry version, or an installed skill by directory name (legacy).
 - `apm deactivate --name NAME [--project PATH]`: deactivate a skill.
-- `apm info [--project PATH]`: print apm.lock details.
+- `apm info [REF] [--project PATH]`: registry details for `REF`; without `REF`, print apm.lock details.
 - `apm verify [--project PATH]`: verify lockfile structure.
 - `apm resolve --ref VALUE [--project PATH]`: resolve skill path or installed reference.
 - `apm audit --manifest PATH`: audit manifest permissions.

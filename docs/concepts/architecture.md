@@ -29,6 +29,7 @@ flowchart TB
         CALM["🏗️ CALM Architecture"]
         GRAPH["🕸️ Graph Intelligence"]
         APM["📦 APM"]
+        REGISTRY["🗂️ Skill & Agent Registry"]
         GATES["🧪 Verification Gates"]
         EVIDENCE["🧾 Evidence"]
     end
@@ -72,7 +73,11 @@ ananke-plexus/
     ├── hooks/          — Git hook manager, stages, runner
     ├── mcp/            — MCP server, tools, resources, prompts, auth
     ├── apm/            — Skill manifests, registry, installer, sandbox, lockfile
-    ├── evidence/       — Evidence bundle, SARIF 2.1.0, hash, retention
+    ├── evidence/       — Evidence bundle, SARIF 2.1.0, hash, retention (+ registry capability snapshot)
+    ├── registry/       — Skill & Agent Registry: SQLite + content-addressed store, importers,
+    │                     resolver, ananke.lock, activation, docs generator, HTTP server
+    ├── evals/          — Enterprise evaluation harness: traces, evaluators, judges, regression
+    ├── testing/        — Unified test & quality harness: adapters, profiles, quality gate
     ├── events/         — In-process event bus with JSONL audit log
     ├── telemetry/      — OpenTelemetry adapter, noop
     └── plugins/        — Entry-point discovery, plugin metadata
@@ -97,6 +102,10 @@ SCMPort        →  BitbucketAdapter | GitHubAdapter
 IssuePort      →  JiraAdapter
 ScannerPort    →  RuffAdapter | SemgrepAdapter | GitleaksAdapter | TrivyAdapter
 ```
+
+### Immutable, content-addressed capabilities
+
+Skills and agents live in the [registry](registry.md): every version is an immutable, hash-verified payload; mutable state (trust, channel, lifecycle) is separate and audited. Resolution is deterministic, policy-aware and explainable, and produces a reproducible `ananke.lock`.
 
 ### Fail closed for hard gates
 
@@ -139,6 +148,8 @@ Highest wins:
 ## Event system
 
 Every subsystem emits typed domain events to an in-process event bus. Events are appended to `.ananke/evidence/*.jsonl` for audit trails.
+
+Registry events (`artifact.registered`, `artifact.promoted`, `artifact.yanked`, `artifact.quarantined`, …) are also written to an append-only `registry_events` table.
 
 Key events: `RequirementCaptured`, `SpecCreated`, `SpecLocked`, `GateCompleted`, `BackendInvoked`, `PullRequestCreated`, `EvidenceFinalized`, `ApprovalRequested`, `ApprovalGranted`
 

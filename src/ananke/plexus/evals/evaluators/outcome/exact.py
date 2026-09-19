@@ -128,7 +128,7 @@ class SchemaConformanceEvaluator:
         self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
     ) -> list[EvalScore]:
         try:
-            import jsonschema  # type: ignore[import-untyped]
+            import jsonschema
 
             jsonschema.validate(trace.final_output, self._schema)
             return [make_score(self.id, _DIM, "schema_conformance", True)]

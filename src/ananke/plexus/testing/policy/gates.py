@@ -35,6 +35,13 @@ class QualityGateDecision(BaseModel):
     reasons: list[str] = Field(default_factory=list)
 
 
+def _run_seconds(run: TestRun) -> float | None:
+    if run.ended_at is not None:
+        return (run.ended_at - run.started_at).total_seconds()
+    durations = [r.duration_ms for r in run.results if r.duration_ms is not None]
+    return sum(durations) / 1000 if durations else None
+
+
 def apply_quality_gate(run: TestRun, config: Any = None) -> QualityGateDecision:
     """Evaluate a TestRun against quality gate rules and produce a decision."""
     from ananke.plexus.testing.policy.thresholds import QualityGateConfig, load_quality_config
@@ -68,6 +75,42 @@ def apply_quality_gate(run: TestRun, config: Any = None) -> QualityGateDecision:
 
     if gate_config.warn_on_skipped and skipped > 0:
         reasons.append(f"{skipped} test(s) skipped")
+        if verdict == QualityGateVerdict.PASS:
+            verdict = QualityGateVerdict.WARN
+
+    unmeasured: list[str] = []
+    for label, metric, threshold in (
+        ("coverage", "coverage_percent", gate_config.coverage_threshold),
+        ("mutation score", "mutation_score", gate_config.mutation_score_threshold),
+    ):
+        if threshold is None:
+            continue
+        values = [
+            float(r.metrics[metric])
+            for r in run.results
+            if isinstance(r.metrics.get(metric), int | float)
+        ]
+        if not values:
+            unmeasured.append(
+                f"{label} threshold {threshold:g}% configured but nothing measured it"
+            )
+            continue
+        measured = min(values)
+        if measured < threshold:
+            blocks = True
+            reasons.append(f"{label} {measured:g}% is below the {threshold:g}% threshold")
+
+    if gate_config.max_duration_seconds is not None:
+        elapsed = _run_seconds(run)
+        if elapsed is not None and elapsed > gate_config.max_duration_seconds:
+            blocks = True
+            reasons.append(
+                f"run took {elapsed:.0f}s, over the {gate_config.max_duration_seconds}s budget"
+            )
+
+    if unmeasured:
+        # A configured threshold nobody measured must not pass silently.
+        reasons.extend(unmeasured)
         if verdict == QualityGateVerdict.PASS:
             verdict = QualityGateVerdict.WARN
 

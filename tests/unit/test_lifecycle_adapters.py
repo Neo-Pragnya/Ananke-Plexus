@@ -24,12 +24,12 @@ def test_lifecycle_remote_dry_run_with_credentials(tmp_path: Path) -> None:
     app.configure_auth(
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
         bitbucket_username="bb-user",
-        bitbucket_app_password="bb-pass",  # noqa: S106 - fixture value
+        bitbucket_app_password="bb-pass",
     )
 
     issue = app.lifecycle_transition_issue("PROJ-2", "Done", "idem-b", mode="auto")
@@ -61,12 +61,12 @@ def test_lifecycle_remote_live_success(tmp_path: Path, monkeypatch) -> None:
         remote_live_services="jira,bitbucket,confluence",
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
         bitbucket_username="bb-user",
-        bitbucket_app_password="bb-pass",  # noqa: S106 - fixture value
+        bitbucket_app_password="bb-pass",
     )
 
     def fake_request(**kwargs):
@@ -93,7 +93,7 @@ def test_lifecycle_remote_live_error(tmp_path: Path, monkeypatch) -> None:
         remote_live_services="jira",
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
     )
 
     def fake_request(**kwargs):
@@ -114,13 +114,13 @@ def test_lifecycle_uses_command_secret_provider(tmp_path: Path) -> None:
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
         jira_token="",
-        jira_token_cmd="printf jira-token-from-cmd",  # noqa: S106 - fixture command
+        jira_token_cmd="printf jira-token-from-cmd",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
         bitbucket_username="bb-user",
         bitbucket_app_password="",
-        bitbucket_app_password_cmd="printf bb-pass-from-cmd",  # noqa: S106 - fixture command
+        bitbucket_app_password_cmd="printf bb-pass-from-cmd",
     )
 
     issue = app.lifecycle_transition_issue("PROJ-7", "Done", "idem-cmd-1", mode="auto")
@@ -140,7 +140,7 @@ def test_remote_live_circuit_breaker(tmp_path: Path, monkeypatch) -> None:
         remote_live_services="jira",
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
     )
 
     def failing_request(**kwargs):
@@ -167,7 +167,7 @@ def test_remote_live_policy_blocked_when_disabled(tmp_path: Path, monkeypatch) -
         remote_live_enabled="false",
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
     )
 
     def should_not_run(**kwargs):

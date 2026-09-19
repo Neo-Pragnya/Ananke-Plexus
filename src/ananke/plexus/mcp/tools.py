@@ -8,6 +8,11 @@ from ananke.plexus.api import Ananke
 
 
 def call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -> dict[str, object]:
+    if tool_name.startswith("registry_"):
+        from ananke.plexus.registry.mcp_interface import call_registry_tool
+
+        return call_registry_tool(repository_root, tool_name, args)
+
     app = Ananke.open(repository_root)
 
     # ------------------------------------------------------------------ #

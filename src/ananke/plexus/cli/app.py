@@ -11,9 +11,16 @@ from ananke.plexus.api import Ananke
 from ananke.plexus.cli.rendering import render_result
 from ananke.plexus.mcp.http import serve_http
 from ananke.plexus.mcp.server import serve_stdio
+from ananke.plexus.registry.cli import (
+    agent_app,
+    registry_app,
+    skill_app,
+    sync_command,
+)
 from ananke.plexus.specs.models import Requirement
 
 app = typer.Typer(help="Ananke Plexus ADLC control plane")
+
 spec_app = typer.Typer(help="Specification operations")
 graph_app = typer.Typer(help="Graph topology operations")
 arch_app = typer.Typer(help="Architecture operations")
@@ -48,6 +55,10 @@ app.add_typer(hooks_app, name="hooks")
 app.add_typer(backend_app, name="backend")
 app.add_typer(bmad_app, name="bmad")
 app.add_typer(eval_app, name="eval")
+app.add_typer(registry_app, name="registry")
+app.add_typer(skill_app, name="skill")
+app.add_typer(agent_app, name="agent")
+app.command("sync")(sync_command)
 eval_app.add_typer(eval_suite_app, name="suite")
 eval_app.add_typer(eval_dataset_app, name="dataset")
 eval_app.add_typer(eval_baseline_app, name="baseline")
@@ -1595,7 +1606,14 @@ def test_run(
 ) -> None:
     """Run the quality test suite."""
     from ananke.plexus.testing.api import run_quality_suite
+    from ananke.plexus.testing.policy.thresholds import QualityConfigError, load_quality_config
     from ananke.plexus.testing.reports.console import generate_console_report
+
+    try:
+        gate_config = load_quality_config(project)
+    except QualityConfigError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
 
     run = run_quality_suite(
         project_root=project,
@@ -1604,11 +1622,18 @@ def test_run(
         selection=select,
         save_evidence=True,
     )
+    from ananke.plexus.testing.policy.gates import apply_quality_gate
+
+    decision = apply_quality_gate(run, gate_config)
     if as_json:
         typer.echo(run.model_dump_json(indent=2))
+        if decision.blocks:
+            raise typer.Exit(code=1)
         return
     typer.echo(generate_console_report(run))
-    if any(r.status in ("fail", "error") for r in run.results):
+    for reason in decision.reasons:
+        typer.echo(f"quality gate: {reason}")
+    if decision.blocks or any(r.status in ("fail", "error") for r in run.results):
         raise typer.Exit(code=1)
 
 

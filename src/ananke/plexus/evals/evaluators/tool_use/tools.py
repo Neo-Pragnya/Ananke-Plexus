@@ -116,7 +116,7 @@ class ToolSchemaEvaluator:
         self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
     ) -> list[EvalScore]:
         try:
-            import jsonschema  # type: ignore[import-untyped]
+            import jsonschema
         except ImportError:
             return [skipped_score(self.id, _DIM, "tool_schema", "jsonschema not installed")]
 

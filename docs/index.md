@@ -21,6 +21,8 @@ Ananke Plexus connects **specifications, CALM architecture, code graphs, tests, 
 | **Agent backends** | GitHub Copilot, Amazon Q, Kiro, Hermes, generic CLI, fake/demo |
 | **MCP server** | Read-only + mutation tools, dynamic resource registry |
 | **APM** | Agent skill package manager with lockfile, sandbox, provenance |
+| **Skill & Agent Registry** | Immutable, content-addressed skills/agents with importers, policy-aware resolver, `ananke.lock`, activation and generated docs |
+| **Evaluation & testing** | Enterprise eval harness and unified test/quality harness with evidence |
 | **Lifecycle** | Jira, Bitbucket, Git worktrees, PR evidence storytelling |
 | **Evidence** | SARIF 2.1.0, SHA-256 manifests, policy decisions, checksums |
 
@@ -55,6 +57,16 @@ Run full verification and generate evidence:
 ananke verify
 ```
 
+Register a skill and resolve it reproducibly:
+
+```bash
+ananke registry init
+ananke registry learn ./skills/graph-review
+ananke registry promote core/graph-review@1.0.0 --trust approved --channel stable
+ananke registry resolve core/graph-review@^1 --explain
+ananke sync            # writes ananke.lock
+```
+
 Serve the MCP server:
 
 ```bash
@@ -75,6 +87,11 @@ ananke serve-mcp --allow-mutations
 | [Graph Intelligence](concepts/graph.md) | Code graph, blast radius, providers |
 | [Policy & Security](concepts/policy-security.md) | Policy engine, packs, security gates |
 | [MCP & APM](concepts/mcp-apm.md) | MCP server and Agent Package Manager |
+| [Skill & Agent Registry](concepts/registry.md) | Artifact model, trust, resolver, lockfile, security |
+| [Registry Guide](guides/registry-guide.md) | Hands-on tour: learn, promote, resolve, sync, publish |
+| [Registry Reference](reference/registry.md) | CLI, manifest, policy, resolver, schemas, Python API |
+| [Evaluation Harness](concepts/evaluation.md) | Agent quality: traces, evaluators, judges |
+| [Testing & Quality Harness](concepts/testing.md) | Unified test runner, profiles, quality gate |
 | [Getting Started](guides/getting-started.md) | Install, init, first spec, first verify |
 | [CLI Reference](reference/commands.md) | Full command taxonomy |
 | [Configuration](reference/configuration.md) | Config files, secrets, precedence |

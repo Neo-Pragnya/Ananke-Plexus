@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/branding/ananke-logo.png" alt="Ananke Plexus Logo" width="260" />
+<img src="https://raw.githubusercontent.com/Neo-Pragnya/Ananke-Plexus/main/assets/branding/ananke-logo.png" alt="Ananke Plexus Logo" width="260" />
 
 # Ananke Plexus
 
@@ -43,6 +43,7 @@ architectural context, deterministic guardrails, security gates, and verifiable 
 - [CLI Reference](#-cli-reference)
 - [MCP Server](#-mcp-server)
 - [APM — Agent Package Manager](#-apm--agent-package-manager)
+- [Skill & Agent Registry](#-skill--agent-registry)
 - [Policy Engine](#-policy-engine)
 - [Ecosystem Integrations](#-ecosystem-integrations)
 - [Development Setup](#-development-setup)
@@ -207,6 +208,15 @@ Every generated test records its full traceability chain: `Requirement → AC �
 | `apm audit`          | Audits skill permissions                                    |
 | `apm bundle export`  | Bundles installed skills as a versioned archive             |
 | `apm import-copilot` | Imports GitHub Awesome Copilot skills with provenance       |
+
+### Skill & Agent Registry
+| Command                        | What it does                                                          |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `ananke registry learn`        | Discovers skills/agents from dirs, Python, Rust, MCP, git, archives   |
+| `ananke registry promote`      | Runs the quality gate, then raises trust and channel                  |
+| `ananke registry resolve`      | Policy-aware, explainable dependency resolution                       |
+| `ananke sync`                  | Resolves project requirements into a deterministic `ananke.lock`      |
+| `ananke registry docs build`   | Generates static, offline registry documentation                      |
 
 ### Evidence
 | Command                      | What it does                                         |
@@ -738,6 +748,27 @@ apm import-copilot --path PATH
 apm bundle list    --bundle PATH
 apm bundle export  --name N1 --name N2 [--output PATH]
 apm bundle install --bundle PATH
+
+# registry-backed
+apm search         QUERY
+apm install        core/graph-review@^1 [--activate]
+apm lock | upgrade [--dry-run] | link PATH | unlink REF | publish PATH
+```
+
+### `ananke registry` / `skill` / `agent` / `sync` — skill & agent registry
+
+```bash
+ananke registry init
+ananke registry learn SOURCE [--dry-run] [--version auto] [--allow-dynamic] [--allow-network]
+ananke registry inspect | show | list | search | diff | resolve [--explain]
+ananke registry promote | yank | deprecate | quarantine | alias
+ananke registry activate | translate | lock | verify-lock | publish | link
+ananke registry export | import | backup | restore | verify | doctor | gc | report | analytics
+ananke registry docs build | dump      ananke registry serve | watch | schema | policy | benchmark
+ananke registry key generate | trust | revoke | list      ananke registry sign REF --key FILE | signatures REF
+ananke registry remote list | search | pull      ananke registry analytics query [QUESTION]
+ananke skill|agent list | show | search | register | resolve | versions | activate
+ananke sync [--activate] [--release] [--dry-run]
 ```
 
 ---
@@ -747,6 +778,8 @@ apm bundle install --bundle PATH
 Ananke exposes a governed engineering intelligence surface via Model Context Protocol:
 
 ### Read-only tools (safe for any agent)
+Registry tools: `registry_search`, `registry_get_skill`, `registry_get_agent`, `registry_resolve`, `registry_compare_versions`, `registry_list_capabilities` (resources `ananke://registry/skills`, `ananke://registry/agents`).
+
 ```
 ananke.project.status     ananke.spec.get           ananke.spec.validate
 ananke.spec.create        ananke.arch.get            ananke.arch.validate
@@ -806,6 +839,37 @@ revision   = "abc123def456..."
 - Run blocked patterns (`git *`, `curl *`, `rm -rf*`, etc.)
 - Write outside declared `filesystem_write` globs
 - Access hosts not in `network` allowlist
+
+---
+
+## 🗂️ Skill & Agent Registry
+
+A local-first, enterprise-grade registry for skills, agents, tools, workflows, evaluators, prompts, policies and bundles. Discovery, trust and resolution are separate concerns:
+
+```text
+learn (discover) → register (immutable) → promote (trust) → resolve (policy) → lock → activate
+```
+
+- **Immutable & content-addressed** — versions are SHA-256 verified payloads; trust, channel and lifecycle are separate, audited mutable state.
+- **Importers** — Ananke manifests, plain directories (`SKILL.md`, `skill.yaml`…), Python packages, Rust crates, MCP servers, git, archives, framework AST scans and an opt-in sandboxed dynamic scan. Missing fields are reported, never guessed.
+- **Policy-aware resolver** — SemVer, channels, trust, licences, security status, compatibility and enterprise approval, with `✓/✗` explanations and a backtracking dependency solver.
+- **Reproducible** — deterministic `ananke.lock` via `ananke sync`; evidence bundles record the exact capability graph of every run.
+- **Secure by default** — secret scanning, path-traversal/symlink/archive checks, git argument-injection protection, network and dynamic execution gated by policy, read-only server and MCP tools.
+- **Signed** — Ed25519 signatures bound to URI + digest; `verified` is always recomputed against your policy's trusted keys (never read from a manifest or archive).
+- **Federated, safely** — pull-only remote registries: https, no redirects, digest-checked, policy-validated, and trust is never inherited.
+- **Operable** — export/import, backup/restore, verify/doctor, dry-run-first GC, reports, analytics questions (DuckDB or SQLite), optional similarity search, native file watching, benchmarks with regression tracking, generated offline docs.
+
+```bash
+ananke registry init
+ananke registry learn ./skills/graph-review
+ananke registry promote core/graph-review@1.0.0 --trust approved --channel stable
+ananke registry resolve core/graph-review@^1 --explain
+ananke sync --activate
+```
+
+> Not yet implemented: the optional Rust core and the `redb`/`tantivy` accelerators (they need a Rust toolchain; SQLite FTS5 is used). Tracked in `ANANKE_PLEXUS_MASTER_SPEC.md` §61.
+
+Docs: [Concept](https://neo-pragnya.github.io/Ananke-Plexus/concepts/registry/) · [Guide](https://neo-pragnya.github.io/Ananke-Plexus/guides/registry-guide/) · [Reference](https://neo-pragnya.github.io/Ananke-Plexus/reference/registry/)
 
 ---
 

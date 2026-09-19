@@ -51,12 +51,23 @@ def create_evidence_bundle(
     write_sarif(sarif_path, outcomes_list)
     gate_hashes["gates/sast.sarif"] = sha256_file(sarif_path)
 
+    extra_hashes: dict[str, str] = {}
+    try:  # record which registry capability versions were in play (spec §139)
+        from ananke.plexus.registry.evidence import EVIDENCE_FILE, write_run_evidence
+
+        written = write_run_evidence(repository_root, bundle)
+        if written is not None:
+            extra_hashes[EVIDENCE_FILE] = sha256_file(written)
+    except Exception:  # noqa: S110 - evidence must never fail because of the registry
+        pass
+
     manifest = {
         "run_id": run_id,
         "files": {
             "run.json": run_hash,
             "policy-decisions.jsonl": policy_hash,
             **gate_hashes,
+            **extra_hashes,
         },
     }
     manifest_path = bundle / "manifest.json"
@@ -71,6 +82,7 @@ def create_evidence_bundle(
                 f"{policy_hash}  policy-decisions.jsonl",
                 f"{manifest_hash}  manifest.json",
                 *[f"{value}  {key}" for key, value in gate_hashes.items()],
+                *[f"{value}  {key}" for key, value in extra_hashes.items()],
             ]
         )
         + "\n",

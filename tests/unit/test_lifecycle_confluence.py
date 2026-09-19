@@ -9,15 +9,15 @@ def test_confluence_upsert_remote_dry_run(tmp_path: Path) -> None:
     app.configure_auth(
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
         bitbucket_username="bb-user",
-        bitbucket_app_password="bb-pass",  # noqa: S106 - fixture value
+        bitbucket_app_password="bb-pass",
         confluence_base_url="https://jira.example.com/wiki",
         confluence_email="dev@example.com",
-        confluence_token="token-2",  # noqa: S106 - fixture value
+        confluence_token="token-2",
     )
 
     content_file = tmp_path / "page.md"
@@ -45,15 +45,15 @@ def test_confluence_upsert_remote_live_success(tmp_path: Path, monkeypatch) -> N
         remote_live_services="jira,bitbucket,confluence",
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
         bitbucket_username="bb-user",
-        bitbucket_app_password="bb-pass",  # noqa: S106 - fixture value
+        bitbucket_app_password="bb-pass",
         confluence_base_url="https://jira.example.com/wiki",
         confluence_email="dev@example.com",
-        confluence_token="token-2",  # noqa: S106 - fixture value
+        confluence_token="token-2",
     )
 
     content_file = tmp_path / "page-live.md"

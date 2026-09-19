@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ananke.plexus.apm.importers.copilot import import_copilot_skills
 from ananke.plexus.architecture.calm import (
@@ -55,6 +56,9 @@ from ananke.plexus.specs.service import (
     validate_spec,
 )
 
+if TYPE_CHECKING:
+    from ananke.plexus.registry.registry import Registry
+
 
 def _safe_int(value: object, default: int = 0) -> int:
     if not isinstance(value, (int, float, str)):
@@ -72,6 +76,20 @@ class Ananke:
     @classmethod
     def open(cls, repository_root: str | Path = ".") -> "Ananke":
         return cls(Path(repository_root))
+
+    @property
+    def registry(self) -> "Registry":
+        """The project's skill & agent registry (created on first use)."""
+        from ananke.plexus.registry.registry import Registry
+
+        cached = getattr(self, "_registry", None)
+        if cached is None:
+            root = self.repository_root / ".ananke" / "registry"
+            cached = Registry.for_project(
+                self.repository_root, create=not (root / "registry.db").exists()
+            )
+            self._registry = cached
+        return cached
 
     def init_project(self) -> CommandResult:
         layout = ensure_project_layout(self.repository_root)

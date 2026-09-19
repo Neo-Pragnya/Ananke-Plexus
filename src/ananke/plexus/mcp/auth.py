@@ -41,6 +41,12 @@ DEFAULT_PERMISSION_MAP = PermissionMap(
         "ananke.evidence.get",
         "ananke.verify.run",
         "ananke.spec.create",
+        "registry_search",
+        "registry_get_skill",
+        "registry_get_agent",
+        "registry_resolve",
+        "registry_compare_versions",
+        "registry_list_capabilities",
     },
     mutation_tools={
         "ananke.run.execute",

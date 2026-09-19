@@ -1,6 +1,6 @@
 # 🚀 Ananke Plexus Implementation Log
 
-Status date: 2026-09-15
+Status date: 2026-09-19
 
 This log tracks what has been implemented, what is partially implemented, and what comes next.
 
@@ -14,6 +14,7 @@ This log tracks what has been implemented, what is partially implemented, and wh
 | MCP baseline | ✅ Implemented | Read-only tools/resources/prompts over stdio + HTTP action transport |
 | Lifecycle baseline | ✅ Implemented | Branch naming, issue transition, PR creation, worktree listing with idempotency store |
 | Run engine baseline | ✅ Implemented | Start, status, cancel, replay with persisted state |
+| Skill & Agent Registry (Epic O) | ✅ Implemented (Python) | Immutable CAS + SQLite registry, importers, resolver, `ananke.lock`, sync, activation, signatures, federation, docs generator, server, MCP tools; Rust core, redb and tantivy not implemented |
 | Enterprise adapters | 🟡 Partial | Jira/Bitbucket provider simulation only (real remote adapters pending) |
 | Security/release hardening | 🟡 Partial | Workflows exist; full attestations/SBOM/strict policy gates pending |
 
@@ -112,6 +113,7 @@ flowchart TD
 | K | Backend adapters (Copilot/Q/Kiro/Hermes) | ⏳ Pending |
 | L | Full DAG run engine and compensation | 🟡 Partial |
 | M | Supply-chain hardening and attestations | 🟡 Partial |
+| O | Skill & Agent Registry | ✅ Python implementation; ⏳ Rust core, redb, tantivy |
 
 ## 🛣️ Next Implementation Wave
 
@@ -127,6 +129,13 @@ flowchart TD
 - Added `ananke config migrate` and `ananke evidence prune` command families with API/CLI/tests.
 - Added release hardening: CycloneDX SBOM generation and provenance attestations in TestPyPI/PyPI workflows.
 - Added security policy workflows: CodeQL, dependency-review, Scorecard, and workflow linting via actionlint + zizmor.
+
+## 2026-09-19
+
+- Implemented the Skill & Agent Registry (Epic O): `ananke registry`, `ananke skill`, `ananke agent`, `ananke sync`, registry-backed `apm` commands, registry MCP tools/resources, evidence hook (`registry-capabilities.json`), generated static documentation, and ~500 new tests.
+- Documented in [Registry concept](../concepts/registry.md), [Registry Guide](registry-guide.md) and [Registry Reference](../reference/registry.md); test harness documented in [Testing](../concepts/testing.md).
+- Follow-up the same day: Ed25519 signatures (computed, never self-asserted trust), pull-only remote federation with bearer-token server auth, optional similarity search, native (`notify`) file watching, DuckDB/SQLite analytics questions, `registry benchmark` with regression tracking, seeded fuzz targets (which found and fixed unwrapped errors on corrupt import archives), and enforcement of the test-harness quality-gate thresholds.
+- Not implemented (tracked in the master spec §61): the Rust core (`ananke-registry-core`, PyO3) and the `redb`/`tantivy` accelerators — they need a Rust toolchain and build/CI work.
 
 ## 🧪 Quality Snapshot
 

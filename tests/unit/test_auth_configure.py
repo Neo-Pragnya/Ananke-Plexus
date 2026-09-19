@@ -10,17 +10,17 @@ def test_configure_auth_updates_credentials_store(tmp_path: Path) -> None:
     result = app.configure_auth(
         jira_base_url="https://jira.example.com",
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
+        jira_token="token-1",
         confluence_base_url="https://jira.example.com/wiki",
         confluence_email="wiki@example.com",
-        confluence_token="token-2",  # noqa: S106 - fixture value
+        confluence_token="token-2",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
         bitbucket_dest_branch="main",
         bitbucket_username="bb-user",
-        bitbucket_app_password="bb-pass",  # noqa: S106 - fixture value
-        mcp_http_token="mcp-token",  # noqa: S106 - fixture value
+        bitbucket_app_password="bb-pass",
+        mcp_http_token="mcp-token",
     )
 
     assert result.ok
@@ -50,12 +50,12 @@ def test_configure_auth_values_masks_secrets(tmp_path: Path) -> None:
     app.init_project()
     app.configure_auth(
         jira_email="dev@example.com",
-        jira_token="token-1",  # noqa: S106 - fixture value
-        bitbucket_app_password="bb-pass",  # noqa: S106 - fixture value
-        jira_token_cmd="printf token",  # noqa: S106 - fixture command
-        jira_bearer_token_cmd="printf bearer",  # noqa: S106 - fixture command
-        confluence_bearer_token_cmd="printf confbearer",  # noqa: S106 - fixture command
-        bitbucket_bearer_token_cmd="printf bbbearer",  # noqa: S106 - fixture command
+        jira_token="token-1",
+        bitbucket_app_password="bb-pass",
+        jira_token_cmd="printf token",
+        jira_bearer_token_cmd="printf bearer",
+        confluence_bearer_token_cmd="printf confbearer",
+        bitbucket_bearer_token_cmd="printf bbbearer",
     )
 
     values = app.configure_auth_values()
@@ -99,13 +99,13 @@ def test_configure_auth_validate_ready_with_bearer_cmd_only(tmp_path: Path) -> N
     app.init_project()
     app.configure_auth(
         jira_base_url="https://jira.example.com",
-        jira_bearer_token_cmd="printf jira-bearer",  # noqa: S106 - fixture command
+        jira_bearer_token_cmd="printf jira-bearer",
         confluence_base_url="https://jira.example.com/wiki",
-        confluence_bearer_token_cmd="printf conf-bearer",  # noqa: S106 - fixture command
+        confluence_bearer_token_cmd="printf conf-bearer",
         bitbucket_base_url="https://api.bitbucket.org",
         bitbucket_workspace="acme",
         bitbucket_repo_slug="ananke",
-        bitbucket_bearer_token_cmd="printf bb-bearer",  # noqa: S106 - fixture command
+        bitbucket_bearer_token_cmd="printf bb-bearer",
     )
 
     validate = app.configure_auth_validate()
