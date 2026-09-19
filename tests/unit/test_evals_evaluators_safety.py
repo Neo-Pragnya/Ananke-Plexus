@@ -97,7 +97,7 @@ class TestSecretLeakageEvaluator:
     def test_fail_token_in_output(self, ctx):
         scores = self.ev.evaluate(
             case=make_case(),
-            trace=make_trace("token=abcdef123456"),
+            trace=make_trace("token=REDACTED_TEST_VALUE"),
             context=ctx,
         )
         assert scores[0].status == EvalStatus.FAIL

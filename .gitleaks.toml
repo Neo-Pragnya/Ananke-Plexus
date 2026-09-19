@@ -1,0 +1,3 @@
+[allowlist]
+description = "Allowlist for test fixtures containing intentionally fake/placeholder secrets"
+commits = ["5523c192c25fdd96d47904c5c5051b84ac00fb09"]
