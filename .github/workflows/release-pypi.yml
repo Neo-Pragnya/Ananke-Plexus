@@ -137,7 +137,7 @@ jobs:
         run: uv publish --trusted-publishing always
 
       - name: Publish to PyPI (token fallback)
-        if: ${{ steps.publish_oidc.conclusion == 'failure' }}
+        if: ${{ steps.publish_oidc.outcome == 'failure' }}
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
           PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}

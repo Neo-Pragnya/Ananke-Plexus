@@ -133,7 +133,7 @@ jobs:
             --trusted-publishing always
 
       - name: Publish to TestPyPI (token fallback)
-        if: ${{ steps.publish_oidc.conclusion == 'failure' }}
+        if: ${{ steps.publish_oidc.outcome == 'failure' }}
         env:
           UV_PUBLISH_TOKEN_TESTPYPI: ${{ secrets.UV_PUBLISH_TOKEN_TESTPYPI }}
           TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
