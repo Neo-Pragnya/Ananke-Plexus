@@ -142,10 +142,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/neo-pragnya/ananke-plexus"
-Documentation = "https://neo-pragnya.github.io/ananke-plexus/"
-Changelog = "https://github.com/neo-pragnya/ananke-plexus/releases"
-Issues = "https://github.com/neo-pragnya/ananke-plexus/issues"
+Homepage = "https://github.com/Neo-Pragnya/Ananke-Plexus"
+Documentation = "https://neo-pragnya.github.io/Ananke-Plexus/"
+Changelog = "https://github.com/Neo-Pragnya/Ananke-Plexus/releases"
+Issues = "https://github.com/Neo-Pragnya/Ananke-Plexus/issues"
 
 [project.scripts]
 ananke = "ananke.plexus.cli.app:app"

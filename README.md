@@ -10,11 +10,11 @@ architectural context, deterministic guardrails, security gates, and verifiable 
 [![PyPI](https://img.shields.io/pypi/v/ananke-plexus?label=PyPI&color=4f46e5)](https://pypi.org/project/ananke-plexus/)
 [![Python](https://img.shields.io/pypi/pyversions/ananke-plexus?color=4f46e5)](https://pypi.org/project/ananke-plexus/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-22c55e)](LICENSE)
-[![CI](https://github.com/neo-pragnya/ananke-plexus/actions/workflows/ci.yml/badge.svg)](https://github.com/neo-pragnya/ananke-plexus/actions/workflows/ci.yml)
-[![Security](https://github.com/neo-pragnya/ananke-plexus/actions/workflows/security.yml/badge.svg)](https://github.com/neo-pragnya/ananke-plexus/actions/workflows/security.yml)
-[![Coverage](https://img.shields.io/badge/coverage-80%25-22c55e)](https://neo-pragnya.github.io/ananke-plexus/)
+[![CI](https://github.com/Neo-Pragnya/Ananke-Plexus/actions/workflows/ci.yml/badge.svg)](https://github.com/Neo-Pragnya/Ananke-Plexus/actions/workflows/ci.yml)
+[![Security](https://github.com/Neo-Pragnya/Ananke-Plexus/actions/workflows/security.yml/badge.svg)](https://github.com/Neo-Pragnya/Ananke-Plexus/actions/workflows/security.yml)
+[![Coverage](https://img.shields.io/badge/coverage-80%25-22c55e)](https://neo-pragnya.github.io/Ananke-Plexus/)
 [![uv](https://img.shields.io/badge/built%20with-uv-7c3aed)](https://docs.astral.sh/uv/)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-4f46e5)](https://neo-pragnya.github.io/ananke-plexus/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-4f46e5)](https://neo-pragnya.github.io/Ananke-Plexus/)
 
 </div>
 
@@ -976,20 +976,20 @@ See [Release Guide](docs/guides/release.md) for OIDC Trusted Publisher setup.
 
 ## 📚 Documentation
 
-Full documentation: **[neo-pragnya.github.io/ananke-plexus](https://neo-pragnya.github.io/ananke-plexus/)**
+Full documentation: **[neo-pragnya.github.io/Ananke-Plexus](https://neo-pragnya.github.io/Ananke-Plexus/)**
 
 | Section                                                                                    |                                              |
 | ------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| [Why Ananke Plexus](https://neo-pragnya.github.io/ananke-plexus/concepts/why-ananke/)      | Problems solved, tensegrity philosophy, ADLC |
-| [System Architecture](https://neo-pragnya.github.io/ananke-plexus/concepts/architecture/)  | Ports & adapters, runtime, exit codes        |
-| [Ananke BMAD](https://neo-pragnya.github.io/ananke-plexus/concepts/bmad/)                  | Behavior + Model + Architecture contracts    |
-| [Code Graph Intelligence](https://neo-pragnya.github.io/ananke-plexus/concepts/graph/)     | Graph model, blast radius, providers         |
-| [Policy & Security](https://neo-pragnya.github.io/ananke-plexus/concepts/policy-security/) | Policy packs, Trivy, evidence bundles        |
-| [MCP & APM](https://neo-pragnya.github.io/ananke-plexus/concepts/mcp-apm/)                 | MCP tools + resources, skill management      |
-| [Getting Started](https://neo-pragnya.github.io/ananke-plexus/guides/getting-started/)     | Step-by-step first use guide                 |
-| [Configuration](https://neo-pragnya.github.io/ananke-plexus/reference/configuration/)      | Config files, secrets, precedence            |
-| [Policy Language](https://neo-pragnya.github.io/ananke-plexus/reference/policy/)           | Rule schema, expressions, builtin packs      |
-| [Release Guide](https://neo-pragnya.github.io/ananke-plexus/guides/release/)               | uv publish, OIDC, Trivy gate                 |
+| [Why Ananke Plexus](https://neo-pragnya.github.io/Ananke-Plexus/concepts/why-ananke/)      | Problems solved, tensegrity philosophy, ADLC |
+| [System Architecture](https://neo-pragnya.github.io/Ananke-Plexus/concepts/architecture/)  | Ports & adapters, runtime, exit codes        |
+| [Ananke BMAD](https://neo-pragnya.github.io/Ananke-Plexus/concepts/bmad/)                  | Behavior + Model + Architecture contracts    |
+| [Code Graph Intelligence](https://neo-pragnya.github.io/Ananke-Plexus/concepts/graph/)     | Graph model, blast radius, providers         |
+| [Policy & Security](https://neo-pragnya.github.io/Ananke-Plexus/concepts/policy-security/) | Policy packs, Trivy, evidence bundles        |
+| [MCP & APM](https://neo-pragnya.github.io/Ananke-Plexus/concepts/mcp-apm/)                 | MCP tools + resources, skill management      |
+| [Getting Started](https://neo-pragnya.github.io/Ananke-Plexus/guides/getting-started/)     | Step-by-step first use guide                 |
+| [Configuration](https://neo-pragnya.github.io/Ananke-Plexus/reference/configuration/)      | Config files, secrets, precedence            |
+| [Policy Language](https://neo-pragnya.github.io/Ananke-Plexus/reference/policy/)           | Rule schema, expressions, builtin packs      |
+| [Release Guide](https://neo-pragnya.github.io/Ananke-Plexus/guides/release/)               | uv publish, OIDC, Trivy gate                 |
 
 ```bash
 make docs-serve   # preview locally at http://127.0.0.1:8000
@@ -1010,6 +1010,6 @@ make docs-build   # static build → site/
 > **into a specification-driven, architecture-aware, graph-grounded, policy-governed,**
 > **deterministically verified, and auditable software engineering lifecycle.**
 
-**[📦 PyPI](https://pypi.org/project/ananke-plexus/) · [📖 Docs](https://neo-pragnya.github.io/ananke-plexus/) · [🐛 Issues](https://github.com/neo-pragnya/ananke-plexus/issues) · [📋 Changelog](CHANGELOG.md)**
+**[📦 PyPI](https://pypi.org/project/ananke-plexus/) · [📖 Docs](https://neo-pragnya.github.io/Ananke-Plexus/) · [🐛 Issues](https://github.com/Neo-Pragnya/Ananke-Plexus/issues) · [📋 Changelog](CHANGELOG.md)**
 
 </div>

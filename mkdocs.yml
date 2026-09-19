@@ -2,7 +2,7 @@ site_name: Ananke Plexus
 site_description: >-
   A local-first ADLC control plane for governed autonomous software engineering.
   Spec-driven development, CALM architecture, code graphs, policy gates, and verifiable evidence.
-site_url: https://neo-pragnya.github.io/ananke-plexus/
+site_url: https://neo-pragnya.github.io/Ananke-Plexus/
 repo_url: https://github.com/Neo-Pragnya/Ananke-Plexus
 repo_name: Neo-Pragnya/Ananke-Plexus
 copyright: Copyright &copy; 2026 Neo Pragnya Architecture Group — Apache-2.0
