@@ -10,6 +10,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.4] — 2026-09-18
+
+### Fixed
+
+- Release/TestPyPI/CI Trivy gates no longer depend on `aquasecurity/trivy-action`; all workflows now install Trivy via `aquasecurity/setup-trivy@v0.3.1` and run CLI scans directly.
+- Added resilient publishing flow for PyPI and TestPyPI: attempt OIDC trusted publishing first, then fall back to token publishing when token secrets are configured.
+
+### Changed
+
+- Restored the `pypi` and `testpypi` job environments for release jobs while keeping explicit fallback behavior for non-matching trusted publisher claims.
+
+---
+
 ## [0.2.3] — 2026-09-18
 
 ### Fixed

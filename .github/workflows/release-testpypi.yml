@@ -50,16 +50,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - name: Trivy SARIF scan
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          scan-type: fs
-          scan-ref: .
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          trivyignores: .trivyignore
+          version: v0.74.0
+
+      - name: Trivy SARIF scan
+        run: |
+          trivy fs \
+            --cache-dir .trivy-cache \
+            --ignorefile .trivyignore \
+            --ignore-unfixed \
+            --severity CRITICAL,HIGH \
+            --format sarif \
+            --output trivy-results.sarif \
+            .
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
@@ -68,15 +73,14 @@ jobs:
           sarif_file: trivy-results.sarif
 
       - name: Trivy blocking gate (CRITICAL only for TestPyPI)
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: table
-          severity: CRITICAL
-          ignore-unfixed: true
-          trivyignores: .trivyignore
-          exit-code: "1"
+        run: |
+          trivy fs \
+            --cache-dir .trivy-cache \
+            --ignorefile .trivyignore \
+            --ignore-unfixed \
+            --severity CRITICAL \
+            --exit-code 1 \
+            .
 
   # ── 3. Build provenance attestation ───────────────────────────────────────
   provenance:
@@ -108,6 +112,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      UV_PUBLISH_TOKEN_TESTPYPI: ${{ secrets.UV_PUBLISH_TOKEN_TESTPYPI }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
     steps:
       - name: Download exact dist artifacts from build step
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -121,7 +128,24 @@ jobs:
           version: "latest"
 
       - name: Publish to TestPyPI (OIDC Trusted Publishing)
+        id: publish_oidc
+        continue-on-error: true
         run: |
           uv publish \
             --publish-url https://test.pypi.org/legacy/ \
             --trusted-publishing always
+
+      - name: Publish to TestPyPI (token fallback)
+        if: ${{ steps.publish_oidc.outcome == 'failure' && (env.UV_PUBLISH_TOKEN_TESTPYPI != '' || env.TEST_PYPI_API_TOKEN != '') }}
+        run: |
+          TOKEN="${UV_PUBLISH_TOKEN_TESTPYPI:-$TEST_PYPI_API_TOKEN}"
+          uv publish \
+            --publish-url https://test.pypi.org/legacy/ \
+            --token "$TOKEN"
+
+      - name: Fail if OIDC and token publish both unavailable
+        if: ${{ steps.publish_oidc.outcome == 'failure' && env.UV_PUBLISH_TOKEN_TESTPYPI == '' && env.TEST_PYPI_API_TOKEN == '' }}
+        run: |
+          echo "Trusted publishing failed and no TestPyPI token secret is configured."
+          echo "Set UV_PUBLISH_TOKEN_TESTPYPI or TEST_PYPI_API_TOKEN in repository secrets, or fix TestPyPI Trusted Publisher claims."
+          exit 1
