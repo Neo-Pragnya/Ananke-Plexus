@@ -10,6 +10,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.2] — 2026-09-18
+
+### Fixed
+
+- Release pipeline: replaced Trivy action invocation in the PyPI release workflow with explicit Trivy installation plus CLI scans to avoid setup-trivy resolution failures on tag builds.
+- Release metadata links: aligned release workflow changelog URL to `Neo-Pragnya/Ananke-Plexus` repository casing.
+
+### Changed
+
+- Documentation and package metadata links updated to use the canonical GitHub Pages URL casing: `https://neo-pragnya.github.io/Ananke-Plexus/`.
+- Added project-specific `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` content for Ananke Plexus community onboarding.
+
+---
+
 ## [0.2.0] — 2026-09-18
 
 ### Added

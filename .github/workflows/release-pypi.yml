@@ -57,16 +57,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - name: Trivy SARIF scan (all severities)
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          scan-type: fs
-          scan-ref: .
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH,MEDIUM
-          ignore-unfixed: true
-          trivyignores: .trivyignore
+          version: v0.74.0
+
+      - name: Trivy SARIF scan (all severities)
+        run: |
+          trivy fs \
+            --cache-dir .trivy-cache \
+            --ignorefile .trivyignore \
+            --ignore-unfixed \
+            --severity CRITICAL,HIGH,MEDIUM \
+            --format sarif \
+            --output trivy-results.sarif \
+            .
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
@@ -75,15 +80,14 @@ jobs:
           sarif_file: trivy-results.sarif
 
       - name: Trivy blocking gate (CRITICAL + HIGH, unfixed)
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: table
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          trivyignores: .trivyignore
-          exit-code: "1"
+        run: |
+          trivy fs \
+            --cache-dir .trivy-cache \
+            --ignorefile .trivyignore \
+            --ignore-unfixed \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            .
 
   # ── 3. Build provenance attestation ───────────────────────────────────────
   provenance:
@@ -139,4 +143,4 @@ jobs:
             ## ${{ github.ref_name }}
 
             Published to [PyPI](https://pypi.org/project/ananke-plexus/).
-            See [CHANGELOG.md](https://github.com/neo-pragnya/ananke-plexus/blob/main/CHANGELOG.md) for details.
+            See [CHANGELOG.md](https://github.com/Neo-Pragnya/Ananke-Plexus/blob/main/CHANGELOG.md) for details.
