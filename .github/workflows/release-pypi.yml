@@ -25,6 +25,17 @@ jobs:
         with:
           version: "latest"
 
+      - name: Verify package version matches release tag
+        run: |
+          VERSION="$(uv run python -c 'from ananke.plexus.version import __version__; print(__version__)')"
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "Package version: $VERSION"
+          echo "Release tag: $TAG"
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "Version mismatch: package version ($VERSION) does not match tag ($TAG)."
+            exit 1
+          fi
+
       - name: Build wheel and sdist
         run: uv build
 

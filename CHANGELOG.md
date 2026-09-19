@@ -10,6 +10,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.8] — 2026-09-18
+
+### Fixed
+
+- Release packaging now derives the package version from the source version file and validates it against the tag before publishing.
+- This prevents stale metadata such as a package still showing `0.1.0` when the code has moved forward.
+
+---
+
 ## [0.2.7] — 2026-09-18
 
 ### Fixed
