@@ -115,7 +115,6 @@ jobs:
     name: publish to PyPI
     runs-on: ubuntu-latest
     needs: [build, trivy, provenance]
-    environment: pypi
     permissions:
       id-token: write
       contents: write

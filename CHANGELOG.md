@@ -10,6 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.2.3] — 2026-09-18
+
+### Fixed
+
+- Release pipeline: removed the `pypi` job environment from the PyPI publish workflow so OIDC token claims match standard trusted publisher configurations.
+
+---
+
 ## [0.2.2] — 2026-09-18
 
 ### Fixed
