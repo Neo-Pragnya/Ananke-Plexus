@@ -119,9 +119,6 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    env:
-      UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
     steps:
       - name: Download exact dist artifacts from build step
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -140,17 +137,18 @@ jobs:
         run: uv publish --trusted-publishing always
 
       - name: Publish to PyPI (token fallback)
-        if: ${{ steps.publish_oidc.conclusion == 'failure' && (env.UV_PUBLISH_TOKEN != '' || env.PYPI_API_TOKEN != '') }}
+        if: ${{ steps.publish_oidc.conclusion == 'failure' }}
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           TOKEN="${UV_PUBLISH_TOKEN:-$PYPI_API_TOKEN}"
+          if [ -z "$TOKEN" ]; then
+            echo "Trusted publishing failed and no token secret is configured."
+            echo "Set UV_PUBLISH_TOKEN or PYPI_API_TOKEN in the pypi environment secrets."
+            exit 1
+          fi
           uv publish --token "$TOKEN"
-
-      - name: Fail if OIDC and token publish both unavailable
-        if: ${{ steps.publish_oidc.conclusion == 'failure' && env.UV_PUBLISH_TOKEN == '' && env.PYPI_API_TOKEN == '' }}
-        run: |
-          echo "Trusted publishing failed and no token secret is configured."
-          echo "Set UV_PUBLISH_TOKEN or PYPI_API_TOKEN in repository secrets, or fix PyPI Trusted Publisher claims."
-          exit 1
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
