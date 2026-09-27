@@ -73,6 +73,229 @@ def version() -> None:
     typer.echo(__version__)
 
 
+docs_app = typer.Typer(help="Offline documentation site (bundled — no PyPI/GitHub needed)")
+app.add_typer(docs_app, name="docs")
+
+
+@docs_app.command("build")
+def docs_build(
+    output: Path = typer.Option(
+        Path("site"), "--output", "-o", help="Directory to write the site into"
+    ),
+    source: Path | None = typer.Option(
+        None, "--source", help="Git checkout root (mkdocs.yml + docs/); default: bundled copy"
+    ),
+    open_browser: bool = typer.Option(False, "--open", help="Open the built site when done"),
+) -> None:
+    """Render the full docs site to a local directory — works with no network access."""
+    from ananke.plexus.docs_site import DocsUnavailableError, build_docs
+
+    try:
+        out = build_docs(output, source=source)
+    except DocsUnavailableError as exc:
+        typer.echo(f"error: {exc.message}", err=True)
+        raise typer.Exit(code=2) from None
+    render_result(f"Docs built: {out}", {"index": str(out / "index.html")})
+    if open_browser:
+        import webbrowser
+
+        webbrowser.open((out / "index.html").as_uri())
+
+
+@docs_app.command("serve")
+def docs_serve(
+    host: str = typer.Option("127.0.0.1", "--host"),
+    port: int = typer.Option(0, "--port", help="0 picks a free port"),
+    source: Path | None = typer.Option(
+        None, "--source", help="Git checkout root (mkdocs.yml + docs/); default: bundled copy"
+    ),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open a browser tab"),
+) -> None:
+    """Build then serve the docs site locally (Ctrl+C to stop)."""
+    from ananke.plexus.docs_site import DocsUnavailableError, serve_docs
+
+    try:
+        serve_docs(source=source, host=host, port=port, open_browser=open_browser)
+    except DocsUnavailableError as exc:
+        typer.echo(f"error: {exc.message}", err=True)
+        raise typer.Exit(code=2) from None
+
+
+@docs_app.command("where")
+def docs_where(
+    source: Path | None = typer.Option(None, "--source", help="Check this path instead"),
+) -> None:
+    """Show which docs source `build`/`serve` would use (bundled copy vs --source)."""
+    from ananke.plexus.docs_site import DocsUnavailableError, resolve_source
+
+    try:
+        root = resolve_source(source)
+    except DocsUnavailableError as exc:
+        typer.echo(f"error: {exc.message}", err=True)
+        raise typer.Exit(code=2) from None
+    render_result(str(root), {"has_assets_images": str((root / "docs" / "assets").is_dir())})
+
+
+workflow_app = typer.Typer(help="Named sequences of ananke/apm commands, run together")
+app.add_typer(workflow_app, name="workflow")
+
+
+@workflow_app.command("list")
+def workflow_list(
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable output"),
+) -> None:
+    """List workflows saved under .ananke/workflows/."""
+    from ananke.plexus.workflows import list_workflows
+
+    names = list_workflows(project)
+    if as_json:
+        typer.echo(json.dumps(names, indent=2))
+        return
+    render_result(f"{len(names)} workflow(s)", {n: "" for n in names} if names else {})
+
+
+@workflow_app.command("show")
+def workflow_show(
+    name: str = typer.Argument(..., help="Workflow name"),
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable output"),
+) -> None:
+    """Show a workflow's steps."""
+    from ananke.plexus.workflows import load_workflow
+    from ananke.plexus.workflows.storage import WorkflowNotFoundError
+
+    try:
+        wf = load_workflow(project, name)
+    except WorkflowNotFoundError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    if as_json:
+        typer.echo(wf.model_dump_json(indent=2))
+        return
+    details = {
+        f"{i}. {s.label}": " ".join(s.command)
+        + (" (continue on error)" if s.continue_on_error else "")
+        for i, s in enumerate(wf.steps, start=1)
+    }
+    render_result(wf.description or wf.name, details)
+
+
+@workflow_app.command("create")
+def workflow_create(
+    name: str = typer.Argument(..., help="Workflow name"),
+    step: list[str] = typer.Option(
+        [],
+        "--step",
+        help='A command to run, e.g. --step "ananke doctor --project ." (repeatable, in order)',
+    ),
+    description: str = typer.Option("", "--description"),
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    force: bool = typer.Option(False, "--force", help="Overwrite an existing workflow"),
+) -> None:
+    """Create a workflow from one or more --step commands."""
+    import shlex
+
+    from ananke.plexus.workflows import Workflow, WorkflowStep, save_workflow
+
+    if not step:
+        typer.echo("error: give at least one --step", err=True)
+        raise typer.Exit(code=2)
+    try:
+        wf = Workflow(
+            name=name,
+            description=description,
+            steps=[WorkflowStep(command=shlex.split(s)) for s in step],
+        )
+        path = save_workflow(project, wf, force=force)
+    except (ValueError, FileExistsError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    render_result(f"workflow created: {name}", {"path": str(path), "steps": len(wf.steps)})
+
+
+@workflow_app.command("install-pack")
+def workflow_install_pack(
+    name: str = typer.Argument(..., help="Preset name: setup, verify-all, registry-bootstrap"),
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    force: bool = typer.Option(False, "--force", help="Overwrite an existing workflow"),
+) -> None:
+    """Install a built-in workflow preset."""
+    from ananke.plexus.workflows.presets import BUILTIN_PRESETS
+    from ananke.plexus.workflows.storage import save_workflow
+
+    preset = BUILTIN_PRESETS.get(name)
+    if preset is None:
+        render_result(f"unknown preset: {name}", {"available": ", ".join(BUILTIN_PRESETS)})
+        raise typer.Exit(code=2)
+    try:
+        path = save_workflow(project, preset, force=force)
+    except FileExistsError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    render_result(f"workflow installed: {name}", {"path": str(path)})
+
+
+@workflow_app.command("delete")
+def workflow_delete(
+    name: str = typer.Argument(..., help="Workflow name"),
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+) -> None:
+    """Delete a saved workflow."""
+    from ananke.plexus.workflows import delete_workflow
+
+    if delete_workflow(project, name):
+        render_result(f"workflow deleted: {name}", {})
+    else:
+        typer.echo(f"error: no workflow named {name!r}", err=True)
+        raise typer.Exit(code=2)
+
+
+@workflow_app.command("run")
+def workflow_run(
+    name: str = typer.Argument(..., help="Workflow name"),
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    set_var: list[str] = typer.Option(
+        [], "--set", help="KEY=VALUE, fills ${KEY} placeholders in steps (repeatable)"
+    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would run, run nothing"),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable output"),
+) -> None:
+    """Run a workflow's steps in order; stops at the first failing step."""
+    from ananke.plexus.workflows import load_workflow, run_workflow
+    from ananke.plexus.workflows.runner import parse_variables
+    from ananke.plexus.workflows.storage import WorkflowNotFoundError
+
+    try:
+        wf = load_workflow(project, name)
+        variables = parse_variables(set_var)
+    except WorkflowNotFoundError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    except ValueError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+
+    result = run_workflow(wf, project=project, variables=variables, dry_run=dry_run)
+    if as_json:
+        typer.echo(result.model_dump_json(indent=2))
+    else:
+        verb = "would run" if dry_run else "ran"
+        for s in result.steps:
+            if s.skipped:
+                typer.echo(f"  ⊘ {s.index}. {s.label} (skipped)")
+                continue
+            mark = "✓" if s.ok else "✗"
+            typer.echo(f"  {mark} {s.index}. {s.label} [{' '.join(s.command)}]")
+            if not s.ok and s.error:
+                typer.echo(f"      {s.error}")
+            elif not s.ok and s.stderr:
+                typer.echo(f"      {s.stderr.strip()[:500]}")
+        render_result(f"workflow {name}: {verb}, ok={result.ok}", {})
+    if not result.ok:
+        raise typer.Exit(code=1)
+
+
 @app.command("init")
 def init(project: Path = typer.Option(Path("."), "--project", help="Repository root")) -> None:
     result = Ananke.open(project).init_project()

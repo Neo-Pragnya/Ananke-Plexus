@@ -28,7 +28,20 @@ GENERIC_MARKERS = (
     "agent.yaml",
     "agent.yml",
     "AGENT.md",
+    "PROMPT.md",
+    "plugin.json",
 )
+# A single loose file, one artifact each — no wrapping directory (spec §156's "any structure").
+# ``ananke registry learn ./agents`` on GitHub's awesome-copilot repo (``agents/Foo.agent.md``,
+# one file per agent, no per-item directory) is the layout this exists for. Keys are matched
+# case-insensitively against the filename suffix; values are (canonical in-payload filename,
+# ArtifactKind). The canonical name lets the same frontmatter-driven inference in the
+# filesystem importer handle both directory- and file-based candidates identically.
+LOOSE_MARKER_SUFFIXES: dict[str, tuple[str, str]] = {
+    ".agent.md": ("AGENT.md", "agent"),
+    ".skill.md": ("SKILL.md", "skill"),
+    ".prompt.md": ("PROMPT.md", "prompt"),
+}
 _SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".tox", "dist", "build"}
 
 _LICENSE_HINTS: list[tuple[str, str]] = [
@@ -94,6 +107,50 @@ def find_candidate_dirs(root: Path, max_depth: int = 3) -> list[Path]:
                 found.append(child)
             else:
                 walk(child, depth + 1)
+
+    walk(root, 1)
+    return found
+
+
+def loose_marker_suffix(filename: str) -> str | None:
+    """The matching key of ``LOOSE_MARKER_SUFFIXES`` for ``filename``, or ``None``."""
+    low = filename.lower()
+    return next((s for s in LOOSE_MARKER_SUFFIXES if low.endswith(s)), None)
+
+
+def find_loose_marker_files(root: Path, max_depth: int = 3) -> list[Path]:
+    """Standalone ``*.agent.md`` / ``*.skill.md`` / ``*.prompt.md`` files under ``root``.
+
+    Mirrors :func:`find_candidate_dirs`'s traversal (same skip list, same depth limit) but
+    collects matching *files* instead of marker directories, and never looks inside a
+    directory that ``find_candidate_dirs`` would already claim whole — a skill directory's
+    own ``AGENT.md``-named sub-file (if any) belongs to that skill, not a separate artifact.
+    """
+    root = root.resolve()
+    if find_manifest(root) is not None or has_generic_marker(root):
+        return []
+    found: list[Path] = []
+
+    def walk(directory: Path, depth: int) -> None:
+        if depth > max_depth:
+            return
+        try:
+            children = sorted(directory.iterdir())
+        except OSError:
+            return
+        for child in children:
+            if child.name.startswith("."):
+                continue
+            if child.is_symlink():
+                continue
+            if child.is_dir():
+                if child.name in _SKIP_DIRS:
+                    continue
+                if find_manifest(child) is not None or has_generic_marker(child):
+                    continue
+                walk(child, depth + 1)
+            elif child.is_file() and loose_marker_suffix(child.name):
+                found.append(child)
 
     walk(root, 1)
     return found

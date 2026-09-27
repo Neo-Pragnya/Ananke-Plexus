@@ -89,6 +89,7 @@ ananke serve-mcp --allow-mutations
 | [MCP & APM](concepts/mcp-apm.md) | MCP server and Agent Package Manager |
 | [Skill & Agent Registry](concepts/registry.md) | Artifact model, trust, resolver, lockfile, security |
 | [Registry Guide](guides/registry-guide.md) | Hands-on tour: learn, promote, resolve, sync, publish |
+| [Workflows](guides/workflows.md) | Bundle CLI commands into named, replayable sequences |
 | [Registry Reference](reference/registry.md) | CLI, manifest, policy, resolver, schemas, Python API |
 | [Evaluation Harness](concepts/evaluation.md) | Agent quality: traces, evaluators, judges |
 | [Testing & Quality Harness](concepts/testing.md) | Unified test runner, profiles, quality gate |
@@ -119,6 +120,22 @@ flowchart LR
 ---
 
 ## Docs workflow
+
+**From a plain `pip install` — no git checkout, no GitHub/PyPI access needed:**
+
+```bash
+pip install "ananke-plexus[docs]"
+ananke docs build          # renders this whole site to ./site/, fully offline
+ananke docs serve          # same, then serves it at http://127.0.0.1:<port> and opens a tab
+```
+
+The Markdown and Mermaid diagrams that make up this site ship inside the package itself
+(`ananke docs where` shows exactly which copy is being used). The handful of large hero
+PNGs are not bundled, to keep the install small — pages that reference one show a
+broken-image icon; pass `ananke docs build --source PATH` at a git checkout to render
+those too.
+
+**From a git checkout (contributors):**
 
 ```bash
 make docs-serve   # local preview at http://127.0.0.1:8000

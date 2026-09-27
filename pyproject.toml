@@ -71,6 +71,7 @@ dev = [
   "ruff>=0.12",
   "pre-commit>=4",
   "python-dotenv>=1.0",
+  "hatchling>=1.26",  # importable so the docs-bundling build hook itself has test coverage
   # uv handles build+publish; no twine dependency needed
 ]
 docs = [
@@ -180,10 +181,16 @@ include = [
   "/README.md",
   "/src/ananke",
   "/assets/**",
+  "/docs/**",
+  "/mkdocs.yml",
+  "/hatch_build.py",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ananke"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
 
 [dependency-groups]
 dev = [
@@ -197,6 +204,7 @@ dev = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.6",
   "pymdown-extensions>=10.15",
+  "hatchling>=1.26",
 ]
 
 [tool.ruff]
@@ -233,6 +241,8 @@ ignore = ["B008", "E501"]
 "src/ananke/plexus/apm/bundle.py" = ["S202"]
 # S603/S607: testing adapters use static controlled commands — intentional
 "src/ananke/plexus/testing/adapters/*.py" = ["S603", "S607"]
+# S603/S607: workflow steps are project-authored argv lists (never a shell string) — intentional
+"src/ananke/plexus/workflows/runner.py" = ["S603", "S607"]
 # S105: false positive — "pass" is a QualityGateVerdict value, not a password
 "src/ananke/plexus/testing/policy/gates.py" = ["S105"]
 "src/ananke/plexus/testing/models/test.py" = ["S105"]
@@ -282,6 +292,8 @@ module = [
   "watchfiles",
   "compression",
   "compression.*",
+  "mkdocs",
+  "mkdocs.*",
 ]
 ignore_missing_imports = true
 

@@ -10,6 +10,31 @@
 
 ---
 
+## ananke docs
+
+Offline documentation site — the Markdown/Mermaid source ships inside the installed package, so these work with no PyPI or GitHub access (`pip install ananke-plexus[docs]`).
+
+- `ananke docs build [--output DIR] [--source PATH] [--open]`: render the full site to `DIR` (default `./site`).
+- `ananke docs serve [--host --port --source PATH] [--open/--no-open]`: build to a temp dir and serve it locally until `Ctrl+C`.
+- `ananke docs where [--source PATH]`: print which docs source `build`/`serve` would use.
+
+`--source PATH` points at a git checkout (repo root containing `mkdocs.yml`) to render with the full-resolution hero images instead of the bundled copy.
+
+---
+
+## ananke workflow
+
+Named, ordered sequences of `ananke`/`apm` commands — see the [Workflows guide](../guides/workflows.md).
+
+- `ananke workflow list [--json]`: list workflows under `.ananke/workflows/`.
+- `ananke workflow show NAME [--json]`: print a workflow's steps.
+- `ananke workflow create NAME --step "..." [--step ...] [--description TEXT] [--force]`: build a workflow from `--step` commands.
+- `ananke workflow install-pack NAME [--force]`: install a built-in preset — `setup`, `verify-all`, `registry-bootstrap`.
+- `ananke workflow run NAME [--set KEY=VALUE]... [--dry-run] [--json]`: run all steps in order; stops at the first failure unless that step has `continue_on_error`; exits `1` if any step failed.
+- `ananke workflow delete NAME`: remove a saved workflow.
+
+---
+
 ## ananke configure
 
 - `ananke configure auth [--project PATH] [--jira-... --confluence-... --bitbucket-... --mcp-http-token ...]`: create/update centralized adapter credentials in `.ananke/secrets/adapters.env`.

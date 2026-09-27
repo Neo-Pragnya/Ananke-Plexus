@@ -623,6 +623,8 @@ ananke doctor [--json]          # environment diagnostics
 ananke verify                   # full local gate suite
 ananke config show              # show effective config
 ananke config migrate [--apply] # migrate config schema
+ananke docs build | serve       # offline docs site (bundled — no PyPI/GitHub needed)
+ananke workflow install-pack setup && ananke workflow run setup  # bundle commands, run together
 ```
 
 ### `ananke spec` — specification lifecycle

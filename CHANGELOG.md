@@ -10,6 +10,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.1] — 2026-09-27
+
+### Added
+
+- `ananke docs build|serve|where`: the MkDocs documentation site (Markdown + Mermaid) is now bundled inside the wheel via a custom hatchling build hook, so the full site renders fully offline right after `pip install ananke-plexus[docs]` — no PyPI page, GitHub Pages, or git checkout needed. The large hero PNGs are excluded to keep the wheel small; `--source PATH` at a git checkout renders those too. A pre-shrunk copy of the header logo (256x256, ~110 KB vs the original 2.1 MB) is substituted at the same path so the site's chrome isn't broken on every page.
+- Registry `learn`/filesystem importer: recognises loose `*.agent.md`/`*.skill.md`/`*.prompt.md` files with no wrapping directory (e.g. GitHub's `awesome-copilot` `agents/Foo.agent.md` layout), and `plugin.json` (the `agent-plugins.org` manifest) as a new generic marker. Validated by registering the real `awesome-copilot` repository end-to-end (745 skills/agents/plugins; 740 registered, the rest correctly rejected by the secret scanner).
+- `ananke workflow`: named, ordered sequences of `ananke`/`apm` commands saved as `.ananke/workflows/<name>.toml` and run together with `ananke workflow run NAME`. `list | show | create | install-pack | run | delete`; built-in presets `setup`, `verify-all`, `registry-bootstrap`; `${var}` placeholder substitution via `--set key=value`; steps run as static argv lists (`shell=False`, never a shell string); a run stops at the first failing step unless that step is marked `continue_on_error`. See the [Workflows guide](https://neo-pragnya.github.io/Ananke-Plexus/guides/workflows/).
+
+### Fixed
+
+- `slugify()` no longer collapses distinct names that only differ in a technical symbol — e.g. "C# Expert" and "C++ Expert" both used to become `c-expert`, silently merging two different agents into one artifact. `#`/`+`/`c++`/`c#`/`f#` now transliterate to words (`csharp-expert`, `cpp-expert`) before the generic slug collapse. Found by registering `awesome-copilot`'s 222 real agent files.
+
+---
+
 ## [0.3.0] — 2026-09-19
 
 ### Added

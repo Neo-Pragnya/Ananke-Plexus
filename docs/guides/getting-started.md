@@ -57,6 +57,16 @@ ananke --help
 apm --help
 ```
 
+### Read the docs offline
+
+No PyPI or GitHub access needed — the whole site (this page included) ships inside the
+package:
+
+```bash
+pip install "ananke-plexus[docs]"
+ananke docs serve   # builds + serves locally, opens a browser tab
+```
+
 ---
 
 ## Initialize a project

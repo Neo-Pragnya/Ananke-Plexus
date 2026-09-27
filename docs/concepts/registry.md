@@ -95,7 +95,7 @@ Newly registered versions are `discovered` in the `candidate` channel. **Approva
 | Source | Example | Static? |
 |---|---|---|
 | Ananke manifest (`ananke.toml/.yaml/.registry.json`, legacy `ananke-skill.toml`) | `./skills/graph-review` | ✅ |
-| Generic skill layout (`SKILL.md`, `skill.yaml`, `AGENT.md`, `tools/*.json`) | `./external-skills` | ✅ |
+| Generic skill layout (`SKILL.md`, `skill.yaml`, `AGENT.md`, `PROMPT.md`, `plugin.json`, `tools/*.json`) — directories *or* loose `*.agent.md`/`*.skill.md`/`*.prompt.md` files with no wrapping directory | `./external-skills` | ✅ |
 | Python package metadata + entry points | `python:pkg`, `python:./dist` | ✅ never imports the package |
 | Rust crate (`Cargo.toml`, `ananke.registry.json`) | `rust:./crate` | ✅ |
 | MCP snapshot | `mcp:tools-list.json` | ✅ |

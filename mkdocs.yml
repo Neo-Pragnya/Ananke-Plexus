@@ -81,6 +81,7 @@ nav:
       - Getting Started: guides/getting-started.md
       - Setup & Capabilities: guides/setup-and-capabilities.md
       - Registry Guide: guides/registry-guide.md
+      - Workflows: guides/workflows.md
       - Release Guide: guides/release.md
       - Implementation Log: guides/implementation-log.md
   - Reference:

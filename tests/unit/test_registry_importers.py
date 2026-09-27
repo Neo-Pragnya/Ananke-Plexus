@@ -127,6 +127,16 @@ class TestSourceParsing:
         assert slugify("My Cool_Skill!!") == "my-cool_skill"
         assert slugify("///") == "unnamed"
 
+    def test_slugify_avoids_technical_symbol_collisions(self) -> None:
+        # "C# Expert" and "C++ Expert" are both real, distinct agents in the wild (found by
+        # dry-running `ananke registry learn` against github/awesome-copilot's agents/): naively
+        # stripping "#"/"+" collapses both to "c-expert", silently merging two artifacts.
+        csharp, cpp = slugify("C# Expert"), slugify("C++ Expert")
+        assert csharp != cpp
+        assert csharp == "csharp-expert"
+        assert cpp == "cpp-expert"
+        assert slugify("F# Functional Guru") == "fsharp-functional-guru"
+
     def test_empty_source(self) -> None:
         with pytest.raises(ManifestError):
             parse_source("  ")
@@ -346,6 +356,78 @@ class TestFilesystemImporter:
         (tmp_path / "empty").mkdir()
         with pytest.raises(ImporterError):
             FilesystemImporter().inspect(parse_source(str(tmp_path / "empty")), ctx())
+
+    def test_loose_agent_md_files_no_wrapping_directory(self, tmp_path: Path) -> None:
+        # github/awesome-copilot's agents/ layout: one *.agent.md file per agent, no
+        # per-item directory — the model find_candidate_dirs alone cannot see at all.
+        agents = tmp_path / "agents"
+        write(
+            agents,
+            {
+                "CSharpExpert.agent.md": '---\nname: "C# Expert"\ndescription: dotnet help\n---\nbody',
+                "expert-cpp-software-engineer.agent.md": "---\nname: 'C++ Expert'\n---\nbody",
+                "WinFormsExpert.agent.md": "# WinForms\n\nHelps with WinForms.",
+            },
+        )
+        assert FilesystemImporter().probe(parse_source(str(agents)), ctx()).ok
+        cands = FilesystemImporter().inspect(parse_source(str(agents)), ctx())
+        names = {c.draft["name"] for c in cands}
+        # the whole point: two distinct real agents must not collapse to the same slug
+        assert names == {"csharp-expert", "cpp-expert", "winformsexpert"}
+        assert all(c.draft["kind"] == "agent" for c in cands)
+        assert all(list(c.files) == ["AGENT.md"] for c in cands)  # payload is the file itself
+
+    def test_loose_file_inside_a_marker_directory_is_not_double_counted(
+        self, tmp_path: Path
+    ) -> None:
+        skill_dir = tmp_path / "skills" / "reviewer"
+        write(skill_dir, {"SKILL.md": "# reviewer", "notes.agent.md": "# not a separate agent"})
+        cands = FilesystemImporter().inspect(parse_source(str(tmp_path / "skills")), ctx())
+        assert len(cands) == 1 and cands[0].draft["name"] == "reviewer"
+
+    def test_loose_skill_and_prompt_md(self, tmp_path: Path) -> None:
+        root = tmp_path / "flat"
+        write(
+            root,
+            {
+                "grep-patterns.skill.md": "---\nname: grep patterns\n---\nbody",
+                "reviewer.prompt.md": "---\nname: reviewer prompt\n---\nbody",
+            },
+        )
+        cands = {
+            c.draft["name"]: c.draft["kind"]
+            for c in FilesystemImporter().inspect(parse_source(str(root)), ctx())
+        }
+        assert cands == {"grep-patterns": "skill", "reviewer-prompt": "prompt"}
+
+    def test_plugin_json(self, tmp_path: Path) -> None:
+        d = write(
+            tmp_path / "where-was-i",
+            {
+                "plugin.json": json.dumps(
+                    {
+                        "name": "where-was-i",
+                        "description": "Reconstruct dev context.",
+                        "version": "1.1.0",
+                        "author": {"name": "Aaron Powell"},
+                        "keywords": ["git-history", "resume-work"],
+                    }
+                ),
+                "README.md": "# where-was-i",
+            },
+        )
+        (cand,) = FilesystemImporter().inspect(parse_source(str(d)), ctx())
+        assert cand.draft["name"] == "where-was-i"
+        assert cand.draft["summary"] == "Reconstruct dev context."
+        assert cand.draft["version"] == "1.1.0"
+        assert cand.draft["maintainers"] == ["Aaron Powell"]
+        assert cand.draft["metadata"]["tags"] == ["git-history", "resume-work"]
+
+    def test_malformed_plugin_json_is_a_diagnostic_not_a_crash(self, tmp_path: Path) -> None:
+        d = write(tmp_path / "bad-plugin", {"plugin.json": "{not json"})
+        (cand,) = FilesystemImporter().inspect(parse_source(str(d)), ctx())
+        assert cand.draft["name"] == "bad-plugin"  # falls back to directory name
+        assert any(x.code == "invalid-plugin-json" for x in cand.diagnostics)
 
 
 # --------------------------------------------------------------------------- python / rust

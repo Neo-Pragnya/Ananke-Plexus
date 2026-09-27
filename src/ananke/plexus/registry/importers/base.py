@@ -217,7 +217,20 @@ class RegistryImporter(Protocol):
     def inspect(self, source: Source, ctx: InspectionContext) -> list[Candidate]: ...
 
 
+# Longest-match-first: "c++"/"c#"/"f#" must be substituted before the bare "+"/"#" fallback,
+# or "C# Expert" and "C++ Expert" (both real, distinct agents in the wild — this is not
+# hypothetical, see tests/unit/test_registry_importers.py) both collapse to the same
+# "c-expert" slug once the generic non-alnum collapse below strips the symbol entirely.
+_SLUG_SYMBOL_WORDS = (
+    ("c++", "cpp"), ("c#", "csharp"), ("f#", "fsharp"), ("++", "plusplus"),
+    ("#", "sharp"), ("+", "plus"),
+)  # fmt: skip
+
+
 def slugify(text: str) -> str:
-    slug = re.sub(r"[^a-z0-9._-]+", "-", text.strip().lower()).strip("-._")
+    lowered = text.strip().lower()
+    for symbol, word in _SLUG_SYMBOL_WORDS:
+        lowered = lowered.replace(symbol, f"-{word}-")
+    slug = re.sub(r"[^a-z0-9._-]+", "-", lowered).strip("-._")
     slug = re.sub(r"-{2,}", "-", slug)
     return slug[:64].strip("-._") or "unnamed"

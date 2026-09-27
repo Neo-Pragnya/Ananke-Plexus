@@ -7,6 +7,8 @@ This guide gives you an operational setup for building and shipping `ananke-plex
 - CLI control plane:
   - `ananke init`
   - `ananke doctor`
+  - `ananke docs build | serve | where` (offline documentation site, bundled in the wheel)
+  - `ananke workflow list | show | create | install-pack | run | delete` (see [Workflows](workflows.md))
   - `ananke configure auth`
   - `ananke spec create`
   - `ananke spec plan`

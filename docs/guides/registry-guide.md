@@ -204,6 +204,18 @@ ananke registry learn dynamic:crewai:./src --allow-dynamic --plugin myplugin:int
 
 The dynamic path runs in an isolated subprocess (no network, scrubbed environment, resource limits, timeout, JSON-only output). Treat it as defence in depth, not a container.
 
+### Flat collections of skills/agents (no per-item directory)
+
+Some ecosystems ship one file per artifact directly inside a shared folder instead of `folder/NAME/SKILL.md` — for example [GitHub's `awesome-copilot`](https://github.com/github/awesome-copilot) has `agents/CSharpExpert.agent.md`, `agents/WinFormsExpert.agent.md`, … with no wrapping directory. `learn` recognises this too:
+
+```bash
+ananke registry learn ./awesome-copilot/agents  --namespace copilot --license MIT   # *.agent.md → kind: agent
+ananke registry learn ./awesome-copilot/skills  --namespace copilot --license MIT   # SKILL.md dirs, one per skill
+ananke registry learn ./awesome-copilot/plugins --namespace copilot --license MIT   # plugin.json → kind: skill (default)
+```
+
+Recognised: `*.agent.md` (agent), `*.skill.md` (skill), `*.prompt.md` (prompt), and `plugin.json` (the [agent-plugins.org](https://agent-plugins.org) manifest — `name`/`description`/`version`/`author`/`keywords` map onto the registry's own fields). Registering the real `awesome-copilot` repository (745 files across `skills/`, `agents/` and `plugins/`) succeeds for everything except a handful of files the secret scanner correctly flags (see below) — no per-repository importer needed.
+
 ## 9. Docs for humans
 
 ```bash
