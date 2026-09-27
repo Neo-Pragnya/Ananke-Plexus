@@ -214,7 +214,7 @@ ananke registry learn ./awesome-copilot/skills  --namespace copilot --license MI
 ananke registry learn ./awesome-copilot/plugins --namespace copilot --license MIT   # plugin.json → kind: skill (default)
 ```
 
-Recognised: `*.agent.md` (agent), `*.skill.md` (skill), `*.prompt.md` (prompt), and `plugin.json` (the [agent-plugins.org](https://agent-plugins.org) manifest — `name`/`description`/`version`/`author`/`keywords` map onto the registry's own fields). Registering the real `awesome-copilot` repository (745 files across `skills/`, `agents/` and `plugins/`) succeeds for everything except a handful of files the secret scanner correctly flags (see below) — no per-repository importer needed.
+Recognised: `*.agent.md` (agent), `*.skill.md` (skill), `*.prompt.md` (prompt), and `plugin.json` (the [agent-plugins.org](https://agent-plugins.org) manifest — `name`/`description`/`version`/`author`/`keywords` map onto the registry's own fields). Registering the real `awesome-copilot` repository (745 files across `skills/`, `agents/` and `plugins/`) succeeds for everything except a handful of files the secret scanner correctly flags (see below) — no per-repository importer needed. This also works pointed at the whole repository root in one call, not just at each subfolder separately — `learn` groups loose marker files by their containing directory alongside any marker-directory subtrees it finds.
 
 ## 9. Docs for humans
 

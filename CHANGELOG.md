@@ -10,6 +10,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.2] — 2026-09-27
+
+### Fixed
+
+- Registry `learn`: pointing at a **mixed root** (e.g. the real `github/awesome-copilot` repository) silently dropped any subtree that was nothing but loose marker files with no wrapping directory — `agents/*.agent.md` never appeared, even though `ananke registry learn ./agents` directly worked fine. `ImporterRegistry.plan_path` only ever looked for marker *directories*; it now also groups loose files by their containing directory (and handles one sitting directly in the scanned root as its own entry, so it can't trigger a duplicate full-tree rescan). Learning the real `awesome-copilot` repo from its root now registers all 740 valid skills/agents/plugins in one call, matching what scanning `skills/`, `agents/` and `plugins/` separately already produced.
+- `FilesystemImporter` now also accepts a single loose marker file as the source itself (`ananke registry learn ./agents/Foo.agent.md`), not just a directory containing one.
+
+---
+
 ## [0.3.1] — 2026-09-27
 
 ### Added

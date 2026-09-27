@@ -357,6 +357,22 @@ class TestFilesystemImporter:
         with pytest.raises(ImporterError):
             FilesystemImporter().inspect(parse_source(str(tmp_path / "empty")), ctx())
 
+    def test_probe_and_inspect_accept_the_loose_file_itself_as_the_source(
+        self, tmp_path: Path
+    ) -> None:
+        d = write(tmp_path, {"CSharpExpert.agent.md": "---\nname: C# Expert\n---\nbody"})
+        f = parse_source(str(d / "CSharpExpert.agent.md"))
+        assert FilesystemImporter().probe(f, ctx()).ok
+        (cand,) = FilesystemImporter().inspect(f, ctx())
+        assert cand.draft["name"] == "csharp-expert" and cand.draft["kind"] == "agent"
+
+    def test_probe_and_inspect_reject_an_unrecognised_file(self, tmp_path: Path) -> None:
+        d = write(tmp_path, {"README.md": "# hi"})
+        f = parse_source(str(d / "README.md"))
+        assert not FilesystemImporter().probe(f, ctx()).ok
+        with pytest.raises(ImporterError):
+            FilesystemImporter().inspect(f, ctx())
+
     def test_loose_agent_md_files_no_wrapping_directory(self, tmp_path: Path) -> None:
         # github/awesome-copilot's agents/ layout: one *.agent.md file per agent, no
         # per-item directory — the model find_candidate_dirs alone cannot see at all.
@@ -1026,6 +1042,52 @@ class TestImporterRegistry:
             ("ananke-manifest", "a"),
             ("filesystem", "b"),
         }
+
+    def test_plan_finds_loose_marker_files_alongside_marker_directories(
+        self, tmp_path: Path
+    ) -> None:
+        # A mixed root — e.g. github/awesome-copilot — with a marker-directory subtree
+        # ("skills/reviewer/SKILL.md") *and* a subtree that is nothing but loose files
+        # ("agents/*.agent.md", no wrapping directory at all). plan_path used to only ever
+        # look for marker directories, so the whole "agents/" subtree was silently invisible
+        # whenever `learn` was pointed at the *root* instead of directly at "agents/".
+        write(tmp_path / "skills" / "reviewer", {"SKILL.md": "# reviewer"})
+        write(
+            tmp_path / "agents",
+            {
+                "CSharpExpert.agent.md": "---\nname: C# Expert\n---\nbody",
+                "WinFormsExpert.agent.md": "# WinForms",
+            },
+        )
+
+        plan = default_registry().plan(str(tmp_path), ctx())
+        all_candidates = [c for imp, src in plan for c in imp.inspect(src, ctx())]
+        names = {c.draft["name"] for c in all_candidates}
+        assert names == {"reviewer", "csharp-expert", "winformsexpert"}
+        kinds = {c.draft["name"]: c.draft["kind"] for c in all_candidates}
+        assert kinds == {"reviewer": "skill", "csharp-expert": "agent", "winformsexpert": "agent"}
+
+    def test_plan_handles_loose_marker_file_directly_in_the_scanned_root(
+        self, tmp_path: Path
+    ) -> None:
+        # A loose file whose parent *is* the root passed to plan(): grouping by "parent
+        # directory" here must not turn into "give FilesystemImporter the whole root again"
+        # (which would re-scan and duplicate every other subtree under it).
+        write(tmp_path / "skills" / "reviewer", {"SKILL.md": "# reviewer"})
+        write(tmp_path, {"top-level.agent.md": "# Top Level"})
+
+        plan = default_registry().plan(str(tmp_path), ctx())
+        all_candidates = [c for imp, src in plan for c in imp.inspect(src, ctx())]
+        assert {c.draft["name"] for c in all_candidates} == {"reviewer", "top-level"}
+
+    def test_single_loose_file_as_the_source_itself(self, tmp_path: Path) -> None:
+        f = write(tmp_path, {"CSharpExpert.agent.md": "---\nname: C# Expert\n---\nbody"})
+        f = f / "CSharpExpert.agent.md"
+        plan = default_registry().plan(str(f), ctx())
+        ((imp, src),) = plan
+        assert imp.id == "filesystem"
+        (cand,) = imp.inspect(src, ctx())
+        assert cand.draft["name"] == "csharp-expert" and cand.draft["kind"] == "agent"
 
     def test_plan_unrecognised(self, tmp_path: Path) -> None:
         (tmp_path / "x").mkdir()

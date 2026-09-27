@@ -17,6 +17,7 @@ from ananke.plexus.registry.importers.common import (
     LEGACY_APM_MANIFEST,
     MANIFEST_NAMES,
     find_candidate_dirs,
+    find_loose_marker_files,
 )
 from ananke.plexus.registry.importers.filesystem import FilesystemImporter
 from ananke.plexus.registry.importers.framework import DynamicImporter, FrameworkImporter
@@ -130,10 +131,32 @@ class ImporterRegistry:
     def plan_path(
         self, path: Path, ctx: InspectionContext
     ) -> list[tuple[RegistryImporter, Source]]:
-        dirs = find_candidate_dirs(path) or [path]
+        """Partition ``path`` into per-subtree sources so a mixed-ecosystem root (some
+        subtrees Python, some Rust, some skill directories, ...) can send each subtree to
+        its own best-matching importer.
+
+        A directory candidate (:func:`find_candidate_dirs`) covers "marker directory"
+        layouts (``SKILL.md``, ``ananke.toml``, ...). A source can *also* hold standalone
+        marker files with no wrapping directory at all (``agents/Foo.agent.md`` — see
+        :func:`find_loose_marker_files`); those are grouped by their containing directory
+        so the whole subtree is inspected once, except when they sit directly in ``path``
+        itself, where grouping by "parent == path" would mean rescanning the entire root —
+        each such file gets its own plan entry instead.
+        """
+        dirs = find_candidate_dirs(path)
+        covered = set(dirs)
+        loose = find_loose_marker_files(path)
+        loose_dirs = sorted({f.parent for f in loose if f.parent != path} - covered)
+        loose_files_at_root = [f for f in loose if f.parent == path]
         plan: list[tuple[RegistryImporter, Source]] = []
-        for d in dirs:
+        for d in [*dirs, *loose_dirs]:
             src = Source(str(d), "path", str(d))
+            plan.append((self._best(src, ctx), src))
+        for f in loose_files_at_root:
+            src = Source(str(f), "path", str(f))
+            plan.append((self._best(src, ctx), src))
+        if not plan:
+            src = Source(str(path), "path", str(path))
             plan.append((self._best(src, ctx), src))
         return plan
 

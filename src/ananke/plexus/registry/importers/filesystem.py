@@ -50,7 +50,15 @@ class FilesystemImporter:
     permissions: ClassVar[ImporterPermissions] = ImporterPermissions()
 
     def probe(self, source: Source, ctx: InspectionContext) -> ProbeResult:
-        if source.scheme != "path" or not source.path.is_dir():
+        if source.scheme != "path":
+            return ProbeResult(ok=False, reason="not a directory")
+        if source.path.is_file():
+            if loose_marker_suffix(source.path.name):
+                return ProbeResult(
+                    ok=True, confidence=0.55, reason="standalone agent/skill/prompt file"
+                )
+            return ProbeResult(ok=False, reason="not a recognised standalone artifact file")
+        if not source.path.is_dir():
             return ProbeResult(ok=False, reason="not a directory")
         path = source.path
         if find_manifest(path) is not None:
@@ -76,6 +84,10 @@ class FilesystemImporter:
         )
 
     def inspect(self, source: Source, ctx: InspectionContext) -> list[Candidate]:
+        if source.path.is_file():
+            if not loose_marker_suffix(source.path.name):
+                raise ImporterError(f"not a recognised standalone artifact file: {source.path}")
+            return [self._inspect_loose_file(source.path, ctx)]
         dirs = [d for d in find_candidate_dirs(source.path) if find_manifest(d) is None]
         loose = find_loose_marker_files(source.path)
         if not dirs and not loose:
