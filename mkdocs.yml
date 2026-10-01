@@ -9,8 +9,8 @@ copyright: Copyright &copy; 2026 Neo Pragnya Architecture Group — Apache-2.0
 
 theme:
   name: material
-  logo: assets/branding/ananke-logo.png
-  favicon: assets/branding/ananke-logo.png
+  logo: assets/branding/ananke-logo.jpg
+  favicon: assets/branding/ananke-logo.jpg
   palette:
     - scheme: default
       primary: indigo
@@ -38,6 +38,15 @@ theme:
 
 plugins:
   - search
+
+# Material lazy-loads Mermaid from https://unpkg.com/mermaid on first use (only if
+# `window.mermaid` isn't already defined) — fine for the hosted site, but it means diagrams
+# silently fail to render with no network access, which is exactly the situation
+# `ananke docs build/serve` promises to support. Vendoring it here (docs/assets/javascripts/
+# mermaid.min.js, pinned to the same major version Material itself would otherwise fetch)
+# makes Material skip that fetch entirely, on the hosted site and offline alike.
+extra_javascript:
+  - assets/javascripts/mermaid.min.js
 
 markdown_extensions:
   - admonition

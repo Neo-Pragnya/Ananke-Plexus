@@ -1,12 +1,13 @@
 """Build or serve the Ananke Plexus documentation site fully offline.
 
-The MkDocs source (Markdown + Mermaid diagrams) ships inside the installed package at
-``ananke/plexus/_docsite/`` (bundled by ``hatch_build.py``), so ``ananke docs build`` and
-``ananke docs serve`` work right after ``pip install ananke-plexus[docs]`` — no PyPI page,
-no GitHub Pages, no git checkout required. The large hero PNGs under ``docs/assets/`` are
-not bundled (they would multiply the wheel size ~40x); pages that reference one render
-with a broken-image icon unless ``--source`` points at a git checkout of the repository,
-which is used byte-for-byte instead of the bundled copy.
+The MkDocs source — Markdown, Mermaid diagrams and images — ships inside the installed
+package at ``ananke/plexus/_docsite/`` (bundled by ``hatch_build.py``), so ``ananke docs
+build`` and ``ananke docs serve`` work right after ``pip install ananke-plexus[docs]`` — no
+PyPI page, no GitHub Pages, no git checkout required. Images are pre-compressed JPEGs
+(~300-400 KB each) specifically so the whole site, pictures included, is small enough to
+always bundle; ``--source PATH`` at a git checkout uses that copy byte-for-byte instead (no
+functional difference today, since both copies are the same compressed images — it exists
+for working on the docs themselves from a checkout).
 """
 
 from __future__ import annotations
@@ -93,8 +94,16 @@ def _materialized(source: Path) -> Iterator[Path]:
         yield work
 
 
-def build_docs(output: Path, *, source: Path | None = None) -> Path:
-    """Render the full documentation site to ``output``. Returns ``output``."""
+def build_docs(output: Path, *, source: Path | None = None, directory_urls: bool = False) -> Path:
+    """Render the full documentation site to ``output``. Returns ``output``.
+
+    ``directory_urls`` mirrors MkDocs' own ``use_directory_urls``: the hosted site (GitHub
+    Pages, behind a real HTTP server) uses clean directory-style URLs (``guides/workflows/``,
+    served as ``.../index.html``) — but a browser opening a *local* file at that path via
+    ``file://`` has no server to resolve the missing filename, so every internal link looks
+    broken. Offline output defaults to flat ``.html`` files (``guides/workflows.html``) instead,
+    which work correctly whether opened directly or through ``ananke docs serve``.
+    """
     if not _mkdocs_available():
         raise DocsUnavailableError(
             "mkdocs is not installed; pip install ananke-plexus[docs] (or: uv sync --extra docs)"
@@ -107,7 +116,11 @@ def build_docs(output: Path, *, source: Path | None = None) -> Path:
 
     with _materialized(src) as work:
         try:
-            config = load_config(str(work / "mkdocs.yml"), site_dir=str(output))
+            config = load_config(
+                str(work / "mkdocs.yml"),
+                site_dir=str(output),
+                use_directory_urls=directory_urls,
+            )
             mkdocs_build(config)
         except ConfigurationError as exc:
             raise DocsBuildError(f"invalid mkdocs.yml: {exc}") from exc

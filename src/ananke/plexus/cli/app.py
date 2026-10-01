@@ -85,13 +85,40 @@ def docs_build(
     source: Path | None = typer.Option(
         None, "--source", help="Git checkout root (mkdocs.yml + docs/); default: bundled copy"
     ),
+    directory_urls: bool = typer.Option(
+        False,
+        "--directory-urls",
+        help=(
+            "Use clean directory-style URLs (guides/workflows/index.html) instead of flat "
+            "files (guides/workflows.html). Only correct if you then serve the output over "
+            "HTTP yourself — opening it directly in a browser (file://) will not resolve "
+            "the missing filename and internal links will appear broken. Default is off, "
+            "so the output works whether opened directly or served."
+        ),
+    ),
     open_browser: bool = typer.Option(False, "--open", help="Open the built site when done"),
 ) -> None:
-    """Render the full docs site to a local directory — works with no network access."""
+    """Render the full docs site to a local directory — works with no network access.
+
+    Builds this same documentation site (every concept, guide and reference page, Mermaid
+    diagrams included) from the copy bundled inside the installed package — no PyPI, no
+    GitHub, no git checkout required beyond the initial ``pip install``.
+
+    Examples:
+
+        ananke docs build                        # writes ./site/, open ./site/index.html
+
+        ananke docs build -o /tmp/ananke-docs --open
+
+        ananke docs build --source ~/src/Ananke-Plexus   # full-resolution hero images
+
+    See also: `ananke docs serve` (build + serve over HTTP, recommended if you also want
+    the search box to work — browsers block search's background fetch on file://).
+    """
     from ananke.plexus.docs_site import DocsUnavailableError, build_docs
 
     try:
-        out = build_docs(output, source=source)
+        out = build_docs(output, source=source, directory_urls=directory_urls)
     except DocsUnavailableError as exc:
         typer.echo(f"error: {exc.message}", err=True)
         raise typer.Exit(code=2) from None

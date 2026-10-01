@@ -10,6 +10,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.3] — 2026-10-01
+
+### Fixed
+
+- **Offline docs: images now render.** The hero images under `docs/assets/` were excluded from the wheel to keep it small (~17 MB of PNGs) — they're now pre-compressed JPEGs (~300-400 KB each, ~3 MB total vs ~17 MB) and bundled unconditionally, in both `docs/assets/` (the local docs copy) and `assets/` (the README's images), everywhere a `.png` reference used to appear.
+- **Offline docs: navigation now works when opened directly.** `ananke docs build` defaulted to MkDocs' clean "directory" URLs (`guides/workflows/`, served as `.../index.html`) — correct behind a real HTTP server, but a browser opening that path via `file://` has no server to resolve the missing filename, so every internal link looked broken. `ananke docs build`/`ananke docs serve` now default to flat `.html` files (`guides/workflows.html`), which open correctly whether double-clicked directly or served; pass `--directory-urls` to `ananke docs build` if you're hosting the output yourself over HTTP and want the cleaner URLs.
+- **Offline docs: Mermaid diagrams now render with no network access.** mkdocs-material lazy-loads Mermaid from `https://unpkg.com` on first use, unless `window.mermaid` is already defined — so every diagram silently failed to render with no network (this is also why `ananke docs serve` could look fine while `ananke docs build` + opening the file directly did not: it depends on whether that particular browser session could reach unpkg.com, not which command built the site). `mermaid.min.js` is now vendored in `docs/assets/javascripts/` and loaded via `mkdocs.yml`'s `extra_javascript` before Material's own check runs, so it never attempts the CDN fetch — verified by rendering a real page with headless Chrome and the CDN host explicitly unreachable.
+
+---
+---
+
 ## [0.3.2] — 2026-09-27
 
 ### Fixed

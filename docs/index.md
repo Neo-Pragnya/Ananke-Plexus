@@ -4,7 +4,7 @@
 
 **Ananke Plexus** is a local-first **Agent Development Life Cycle (ADLC) control plane** — a tensegrity engineering harness that gives AI coding agents architectural context, deterministic guardrails, security gates, and verifiable delivery evidence.
 
-![System Architecture Overview](assets/ananke_plexus_architecture_overview.png)
+![System Architecture Overview](assets/ananke_plexus_architecture_overview.jpg)
 
 ---
 
@@ -129,11 +129,13 @@ ananke docs build          # renders this whole site to ./site/, fully offline
 ananke docs serve          # same, then serves it at http://127.0.0.1:<port> and opens a tab
 ```
 
-The Markdown and Mermaid diagrams that make up this site ship inside the package itself
-(`ananke docs where` shows exactly which copy is being used). The handful of large hero
-PNGs are not bundled, to keep the install small — pages that reference one show a
-broken-image icon; pass `ananke docs build --source PATH` at a git checkout to render
-those too.
+The Markdown, images and Mermaid diagrams that make up this site ship inside the package
+itself (`ananke docs where` shows exactly which copy is being used), with no dependency on
+a CDN or any other network access — diagrams render from a vendored copy of Mermaid, and
+the hero images are pre-compressed so the whole site stays small. Internal links work
+whether you open `index.html` directly or run `ananke docs serve`; only the search box
+needs a real HTTP server (`ananke docs serve`), since browsers block its background fetch
+when a page is opened directly via `file://`.
 
 **From a git checkout (contributors):**
 

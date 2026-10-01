@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Neo-Pragnya/Ananke-Plexus/main/assets/branding/ananke-logo.png" alt="Ananke Plexus Logo" width="260" />
+<img src="https://raw.githubusercontent.com/Neo-Pragnya/Ananke-Plexus/main/assets/branding/ananke-logo.jpg" alt="Ananke Plexus Logo" width="260" />
 
 # Ananke Plexus
 
@@ -22,7 +22,7 @@ architectural context, deterministic guardrails, security gates, and verifiable 
 
 ---
 
-![Ananke Plexus — System Architecture Overview](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/ananke_plexus_architecture_overview.png)
+![Ananke Plexus — System Architecture Overview](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/ananke_plexus_architecture_overview.jpg)
 
 ---
 
@@ -87,7 +87,7 @@ Ananke Plexus is designed around that question.
 
 **Tensegrity** is the governing metaphor: agents remain *creative at the edge* while the surrounding structure of contracts, graphs, and policies keeps the system geometrically sound.
 
-![Governed Software Architecture — Tensegrity Model](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/ananke_plexus_governed_software_architecture.png)
+![Governed Software Architecture — Tensegrity Model](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/ananke_plexus_governed_software_architecture.jpg)
 
 This allows the system to support **more autonomy precisely because stronger constraints exist where they matter**.
 
@@ -108,7 +108,7 @@ This allows the system to support **more autonomy precisely because stronger con
 | Traceability       | Tickets + Git     | Spec → Code       | Intent → Agent → Code → Evidence       |
 | Governance         | Organizational    | Contract-oriented | Machine-enforced                       |
 
-![Why ADLC Matters — Governed Autonomous Development](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/why_adlc_matters_governed_autonomous_development.png)
+![Why ADLC Matters — Governed Autonomous Development](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/why_adlc_matters_governed_autonomous_development.jpg)
 
 The core engineering equation:
 
@@ -132,7 +132,7 @@ Intent → Specification → Architecture Contracts → Graph Context
 
 Every requirement is progressively transformed into durable, verifiable artifacts:
 
-![From Intent to Implementation — Full Specification Flow](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/from_intent_to_implementation.png)
+![From Intent to Implementation — Full Specification Flow](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/from_intent_to_implementation.jpg)
 
 The **Ananke BMAD** triad drives the transformation:
 
@@ -387,7 +387,7 @@ Expected output:
 
 Ananke treats your repository as a **graph of semantic relationships**, not a flat directory tree.
 
-![Code Graph Intelligence — Blast Radius & Symbol Impact](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/code_graph_intelligence_infographic.png)
+![Code Graph Intelligence — Blast Radius & Symbol Impact](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/code_graph_intelligence_infographic.jpg)
 
 ### Why this matters
 
@@ -428,7 +428,7 @@ All providers normalize to the same canonical model (14 node kinds, 14 edge kind
 
 Ananke orchestrates agent execution as a deterministic DAG — not a free-form chat loop.
 
-![Governed Agentic Execution Pipeline](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/governed_agentic_execution_pipeline.png)
+![Governed Agentic Execution Pipeline](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/governed_agentic_execution_pipeline.jpg)
 
 ### Execution plan
 
@@ -487,7 +487,7 @@ ananke backend test fake
 
 Security is not one tool — it is a layered system integrated at every stage.
 
-![Verifiable Pipeline for Autonomous Engineering](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/verifiable_pipeline_for_autonomous_engineering.png)
+![Verifiable Pipeline for Autonomous Engineering](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/verifiable_pipeline_for_autonomous_engineering.jpg)
 
 ### Security layers
 
@@ -558,7 +558,7 @@ Every `ananke verify` run produces an immutable, content-addressed evidence bund
 
 Ananke Plexus is a **control plane, not a mega-dependency**. Every external integration is swappable.
 
-![Open Ecosystem — Getting Started with Any Agent](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/open_ecosystem_getting_started.png)
+![Open Ecosystem — Getting Started with Any Agent](https://raw.githubusercontent.com/neo-pragnya/ananke-plexus/main/assets/open_ecosystem_getting_started.jpg)
 
 ```
               ┌─────────────────────────────────────┐
