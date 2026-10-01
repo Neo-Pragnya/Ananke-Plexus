@@ -10,6 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.4] — 2026-10-01
+
+### Fixed
+
+- `uv.lock`: bumped `virtualenv` (21.7.10 → 21.14.1) for [CVE-2026-102930](https://avd.aquasec.com/nvd/cve-2026-102930) (arbitrary code execution via unverified downloaded seed wheels), which failed the release's Trivy gate. `virtualenv` is a transitive dev/build dependency, not part of the installed package — this does not affect any previously published release. Also re-locked after the `hatchling` dev dependency added for 0.3.0 (needed so the docs-bundling build hook has test coverage) had never actually been re-locked.
+
+---
+
 ## [0.3.3] — 2026-10-01
 
 ### Fixed
