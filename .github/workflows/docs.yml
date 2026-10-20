@@ -34,9 +34,9 @@ jobs:
       - name: Install docs dependencies
         run: uv sync --extra docs
 
+      # Overlay the full-resolution originals; never delete docs/assets (it also holds flows/ and javascripts/).
       - name: Copy assets into docs directory
         run: |
-          rm -rf docs/assets
           mkdir -p docs/assets
           cp -R assets/. docs/assets/
 
