@@ -1,0 +1,99 @@
+---
+import "../styles/global.css";
+import Glyph from "./Glyph.astro";
+import { NAV, site } from "../lib/site";
+
+interface Props {
+  title: string;
+  description?: string;
+  wide?: boolean;
+}
+
+const { title, description = site.description, wide = false } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const path = Astro.url.pathname;
+const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//, "")}`);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <title>{title === site.name ? `${site.name} — ${site.tagline}` : `${title} · ${site.name}`}</title>
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap"
+    />
+    <link rel="stylesheet" href={`${base}motion-kit/motion-kit.css`} />
+    <script is:inline>
+      try {
+        if (localStorage.getItem("site-theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch {}
+    </script>
+  </head>
+  <body class="mk-grain">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href={base} aria-label={`${site.name} home`}>
+        <Glyph shapes={site.logoShapes} tint="coral" class="brand-mark" />
+        <span class="brand-text">{site.name}<small>{site.tagline}</small></span>
+      </a>
+      <nav class="top-nav" aria-label="Main">
+        {
+          NAV.map((n) => (
+            <a href={href(n.href)} aria-current={!/^https?:/.test(n.href) && path.startsWith(href(n.href)) ? "page" : undefined}>
+              {n.label}
+            </a>
+          ))
+        }
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark theme">◐</button>
+      </nav>
+    </header>
+    <main id="main" class:list={{ wide }}>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <span>{site.footer}</span>
+      <span class="footer-links">
+        {site.footerLinks.map((l) => <a href={href(l.href)}>{l.label}</a>)}
+      </span>
+    </footer>
+    <script is:inline src={`${base}motion-kit/motion-kit.js`} defer></script>
+    <script>
+      document.getElementById("theme-toggle")?.addEventListener("click", () => {
+        const root = document.documentElement;
+        const dark = root.dataset.theme !== "dark";
+        if (dark) root.dataset.theme = "dark";
+        else delete root.dataset.theme;
+        try {
+          localStorage.setItem("site-theme", dark ? "dark" : "light");
+        } catch {}
+      });
+      for (const pre of document.querySelectorAll<HTMLPreElement>("pre")) {
+        if (pre.closest(".mermaid-diagram")) continue;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "copy";
+        btn.textContent = "Copy";
+        btn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(pre.innerText.replace(/\n?Cop(y|ied)$/, ""));
+            btn.textContent = "Copied";
+          } catch {
+            btn.textContent = "Select & copy";
+          }
+          setTimeout(() => (btn.textContent = "Copy"), 1500);
+        });
+        pre.classList.add("has-copy");
+        pre.append(btn);
+      }
+    </script>
+  </body>
+</html>

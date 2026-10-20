@@ -1,0 +1,21 @@
+---
+// A morphing SVG glyph (motion-kit). `shapes` is "rest>hover" (morphs when the enclosing link/button is hovered)
+// or a space-separated cycle. `tint` (optional) is a palette name: coral lemon lime teal lilac sky pink; without it
+// the glyph inherits --kc from its parent (e.g. a .k-skill card).
+interface Props {
+  shapes?: string;
+  tint?: string;
+  class?: string;
+  auto?: number;
+}
+const { shapes = "blob>star", tint, class: cls = "glyph", auto } = Astro.props;
+---
+
+<svg
+  class:list={[cls, tint && `t-${tint}`]}
+  viewBox="0 0 100 100"
+  data-morph={shapes}
+  data-morph-auto={auto}
+  aria-hidden="true"
+  focusable="false"
+></svg>

@@ -22,6 +22,7 @@ Ananke Plexus connects **specifications, CALM architecture, code graphs, tests, 
 | **MCP server** | Read-only + mutation tools, dynamic resource registry |
 | **APM** | Agent skill package manager with lockfile, sandbox, provenance |
 | **Skill & Agent Registry** | Immutable, content-addressed skills/agents with importers, policy-aware resolver, `ananke.lock`, activation and generated docs |
+| **Skill library** | [Dex Trove](guides/dex-trove.md): 970 licence-clean skills, agents and plugins, loadable with `ananke registry learn python:dex-trove` |
 | **Evaluation & testing** | Enterprise eval harness and unified test/quality harness with evidence |
 | **Lifecycle** | Jira, Bitbucket, Git worktrees, PR evidence storytelling |
 | **Evidence** | SARIF 2.1.0, SHA-256 manifests, policy decisions, checksums |

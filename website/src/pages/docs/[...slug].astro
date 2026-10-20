@@ -1,0 +1,96 @@
+---
+import { getCollection, render } from "astro:content";
+import Glyph from "../../components/Glyph.astro";
+import Layout from "../../components/Layout.astro";
+import Mermaid from "../../components/Mermaid.astro";
+import { DOC_NAV, DOC_TITLES, docHref, site } from "../../lib/site";
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs");
+  return docs.map((entry) => ({
+    params: { slug: entry.id === "index" ? undefined : entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const base = import.meta.env.BASE_URL;
+const all = await getCollection("docs");
+const byId = new Map(all.map((d) => [d.id, d]));
+const titleOf = (id: string) =>
+  byId.get(id)?.data.title ??
+  DOC_TITLES[id] ??
+  (id.split("/").at(-1) ?? id).replace(/[-_]/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+const h1 = headings.find((h) => h.depth === 1)?.text;
+const title = entry.data.title ?? DOC_TITLES[entry.id] ?? h1 ?? titleOf(entry.id);
+const listed = new Set(DOC_NAV.flatMap((s) => s.items));
+const extra = all.map((d) => d.id).filter((id) => !listed.has(id)).sort();
+const nav = extra.length ? [...DOC_NAV, { section: "More", items: extra, shapes: "circle>spark", tint: "sky" }] : DOC_NAV;
+const flat = nav.flatMap((s) => s.items).filter((id) => byId.has(id));
+const index = flat.indexOf(entry.id);
+const prev = index > 0 ? flat[index - 1] : undefined;
+const next = index >= 0 && index < flat.length - 1 ? flat[index + 1] : undefined;
+const section = nav.find((s) => s.items.includes(entry.id));
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<Layout title={title} description={entry.data.description ?? `${site.name} documentation: ${title}`} wide>
+  <div class="doc-shell">
+    <aside class="doc-sidebar" aria-label="Documentation">
+      <details open>
+        <summary>Documentation</summary>
+        {
+          nav.map((s) => (
+            <div class={`nav-group t-${s.tint}`}>
+              <p class="sidebar-heading">
+                <Glyph shapes={s.shapes} tint={s.tint} class="" />
+                {s.section}
+              </p>
+              {s.items
+                .filter((id) => byId.has(id))
+                .map((id) => (
+                  <a
+                    class:list={["sidebar-link", { active: id === entry.id }]}
+                    href={docHref(base, id)}
+                    aria-current={id === entry.id ? "page" : undefined}
+                  >
+                    {id === "index" ? "Overview" : titleOf(id)}
+                  </a>
+                ))}
+            </div>
+          ))
+        }
+      </details>
+    </aside>
+
+    <article class={`prose doc-article t-${section?.tint ?? "coral"}`}>
+      <p class="eyebrow">{section?.section ?? "Docs"}</p>
+      {!h1 && <h1>{title}</h1>}
+      <Content />
+      {entry.body?.includes("```mermaid") && <Mermaid />}
+      <nav class="pager" aria-label="Previous and next">
+        {prev ? <a class="card" href={docHref(base, prev)}><small>← Previous</small>{titleOf(prev)}</a> : <span />}
+        {next ? <a class="card next" href={docHref(base, next)}><small>Next →</small>{titleOf(next)}</a> : <span />}
+      </nav>
+      <p class="edit">
+        <a href={`${site.repo}/edit/main/${site.docsDir}/${entry.id}.md`}>Edit this page on GitHub ↗</a>
+      </p>
+    </article>
+
+    {
+      toc.length > 1 && (
+        <aside class="doc-toc" aria-label="On this page">
+          <p class="sidebar-heading">On this page</p>
+          <nav>
+            {toc.map((h) => (
+              <a class:list={["toc-link", { nested: h.depth === 3 }]} href={`#${h.slug}`}>
+                {h.text}
+              </a>
+            ))}
+          </nav>
+        </aside>
+      )
+    }
+  </div>
+</Layout>

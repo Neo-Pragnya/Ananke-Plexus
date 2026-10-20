@@ -1,0 +1,20 @@
+---
+import Glyph from "../components/Glyph.astro";
+import Layout from "../components/Layout.astro";
+const base = import.meta.env.BASE_URL;
+---
+
+<Layout title="Not found">
+  <section class="hero" style="text-align:center">
+    <div class="hero-content" style="margin:0 auto">
+      <Glyph shapes="circle star hex flower blob" tint="coral" class="glyph" auto={1600} />
+      <p class="eyebrow">404</p>
+      <h1><span data-scramble>Nothing here</span></h1>
+      <p class="lede" style="margin:0 auto">The page moved, or never existed.</p>
+      <div class="hero-actions" style="justify-content:center">
+        <a class="btn" href={base}>Home</a>
+        <a class="btn ghost" href={`${base}docs/`}>Documentation</a>
+      </div>
+    </div>
+  </section>
+</Layout>

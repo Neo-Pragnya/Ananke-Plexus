@@ -1,0 +1,87 @@
+---
+import { getCollection } from "astro:content";
+import Glyph from "../components/Glyph.astro";
+import Layout from "../components/Layout.astro";
+import { DOC_NAV, DOC_TITLES, FEATURES, STATS, docHref, site } from "../lib/site";
+
+const base = import.meta.env.BASE_URL;
+const docs = await getCollection("docs");
+const byId = new Map(docs.map((d) => [d.id, d]));
+const titleOf = (id: string) =>
+  byId.get(id)?.data.title ?? DOC_TITLES[id] ?? (id.split("/").at(-1) ?? id).replace(/[-_]/g, " ");
+const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//, "")}`);
+---
+
+<Layout title={site.name}>
+  <section class="hero">
+    <div class="mk-aurora" style="--mk-aurora-a: var(--lemon); --mk-aurora-b: var(--teal)"></div>
+    <canvas data-field="34" aria-hidden="true"></canvas>
+    <div class="hero-content">
+      <p class="eyebrow" data-reveal>{site.eyebrow}</p>
+      <h1 data-reveal style="--d: .05s">
+        <span data-scramble>{site.headline}</span>
+        {site.highlight && <span class="hl">{site.highlight}</span>}
+      </h1>
+      <p class="lede" data-reveal style="--d: .1s">{site.lede}</p>
+      <div class="hero-actions" data-reveal style="--d: .15s">
+        {
+          site.ctas.map((c, i) => (
+            <a class:list={["btn", "ants", { ghost: i > 0 }]} data-magnetic href={href(c.href)} style="--mk-ants: var(--coral)">
+              {c.label}
+            </a>
+          ))
+        }
+      </div>
+      {site.install && <div class="install-line" data-reveal style="--d: .2s"><span>$ {site.install}</span></div>}
+    </div>
+  </section>
+
+  {
+    STATS.length > 0 && (
+      <div class="stats">
+        {STATS.map((s, i) => (
+          <div class={`card stat t-${s.tint}`} data-tilt data-reveal style={`--d:${i * 0.05}s`}>
+            <strong data-countup>{s.value}</strong>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  <h2 data-reveal>What's inside</h2>
+  <div class="grid-cards">
+    {
+      FEATURES.map((f, i) => (
+        <a class={`card feature t-${f.tint}`} href={href(f.href)} data-tilt data-reveal style={`--d:${Math.min(i * 0.05, 0.3)}s`}>
+          <Glyph shapes={f.shapes} tint={f.tint} />
+          <strong>{f.title}</strong>
+          <p>{f.text}</p>
+        </a>
+      ))
+    }
+  </div>
+
+  <h2 data-reveal>Browse the documentation</h2>
+  <div class="grid-cards">
+    {
+      DOC_NAV.map((section) => (
+        <section class={`card t-${section.tint}`} data-reveal>
+          <p class="sidebar-heading">
+            <Glyph shapes={section.shapes} tint={section.tint} class="" />
+            {section.section}
+          </p>
+          <ul style="margin:0;padding-left:18px">
+            {section.items
+              .filter((id) => byId.has(id))
+              .map((id) => (
+                <li>
+                  <a href={docHref(base, id)}>{id === "index" ? "Overview" : titleOf(id)}</a>
+                </li>
+              ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</Layout>

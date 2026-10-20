@@ -1,0 +1,177 @@
+/*!
+ * motion-kit.css — companion styles for motion-kit.js · MIT · Neo Pragnya
+ * Pair with your own design tokens. Uses: --mk-ease, --mk-ants (marching ants colour).
+ */
+:root {
+  --mk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --mk-ants: currentColor;
+}
+
+/* Reveal: hidden only once JS is ready (no-JS visitors always see content) */
+.mk-ready [data-reveal]:not(.is-shown) {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(12px);
+}
+[data-reveal] {
+  transition:
+    opacity 0.8s var(--mk-ease) var(--d, 0s),
+    filter 0.8s var(--mk-ease) var(--d, 0s),
+    transform 0.8s var(--mk-ease) var(--d, 0s);
+}
+
+/* Morphing glyphs */
+svg[data-morph] {
+  overflow: visible;
+}
+svg[data-morph] path[data-morph-path] {
+  fill: var(--mk-fill, currentColor);
+  stroke: var(--mk-stroke, none);
+  stroke-width: var(--mk-stroke-width, 0);
+  transition: fill 0.4s var(--mk-ease);
+}
+
+/* Field canvas fills its positioned parent */
+canvas[data-field] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Magnetic / tilt elements animate back smoothly */
+[data-magnetic],
+[data-tilt] {
+  transition: transform 0.35s var(--mk-ease);
+  will-change: transform;
+}
+[data-tilt] {
+  background-image: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--mk-spot, #ffffff) 55%, transparent),
+    transparent 60%
+  );
+}
+
+/* Marching-ants dashed border on hover/focus */
+.ants {
+  position: relative;
+}
+.ants::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background:
+    linear-gradient(90deg, var(--mk-ants) 50%, transparent 0) repeat-x top / 10px 2px,
+    linear-gradient(90deg, var(--mk-ants) 50%, transparent 0) repeat-x bottom / 10px 2px,
+    linear-gradient(0deg, var(--mk-ants) 50%, transparent 0) repeat-y left / 2px 10px,
+    linear-gradient(0deg, var(--mk-ants) 50%, transparent 0) repeat-y right / 2px 10px;
+  animation: mk-ants 0.7s linear infinite paused;
+}
+.ants:hover::after,
+.ants:focus-visible::after {
+  opacity: 1;
+  animation-play-state: running;
+}
+@keyframes mk-ants {
+  to {
+    background-position:
+      10px 0,
+      -10px 100%,
+      0 -10px,
+      100% 10px;
+  }
+}
+
+/* Marquee: duplicate the children once in markup for a seamless loop */
+[data-marquee] {
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+[data-marquee] > * {
+  display: flex;
+  flex: none;
+  gap: inherit;
+  padding-right: var(--mk-gap, 12px);
+  animation: mk-marquee var(--mk-marquee, 40s) linear infinite;
+}
+[data-marquee]:hover > * {
+  animation-play-state: paused;
+}
+@keyframes mk-marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Soft drifting gradient blobs for hero backgrounds */
+.mk-aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.mk-aurora::before,
+.mk-aurora::after {
+  content: "";
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  animation: mk-drift 22s ease-in-out infinite alternate;
+}
+.mk-aurora::before {
+  background: var(--mk-aurora-a, #ffd84d);
+  top: -35vmax;
+  left: -20vmax;
+}
+.mk-aurora::after {
+  background: var(--mk-aurora-b, #46d1c6);
+  bottom: -40vmax;
+  right: -25vmax;
+  animation-delay: -11s;
+}
+@keyframes mk-drift {
+  to {
+    transform: translate(8vmax, 6vmax) scale(1.12);
+  }
+}
+
+/* Film grain overlay (graphify-style texture) */
+.mk-grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-magnetic],
+  [data-tilt] {
+    transition: none !important;
+  }
+  .ants::after,
+  [data-marquee] > *,
+  .mk-aurora::before,
+  .mk-aurora::after {
+    animation: none !important;
+  }
+}
+.mk-static .ants::after,
+.mk-static [data-marquee] > *,
+.mk-static .mk-aurora::before,
+.mk-static .mk-aurora::after {
+  animation: none !important;
+}

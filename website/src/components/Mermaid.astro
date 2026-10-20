@@ -1,0 +1,53 @@
+<script>
+  const blocks = Array.from(
+    document.querySelectorAll<HTMLElement>("pre > code"),
+  ).filter((code) =>
+    /^(?:flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|xychart-beta|sankey-beta|block-beta|architecture-beta|requirementDiagram)(?:\s|$)/m.test(
+      code.textContent?.trimStart() ?? "",
+    ),
+  );
+
+  if (blocks.length > 0) {
+    const { default: mermaid } = await import("mermaid");
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: document.documentElement.dataset.theme === "dark" ? "dark" : "base",
+      themeVariables: {
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+        primaryColor: "#fff6c7",
+        primaryBorderColor: "#ffd84d",
+        primaryTextColor: "#1f1d2b",
+        lineColor: "#5b5870",
+        secondaryColor: "#d6f6f3",
+        tertiaryColor: "#ede6ff",
+        clusterBkg: "#fffaf0",
+        clusterBorder: "#efe7d6",
+      },
+    });
+
+    for (const [index, code] of Array.from(blocks).entries()) {
+      const pre = code.parentElement;
+      if (!pre) continue;
+
+      try {
+        const source = code.textContent ?? "";
+        const { svg } = await mermaid.render(
+          `doc-diagram-${index}`,
+          source,
+        );
+        const diagram = document.createElement("div");
+        diagram.className = "mermaid-diagram";
+        diagram.innerHTML = svg;
+        pre.replaceWith(diagram);
+      } catch (error) {
+        console.error("Unable to render a Mermaid diagram.", error);
+        const message = document.createElement("p");
+        message.className = "diagram-error";
+        message.textContent =
+          "This diagram could not be rendered. The source is shown above.";
+        pre.after(message);
+      }
+    }
+  }
+</script>

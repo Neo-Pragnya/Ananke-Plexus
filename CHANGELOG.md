@@ -8,6 +8,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **New documentation website (Astro)** in `website/`, deployed to GitHub Pages by `.github/workflows/docs-site.yml`:
+  pastel, interactive landing page (morphing glyphs, cursor-reactive shape field, count-up stats), sidebar and on-page
+  TOC, prev/next, edit links, Mermaid, callouts for `!!!` admonitions. It reads the same `docs/` Markdown, with
+  navigation imported from `mkdocs.yml`.
+- **Dex Trove guide** (`docs/guides/dex-trove.md`): load the licence-clean Dex Trove library (970 skills, agents and
+  plugins) with `ananke registry learn python:dex-trove` or `dex ananke sync`.
+
+### Changed
+
+- `docs.yml` now only validates the MkDocs build that ships inside the wheel for `ananke docs build/serve`
+  (offline docs, unchanged). The hosted site is the Astro build.
+
 ---
 
 ## [0.3.4] — 2026-10-01
