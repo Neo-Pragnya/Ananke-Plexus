@@ -1,8 +1,11 @@
 ---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
 import { getCollection } from "astro:content";
 import Glyph from "../components/Glyph.astro";
 import Layout from "../components/Layout.astro";
-import { DOC_NAV, DOC_TITLES, FEATURES, STATS, docHref, site } from "../lib/site";
+import Orbits from "../components/Orbits.astro";
+import { DOC_NAV, DOC_TITLES, FEATURES, PIPELINE, PLATES, PRINCIPLES, STATS, docHref, site } from "../lib/site";
 
 const base = import.meta.env.BASE_URL;
 const docs = await getCollection("docs");
@@ -10,12 +13,13 @@ const byId = new Map(docs.map((d) => [d.id, d]));
 const titleOf = (id: string) =>
   byId.get(id)?.data.title ?? DOC_TITLES[id] ?? (id.split("/").at(-1) ?? id).replace(/[-_]/g, " ");
 const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//, "")}`);
+const images = import.meta.glob<{ default: ImageMetadata }>("../../../docs/assets/*.jpg", { eager: true });
+const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.default;
 ---
 
 <Layout title={site.name}>
   <section class="hero">
-    <div class="mk-aurora" style="--mk-aurora-a: var(--lemon); --mk-aurora-b: var(--teal)"></div>
-    <canvas data-field="34" aria-hidden="true"></canvas>
+    <Orbits />
     <div class="hero-content">
       <p class="eyebrow" data-reveal>{site.eyebrow}</p>
       <h1 data-reveal style="--d: .05s">
@@ -26,13 +30,19 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
       <div class="hero-actions" data-reveal style="--d: .15s">
         {
           site.ctas.map((c, i) => (
-            <a class:list={["btn", "ants", { ghost: i > 0 }]} data-magnetic href={href(c.href)} style="--mk-ants: var(--coral)">
+            <a class:list={["btn", { ghost: i > 0 }]} data-magnetic href={href(c.href)}>
               {c.label}
             </a>
           ))
         }
       </div>
       {site.install && <div class="install-line" data-reveal style="--d: .2s"><span>$ {site.install}</span></div>}
+      <ul class="pillars" data-reveal style="--d: .25s">
+        <li>Specify</li>
+        <li>Build</li>
+        <li>Verify</li>
+        <li>Evolve</li>
+      </ul>
     </div>
   </section>
 
@@ -40,7 +50,7 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
     STATS.length > 0 && (
       <div class="stats">
         {STATS.map((s, i) => (
-          <div class={`card stat t-${s.tint}`} data-tilt data-reveal style={`--d:${i * 0.05}s`}>
+          <div class={`card stat t-${s.tint}`} data-reveal style={`--d:${i * 0.05}s`}>
             <strong data-countup>{s.value}</strong>
             <span>{s.label}</span>
           </div>
@@ -49,11 +59,56 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
     )
   }
 
-  <h2 data-reveal>What's inside</h2>
+  <h2 class="home-h2" data-reveal>The harness, not the cage</h2>
+  <div class="myth">
+    <section class="card myth-story t-gold" data-reveal>
+      <p class="eyebrow">Ἀνάγκη · Necessity</p>
+      <blockquote>
+        In the Orphic stories, Ananke coils around the cosmos with Chronos; in Plato's Myth of Er, the heavens turn
+        on her spindle.
+      </blockquote>
+      <p>
+        She doesn't build the stars. She keeps them in order while the universe expands and expresses itself.
+        Ananke Plexus takes the same role for AI agents. It doesn't write the code. It sets the few things that
+        must always hold, such as the spec, the architecture contract, the policy and the evidence, and leaves
+        everything else to the agent.
+      </p>
+      <p><a href={`${base}docs/concepts/why-ananke/`}>Why Ananke Plexus →</a></p>
+    </section>
+    <div class="principles">
+      {
+        PRINCIPLES.map((p, i) => (
+          <section class={`card principle t-${p.tint}`} data-reveal style={`--d:${i * 0.06}s`}>
+            <Glyph shapes={p.shapes} tint={p.tint} />
+            <div>
+              <strong>{p.title}</strong>
+              <p>{p.text}</p>
+            </div>
+          </section>
+        ))
+      }
+    </div>
+  </div>
+
+  <h2 class="home-h2" data-reveal>Intent → Proof</h2>
+  <div class="pipeline-rail" aria-hidden="true"></div>
+  <ol class="pipeline">
+    {
+      PIPELINE.map((s, i) => (
+        <li class={`card t-${s.tint}`} data-reveal style={`--d:${i * 0.05}s`}>
+          <Glyph shapes={s.shapes} tint={s.tint} />
+          <strong>{s.title}</strong>
+          <p>{s.text}</p>
+        </li>
+      ))
+    }
+  </ol>
+
+  <h2 class="home-h2" data-reveal>What's inside</h2>
   <div class="grid-cards">
     {
       FEATURES.map((f, i) => (
-        <a class={`card feature t-${f.tint}`} href={href(f.href)} data-tilt data-reveal style={`--d:${Math.min(i * 0.05, 0.3)}s`}>
+        <a class={`card feature t-${f.tint}`} href={href(f.href)} data-reveal style={`--d:${Math.min(i * 0.05, 0.3)}s`}>
           <Glyph shapes={f.shapes} tint={f.tint} />
           <strong>{f.title}</strong>
           <p>{f.text}</p>
@@ -62,7 +117,27 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
     }
   </div>
 
-  <h2 data-reveal>Browse the documentation</h2>
+  <h2 class="home-h2" data-reveal>The system at a glance</h2>
+  <div class="plates">
+    {
+      PLATES.map((p, i) => {
+        const img = imageOf(p.image);
+        return (
+          img && (
+            <a class="card plate" href={href(p.href)} data-reveal style={`--d:${i * 0.05}s`}>
+              <Image src={img} alt={p.title} width={640} loading="lazy" />
+              <span>
+                {p.title}
+                <small>{p.caption}</small>
+              </span>
+            </a>
+          )
+        );
+      })
+    }
+  </div>
+
+  <h2 class="home-h2" data-reveal>Browse the documentation</h2>
   <div class="grid-cards">
     {
       DOC_NAV.map((section) => (

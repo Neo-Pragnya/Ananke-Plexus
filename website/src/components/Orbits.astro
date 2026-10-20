@@ -1,0 +1,199 @@
+---
+// The Ananke hero: a cosmic harness. Agents (nodes) travel tilted orbits around a gold core ("necessity at the
+// core"). Each one drifts freely off its path ("freedom at the edge") and a soft spring, not a wall, guides it back.
+// Nearby agents link into a plexus. The cursor is a gentle attractor; a click sends a pulse from the core.
+// Honours prefers-reduced-motion and ?motion=static (draws a single still frame).
+---
+
+<canvas class="orbits" aria-hidden="true"></canvas>
+
+<script>
+  const TAU = Math.PI * 2;
+  const canvas = document.querySelector<HTMLCanvasElement>("canvas.orbits");
+  const ctx = canvas?.getContext("2d");
+  if (canvas && ctx) {
+    const still =
+      matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      new URLSearchParams(location.search).get("motion") === "static";
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+    const RINGS = [
+      { r: 0.3, tilt: 0.34, rot: -0.35, speed: 0.22, color: "212,165,65" },
+      { r: 0.5, tilt: 0.42, rot: 0.25, speed: 0.14, color: "120,160,255" },
+      { r: 0.72, tilt: 0.3, rot: -0.12, speed: 0.09, color: "212,165,65" },
+      { r: 0.94, tilt: 0.38, rot: 0.42, speed: 0.06, color: "120,160,255" },
+    ];
+    const agents = Array.from({ length: 30 }, (_, i) => {
+      const ring = RINGS[i % RINGS.length];
+      return {
+        ring,
+        a: rnd() * TAU,
+        speed: ring.speed * (0.7 + rnd() * 0.6) * (i % 3 === 0 ? -1 : 1),
+        drift: 0,
+        dv: 0,
+        size: 1.6 + rnd() * 2.4,
+        gold: rnd() > 0.6,
+        x: 0,
+        y: 0,
+      };
+    });
+    const stars = Array.from({ length: 90 }, () => ({ x: rnd(), y: rnd(), s: rnd() * 1.2 + 0.2, p: rnd() * TAU }));
+    const pointer = { x: -9999, y: -9999 };
+    const pulses: number[] = [];
+    let w = 0;
+    let h = 0;
+    let cx = 0;
+    let cy = 0;
+    let R = 0;
+    let visible = true;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      w = rect.width;
+      h = rect.height;
+      canvas.width = Math.max(1, w * dpr);
+      canvas.height = Math.max(1, h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const wide = w > 760;
+      cx = wide ? w * 0.8 : w * 0.5;
+      cy = wide ? h * 0.5 : h * 0.9;
+      R = Math.min(wide ? w * 0.25 : w * 0.48, h * (wide ? 0.6 : 0.4));
+    };
+
+    const point = (ring: (typeof RINGS)[number], a: number, extra = 0) => {
+      const rr = R * ring.r * (1 + extra);
+      const ex = Math.cos(a) * rr;
+      const ey = Math.sin(a) * rr * ring.tilt;
+      return [cx + ex * Math.cos(ring.rot) - ey * Math.sin(ring.rot), cy + ex * Math.sin(ring.rot) + ey * Math.cos(ring.rot)];
+    };
+
+    const draw = (time: number) => {
+      const t = time / 1000;
+      ctx.clearRect(0, 0, w, h);
+
+      for (const s of stars) {
+        ctx.globalAlpha = 0.35 + 0.35 * Math.sin(t * 1.3 + s.p);
+        ctx.fillStyle = "#dfe8ff";
+        ctx.fillRect(s.x * w, s.y * h, s.s, s.s);
+      }
+
+      // the harness: tilted orbits
+      ctx.globalAlpha = 1;
+      for (const ring of RINGS) {
+        ctx.beginPath();
+        for (let i = 0; i <= 96; i++) {
+          const [x, y] = point(ring, (i / 96) * TAU);
+          if (i) ctx.lineTo(x, y);
+          else ctx.moveTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(${ring.color},0.32)`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // the core: necessity
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.22);
+      glow.addColorStop(0, "rgba(255,236,180,0.95)");
+      glow.addColorStop(0.25, "rgba(212,165,65,0.55)");
+      glow.addColorStop(1, "rgba(212,165,65,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.22, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#fff4d6";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4.5, 0, TAU);
+      ctx.fill();
+
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const age = t - pulses[i];
+        if (age > 2.4) {
+          pulses.splice(i, 1);
+          continue;
+        }
+        ctx.beginPath();
+        ctx.arc(cx, cy, (age / 2.4) * R * 1.05, 0, TAU);
+        ctx.strokeStyle = `rgba(240,207,122,${0.55 * (1 - age / 2.4)})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // agents: free to drift, guided back by a spring
+      for (const g of agents) {
+        if (!still) g.a += g.speed * 0.016;
+        const [px, py] = point(g.ring, g.a, g.drift);
+        const dx = pointer.x - px;
+        const dy = pointer.y - py;
+        const dist = Math.hypot(dx, dy);
+        const pull = Math.max(0, 1 - dist / 170);
+        const pulse = pulses.some((p) => Math.abs((t - p) / 2.4 * R * 1.05 - Math.hypot(px - cx, py - cy)) < 14);
+        g.dv += (Math.sin(t * 0.7 + g.a * 3) * 0.04 - g.drift) * 0.02 + (pulse ? 0.02 : 0);
+        g.dv *= 0.9;
+        g.drift += g.dv;
+        g.x = px + dx * pull * 0.18;
+        g.y = py + dy * pull * 0.18;
+      }
+
+      // plexus links
+      for (let i = 0; i < agents.length; i++) {
+        for (let j = i + 1; j < agents.length; j++) {
+          const a = agents[i];
+          const b = agents[j];
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (d < R * 0.32) {
+            ctx.globalAlpha = (1 - d / (R * 0.32)) * 0.5;
+            ctx.strokeStyle = a.gold || b.gold ? "#f0cf7a" : "#8fb0ff";
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      for (const g of agents) {
+        const near = Math.max(0, 1 - Math.hypot(pointer.x - g.x, pointer.y - g.y) / 170);
+        ctx.fillStyle = g.gold ? "#f0cf7a" : "#bcd0ff";
+        ctx.shadowColor = g.gold ? "rgba(240,207,122,0.9)" : "rgba(140,176,255,0.9)";
+        ctx.shadowBlur = 8 + near * 14;
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, g.size * (1 + near * 0.8), 0, TAU);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    };
+
+    const loop = (time: number) => {
+      if (visible) draw(time);
+      requestAnimationFrame(loop);
+    };
+
+    resize();
+    addEventListener("resize", () => {
+      resize();
+      if (still) draw(4000);
+    });
+    if (still) {
+      draw(4000);
+    } else {
+      const host = canvas.parentElement ?? canvas;
+      host.addEventListener("pointermove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = e.clientX - rect.left;
+        pointer.y = e.clientY - rect.top;
+      });
+      host.addEventListener("pointerleave", () => {
+        pointer.x = pointer.y = -9999;
+      });
+      host.addEventListener("click", (e) => {
+        if (!(e.target as Element).closest("a,button")) pulses.push(performance.now() / 1000);
+      });
+      new IntersectionObserver(([entry]) => (visible = entry.isIntersecting)).observe(canvas);
+      setInterval(() => visible && pulses.push(performance.now() / 1000), 6000);
+      requestAnimationFrame(loop);
+    }
+  }
+</script>

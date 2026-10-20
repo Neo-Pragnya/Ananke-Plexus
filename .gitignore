@@ -254,3 +254,6 @@ trivy-results.sarif
 **/Debug**
 **/DEBUG**
 Debug-Specs/**
+
+# The docs website keeps TypeScript sources in website/src/lib (not a Python build dir)
+!website/src/lib/

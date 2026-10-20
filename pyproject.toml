@@ -60,6 +60,8 @@ telemetry = [
   "opentelemetry-sdk>=1.30",
 ]
 jira = ["atlassian-python-api>=3"]
+# Dex Trove: a licence-clean library of skills, agents and plugins (see docs/guides/dex-trove.md)
+dex = ["dex-trove>=0.1.0"]
 security = [
   "pip-audit>=2.8",
 ]

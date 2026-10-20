@@ -8,19 +8,30 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+---
+
+## [0.3.5] — 2026-10-20
+
 ### Added
 
-- **New documentation website (Astro)** in `website/`, deployed to GitHub Pages by `.github/workflows/docs-site.yml`:
-  pastel, interactive landing page (morphing glyphs, cursor-reactive shape field, count-up stats), sidebar and on-page
-  TOC, prev/next, edit links, Mermaid, callouts for `!!!` admonitions. It reads the same `docs/` Markdown, with
-  navigation imported from `mkdocs.yml`.
-- **Dex Trove guide** (`docs/guides/dex-trove.md`): load the licence-clean Dex Trove library (970 skills, agents and
-  plugins) with `ananke registry learn python:dex-trove` or `dex ananke sync`.
+- **`dex` extra**: `pip install "ananke-plexus[dex]"` installs [Dex Trove](https://pypi.org/project/dex-trove/),
+  a licence-clean library of 970 skills, agents, instructions, hooks, workflows and plugins that Ananke can register
+  with `ananke registry learn python:dex-trove`.
+- **New documentation website (Astro)** in `website/`, deployed to GitHub Pages by `.github/workflows/docs-site.yml`.
+  Its theme follows the Ananke idea of a cosmic harness: celestial navy, royal blue and gold taken from the logo and
+  the docs infographics, a structured blueprint grid, and an interactive hero where agents travel orbits around a
+  gold core and link into a plexus. Agents drift freely and are guided back gently (freedom at the edge, necessity
+  at the core). The home page adds the Ananke story, the guiding principles, the Intent → Proof pipeline and the
+  infographics. Docs pages have a sidebar and an on-page table of contents, prev/next and edit links, Mermaid
+  diagrams and callouts for `!!!` admonitions. The site reads the same `docs/` Markdown, with navigation imported
+  from `mkdocs.yml`.
+- **Dex Trove guide** (`docs/guides/dex-trove.md`): how to load Dex Trove with `ananke registry learn python:dex-trove`
+  or with `dex ananke sync`.
 
 ### Changed
 
-- `docs.yml` now only validates the MkDocs build that ships inside the wheel for `ananke docs build/serve`
-  (offline docs, unchanged). The hosted site is the Astro build.
+- `docs.yml` now only validates the MkDocs build that ships inside the wheel for `ananke docs build/serve`. The
+  offline docs are unchanged. The hosted site is now the Astro build.
 
 ---
 

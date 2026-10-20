@@ -20,7 +20,7 @@ flowchart LR
 ## Load everything
 
 ```bash
-pip install ananke-plexus dex-trove
+pip install "ananke-plexus[dex]"     # same as: pip install ananke-plexus dex-trove
 ananke registry init
 ananke registry learn python:dex-trove
 ```

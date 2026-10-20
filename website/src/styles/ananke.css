@@ -1,0 +1,642 @@
+/*
+ * Ananke theme — "the cosmic harness".
+ * Layered over the shared docs template (global.css). Colours come from the Ananke logo and the infographics in
+ * docs/assets: celestial navy, royal blue and gold on a misty sky-white, with crisp structure (hairlines, small
+ * caps, square-ish corners, a faint blueprint grid). Dex Trove is playful pastel; Ananke is ordered and celestial.
+ */
+:root {
+  --bg: #f4f7fc;
+  --bg-2: #e9f0fa;
+  --surface: #ffffff;
+  --surface-2: #f0f4fb;
+  --ink: #0b1b3f;
+  --muted: #475676;
+  --line: #d8e2f1;
+  --brand: #0b1b3f;
+  --brand-ink: #ffffff;
+  --link: #1c3fae;
+  --code-bg: #eef3fb;
+  --night: #071331;
+  --night-2: #0f2563;
+
+  /* celestial palette: strong (marks), soft (fills), ink (text on soft) */
+  --gold: #d4a541;
+  --gold-bright: #f0cf7a;
+  --gold-soft: #f8f0dc;
+  --gold-ink: #74500c;
+  --royal: #2f5be7;
+  --royal-soft: #e4ebfd;
+  --royal-ink: #1c3fae;
+  --azure: #38a3e8;
+  --azure-soft: #e0f2fd;
+  --azure-ink: #0b5a8c;
+  --violet: #7c5ce6;
+  --violet-soft: #ece7fd;
+  --violet-ink: #4a2db0;
+  --jade: #1fae9c;
+  --jade-soft: #dcf4f0;
+  --jade-ink: #0a675b;
+  --ember: #ec8a3a;
+  --ember-soft: #fdebd9;
+  --ember-ink: #8f450b;
+
+  --ok: #0a675b;
+  --ok-soft: #dcf4f0;
+  --warn: #8f450b;
+  --warn-soft: #fdebd9;
+  --deny: #a3223a;
+  --deny-soft: #fde4e8;
+
+  --radius: 10px;
+  --shadow: 0 1px 0 rgb(11 27 63 / 4%), 0 10px 30px -12px rgb(11 27 63 / 18%);
+  --serif: "Cinzel", "Trajan Pro", Georgia, serif;
+  --display: "Inter", var(--font);
+}
+
+:root[data-theme="dark"] {
+  --bg: #060d22;
+  --bg-2: #0a1530;
+  --surface: #0d1a3a;
+  --surface-2: #122249;
+  --ink: #eef3ff;
+  --muted: #a7b4d6;
+  --line: #22335f;
+  --brand: #f0cf7a;
+  --brand-ink: #071331;
+  --link: #a8c0ff;
+  --code-bg: #0f1e44;
+  --gold-soft: #2b2410;
+  --gold-ink: #f0cf7a;
+  --royal-soft: #15275e;
+  --royal-ink: #b4c6ff;
+  --azure-soft: #0d2c47;
+  --azure-ink: #9fd6fb;
+  --violet-soft: #241a4f;
+  --violet-ink: #cbbcff;
+  --jade-soft: #0c3530;
+  --jade-ink: #8ce6d9;
+  --ember-soft: #3a2310;
+  --ember-ink: #ffc08a;
+  --ok: #8ce6d9;
+  --ok-soft: #0c3530;
+  --warn: #ffc08a;
+  --warn-soft: #3a2310;
+  --deny: #ffb3c0;
+  --deny-soft: #3a1520;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 12px 30px -14px rgb(0 0 0 / 60%);
+}
+
+/* tints used by sections and glyphs */
+.t-gold { --kc: var(--gold); --kc-soft: var(--gold-soft); --kc-ink: var(--gold-ink); }
+.t-royal { --kc: var(--royal); --kc-soft: var(--royal-soft); --kc-ink: var(--royal-ink); }
+.t-azure { --kc: var(--azure); --kc-soft: var(--azure-soft); --kc-ink: var(--azure-ink); }
+.t-violet { --kc: var(--violet); --kc-soft: var(--violet-soft); --kc-ink: var(--violet-ink); }
+.t-jade { --kc: var(--jade); --kc-soft: var(--jade-soft); --kc-ink: var(--jade-ink); }
+.t-ember { --kc: var(--ember); --kc-soft: var(--ember-soft); --kc-ink: var(--ember-ink); }
+
+/* ---------------------------------------------------------------- canvas: misty sky over a blueprint grid */
+body {
+  background:
+    radial-gradient(1200px 520px at 50% -160px, color-mix(in srgb, var(--royal) 12%, transparent), transparent 70%),
+    linear-gradient(color-mix(in srgb, var(--royal) 5%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, color-mix(in srgb, var(--royal) 5%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    var(--bg);
+}
+
+.mk-grain::before {
+  opacity: 0.025;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
+.serif,
+.hero h1,
+.home-h2,
+.brand-text {
+  font-family: var(--serif);
+  letter-spacing: 0.02em;
+}
+
+/* ---------------------------------------------------------------- header */
+.site-header {
+  border-bottom: 1px solid var(--line);
+  max-width: none;
+  padding-inline: max(16px, calc((100vw - 1288px) / 2));
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand-text {
+  font-weight: 700;
+  font-size: 1.12rem;
+}
+
+.brand-text small {
+  font-family: var(--font);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.brand-emblem {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+
+.brand-emblem .orbit {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.6;
+}
+
+.brand-emblem .orbit.b {
+  stroke: var(--royal);
+  opacity: 0.7;
+}
+
+.brand-emblem .core {
+  fill: var(--royal);
+}
+
+.brand-emblem .apex {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.brand-emblem .moon {
+  fill: var(--gold);
+  transform-origin: 32px 32px;
+  animation: an-orbit 9s linear infinite;
+}
+
+.brand:hover .brand-emblem .moon {
+  animation-duration: 2.4s;
+}
+
+@keyframes an-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.top-nav a {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.top-nav a[aria-current="page"] {
+  background: transparent;
+  color: var(--royal-ink);
+  box-shadow: inset 0 -2px 0 var(--gold);
+  border-radius: 0;
+}
+
+.theme-toggle {
+  border-radius: 8px;
+}
+
+/* ---------------------------------------------------------------- shared components */
+.eyebrow {
+  color: var(--gold-ink);
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+}
+
+.card {
+  border-radius: var(--radius);
+  position: relative;
+}
+
+.card::before {
+  /* a gold hairline on every panel — the "harness" */
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto;
+  height: 2px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: linear-gradient(90deg, var(--kc, var(--gold)), transparent 70%);
+  opacity: 0.85;
+}
+
+.btn {
+  border-radius: 8px;
+  letter-spacing: 0.01em;
+}
+
+.chip {
+  border-radius: 6px;
+}
+
+.chip.gold {
+  color: var(--gold-ink);
+  background: var(--gold-soft);
+}
+
+.glyph {
+  color: var(--kc, var(--gold));
+}
+
+.feature {
+  border-top: 1px solid var(--line);
+}
+
+.feature:hover {
+  border-color: var(--kc);
+  transform: translateY(-1px);
+}
+
+pre,
+.table-wrap,
+.doc-article table,
+.mermaid-diagram {
+  border-radius: 8px;
+}
+
+:not(pre) > code {
+  border-radius: 4px;
+}
+
+/* ---------------------------------------------------------------- hero: the night sky */
+.hero {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  color: #eef3ff;
+  background:
+    radial-gradient(900px 420px at 78% 40%, rgb(47 91 231 / 45%), transparent 70%),
+    radial-gradient(600px 300px at 10% 110%, rgb(212 165 65 / 20%), transparent 70%),
+    linear-gradient(160deg, var(--night-2), var(--night) 60%);
+  box-shadow: 0 30px 60px -30px rgb(7 19 49 / 55%);
+}
+
+.hero canvas.orbits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(100deg, transparent 0 46%, #000 72%);
+  mask-image: linear-gradient(100deg, transparent 0 46%, #000 72%);
+}
+
+@media (max-width: 760px) {
+  .hero canvas.orbits {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0 45%, #000 85%);
+    mask-image: linear-gradient(180deg, transparent 0 45%, #000 85%);
+  }
+}
+
+.hero .eyebrow {
+  color: var(--gold-bright);
+}
+
+.hero h1 {
+  font-weight: 600;
+  font-size: clamp(2.1rem, 5.4vw, 3.9rem);
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+}
+
+.hero h1 .hl {
+  background: linear-gradient(90deg, #f6dc95, var(--gold) 45%, #f6dc95);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero .lede {
+  color: #d5def5;
+  opacity: 1;
+}
+
+.hero .btn {
+  background: linear-gradient(180deg, #f3d687, var(--gold));
+  border-color: transparent;
+  color: var(--night);
+}
+
+.hero .btn.ghost {
+  background: transparent;
+  color: #eef3ff;
+  border-color: rgb(238 243 255 / 35%);
+}
+
+.hero .install-line {
+  background: rgb(255 255 255 / 6%);
+  border-color: rgb(255 255 255 / 18%);
+  color: #eef3ff;
+}
+
+.pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #b9c6e6;
+}
+
+.pillars li + li::before {
+  content: "◆";
+  color: var(--gold);
+  margin-right: 18px;
+  font-size: 0.55rem;
+  vertical-align: 2px;
+}
+
+/* ---------------------------------------------------------------- home sections */
+.home-h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-h2::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  opacity: 0.6;
+}
+
+.stat {
+  text-align: left;
+  border-left: 3px solid var(--kc, var(--gold));
+}
+
+.stat strong {
+  font-family: var(--serif);
+  font-weight: 600;
+  color: var(--kc-ink, var(--ink));
+}
+
+.stat span {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.myth {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+  .myth {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+
+.myth-story {
+  padding: 26px 28px;
+}
+
+.myth-story blockquote {
+  margin: 0 0 14px;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.45rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.myth-story p {
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+.principles {
+  display: grid;
+  gap: 12px;
+}
+
+.principle {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.principle .glyph {
+  width: 44px;
+  height: 44px;
+}
+
+.principle strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.principle p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* pipeline: Intent → Spec → Plan → Tasks → Code → Proof */
+.pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  counter-reset: step;
+  position: relative;
+}
+
+.pipeline li {
+  counter-increment: step;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+}
+
+.pipeline li::after {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font: 600 0.72rem/1 var(--mono);
+  color: var(--kc-ink, var(--gold-ink));
+  opacity: 0.8;
+}
+
+.pipeline .glyph {
+  width: 36px;
+  height: 36px;
+}
+
+.pipeline strong {
+  font-size: 1rem;
+}
+
+.pipeline p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.pipeline li:hover .glyph {
+  color: var(--kc-ink);
+}
+
+.pipeline-rail {
+  height: 2px;
+  margin: 6px 0 14px;
+  background: linear-gradient(90deg, var(--gold), var(--royal), var(--azure), var(--violet), var(--jade), var(--gold));
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pipeline-rail::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -20%;
+  width: 20%;
+  background: linear-gradient(90deg, transparent, #fff, transparent);
+  animation: an-rail 3.6s var(--mk-ease) infinite;
+}
+
+@keyframes an-rail {
+  to {
+    left: 100%;
+  }
+}
+
+.plates {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.plate {
+  padding: 0;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.plate img {
+  border-radius: 0;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: top;
+  transition: transform 0.6s var(--mk-ease);
+}
+
+.plate:hover img {
+  transform: scale(1.04);
+}
+
+.plate span {
+  padding: 12px 16px 14px;
+  font-weight: 600;
+  font-size: 0.94rem;
+}
+
+.plate small {
+  display: block;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- docs */
+.sidebar-link,
+.toc-link {
+  border-radius: 6px;
+}
+
+.sidebar-link.active {
+  background: var(--kc-soft, var(--gold-soft));
+  box-shadow: inset 2px 0 0 var(--kc, var(--gold));
+  border-radius: 0 6px 6px 0;
+}
+
+.toc-link:hover {
+  border-left-color: var(--gold);
+}
+
+.doc-article h2 {
+  border-top: 1px solid var(--line);
+}
+
+.callout-note,
+.callout-info { --kc: var(--azure); --kc-soft: var(--azure-soft); }
+.callout-tip,
+.callout-success { --kc: var(--jade); --kc-soft: var(--jade-soft); }
+.callout-important,
+.callout-example,
+.callout-question { --kc: var(--violet); --kc-soft: var(--violet-soft); }
+.callout-warning { --kc: var(--gold); --kc-soft: var(--gold-soft); }
+.callout-caution,
+.callout-danger { --kc: var(--ember); --kc-soft: var(--ember-soft); }
+
+.site-footer {
+  border-top: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-emblem .moon,
+  .pipeline-rail::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- small screens and leftovers */
+main {
+  min-width: 0;
+}
+
+.doc-toc .sidebar-heading {
+  color: var(--gold-ink);
+}
+
+@media (max-width: 560px) {
+  .hero h1 {
+    font-size: clamp(1.6rem, 7.6vw, 2.1rem);
+    letter-spacing: 0;
+  }
+
+  .site-header .brand-text small {
+    letter-spacing: 0.06em;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pillars {
+    gap: 6px 10px;
+    letter-spacing: 0.16em;
+  }
+
+  .pillars li + li::before {
+    margin-right: 10px;
+  }
+}

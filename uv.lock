@@ -267,6 +267,9 @@ dev = [
     { name = "python-dotenv" },
     { name = "ruff" },
 ]
+dex = [
+    { name = "dex-trove" },
+]
 docs = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
@@ -406,6 +409,7 @@ requires-dist = [
     { name = "cryptography", marker = "extra == 'registry'", specifier = ">=42" },
     { name = "cryptography", marker = "extra == 'registry-signing'", specifier = ">=42" },
     { name = "deepeval", marker = "extra == 'eval-deepeval'", specifier = ">=1.0" },
+    { name = "dex-trove", marker = "extra == 'dex'", specifier = ">=0.1.0" },
     { name = "duckdb", marker = "extra == 'registry-analytics'", specifier = ">=1.0" },
     { name = "hatchling", marker = "extra == 'dev'", specifier = ">=1.26" },
     { name = "httpx", specifier = ">=0.28,<1" },
@@ -482,7 +486,7 @@ requires-dist = [
     { name = "zstandard", marker = "extra == 'registry'", specifier = ">=0.22" },
     { name = "zstandard", marker = "extra == 'registry-zstd'", specifier = ">=0.22" },
 ]
-provides-extras = ["all", "dev", "docs", "eval-agentevals", "eval-deepeval", "eval-enterprise", "eval-inspect", "eval-mlflow", "eval-openevals", "eval-otel", "eval-pydantic", "eval-ragas", "jira", "mcp", "registry", "registry-analytics", "registry-fast", "registry-signing", "registry-validate", "registry-watch", "registry-zstd", "security", "telemetry", "test-all", "test-api", "test-automation", "test-bdd", "test-contract", "test-mutation", "test-property", "test-python", "test-snapshot"]
+provides-extras = ["all", "dev", "dex", "docs", "eval-agentevals", "eval-deepeval", "eval-enterprise", "eval-inspect", "eval-mlflow", "eval-openevals", "eval-otel", "eval-pydantic", "eval-ragas", "jira", "mcp", "registry", "registry-analytics", "registry-fast", "registry-signing", "registry-validate", "registry-watch", "registry-zstd", "security", "telemetry", "test-all", "test-api", "test-automation", "test-bdd", "test-contract", "test-mutation", "test-property", "test-python", "test-snapshot"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1656,6 +1660,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/49/85/12f0a49a7c4ffb70572b6c2ef13c90c88fd190debda93b23f026b25f9634/deprecated-1.3.1.tar.gz", hash = "sha256:b1b50e0ff0c1fddaa5708a2c6b0a6588bb09b892825ab2b214ac9ea9d92a5223", size = 2932523, upload-time = "2025-10-30T08:19:02.757Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/84/d0/205d54408c08b13550c733c4b85429e7ead111c7f0014309637425520a9a/deprecated-1.3.1-py2.py3-none-any.whl", hash = "sha256:597bfef186b6f60181535a29fbe44865ce137a5079f295b479886c82729d5f3f", size = 11298, upload-time = "2025-10-30T08:19:00.758Z" },
+]
+
+[[package]]
+name = "dex-trove"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f7/bd/845cdaf826d961c7983e6a132067c47a5b2892904bf3e00293717c9220cd/dex_trove-0.1.0.tar.gz", hash = "sha256:54b0f1fab2a586934db989944d2f1274d69413e3c4e65f05bbbaed948664c198", size = 11402313, upload-time = "2026-10-20T05:10:11.764Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/91/60f93427ba1fc83b6a909d9b7437372e783812773ad4d35b8be57714f129/dex_trove-0.1.0-py3-none-any.whl", hash = "sha256:cc4adf52290415352d9f782720b463f2d1f03b8e947d5aa82f250d6ab521565e", size = 14771024, upload-time = "2026-10-20T05:10:07.642Z" },
 ]
 
 [[package]]

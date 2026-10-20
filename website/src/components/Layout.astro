@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import Glyph from "./Glyph.astro";
+import "../styles/ananke.css";
 import { NAV, site } from "../lib/site";
 
 interface Props {
@@ -29,7 +29,7 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
     />
     <link rel="stylesheet" href={`${base}motion-kit/motion-kit.css`} />
     <script is:inline>
@@ -42,7 +42,13 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
     <a class="skip" href="#main">Skip to content</a>
     <header class="site-header">
       <a class="brand" href={base} aria-label={`${site.name} home`}>
-        <Glyph shapes={site.logoShapes} tint="coral" class="brand-mark" />
+        <svg class="brand-emblem" viewBox="0 0 64 64" aria-hidden="true">
+          <ellipse class="orbit" cx="32" cy="32" rx="28" ry="11" transform="rotate(-24 32 32)" />
+          <ellipse class="orbit b" cx="32" cy="32" rx="28" ry="11" transform="rotate(24 32 32)" />
+          <path class="apex" d="M18 50 L32 12 L46 50 M24 36 H40" />
+          <circle class="core" cx="32" cy="32" r="5" />
+          <circle class="moon" cx="60" cy="32" r="3" />
+        </svg>
         <span class="brand-text">{site.name}<small>{site.tagline}</small></span>
       </a>
       <nav class="top-nav" aria-label="Main">
