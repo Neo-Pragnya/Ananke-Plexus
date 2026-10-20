@@ -1,0 +1,67 @@
+/*!
+ * diagram-fx.css — companion styles for diagram-fx.js · MIT · Neo Pragnya
+ * Tokens: --fx-hot (lit edges, pulses), --fx-dim (opacity of everything off-focus), --fx-glow (pulse halo).
+ */
+svg.dfx {
+  --fx-hot: #ff7a59;
+  --fx-dim: 0.22;
+  --fx-glow: color-mix(in srgb, var(--fx-hot) 55%, transparent);
+  overflow: visible;
+}
+
+svg.dfx .dfx-node {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.35s ease, filter 0.35s ease;
+}
+
+svg.dfx .dfx-edge {
+  transition: opacity 0.35s ease, stroke 0.35s ease, stroke-width 0.35s ease;
+}
+
+/* focus mode: dim everything, then lift the hovered node, its neighbours and their edges */
+svg.dfx.dfx-focus .dfx-node,
+svg.dfx.dfx-focus .dfx-edge,
+svg.dfx.dfx-focus .edgeLabel,
+svg.dfx.dfx-focus marker path {
+  opacity: var(--fx-dim);
+}
+
+svg.dfx.dfx-focus .dfx-node.dfx-hot,
+svg.dfx.dfx-focus .dfx-node.dfx-near,
+svg.dfx.dfx-focus .dfx-edge.dfx-on {
+  opacity: 1;
+}
+
+svg.dfx .dfx-node.dfx-hot {
+  filter: drop-shadow(0 0 10px var(--fx-glow));
+}
+
+svg.dfx .dfx-edge.dfx-on {
+  stroke: var(--fx-hot) !important;
+  stroke-width: 2.4px !important;
+  stroke-dasharray: 7 7 !important;
+  animation: dfx-flow 0.9s linear infinite !important;
+}
+
+@keyframes dfx-flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+svg.dfx .dfx-pulse {
+  fill: var(--fx-hot);
+  filter: drop-shadow(0 0 6px var(--fx-glow));
+  pointer-events: none;
+}
+
+svg.dfx .dfx-pulse.dfx-ambient {
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg.dfx .dfx-edge.dfx-on {
+    animation: none !important;
+  }
+}

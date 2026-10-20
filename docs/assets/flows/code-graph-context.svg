@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2034 730" width="2034" height="730" font-family="Amazon Ember, Inter, Arial, Helvetica, sans-serif" class="archviz-svg" data-uid="code-graph-context" role="img" aria-label="Precise context from the code graph">
+<title>Precise context from the code graph</title>
+<defs>
+<marker id="code-graph-context-ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#545B64"/></marker>
+<marker id="code-graph-context-mn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#E7157B"/></marker>
+<marker id="code-graph-context-mh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#FF9900"/></marker>
+<marker id="code-graph-context-mc0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0F8F7E"/></marker>
+<filter id="code-graph-context-glow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FF9900" flood-opacity=".9"/></filter>
+<filter id="code-graph-context-shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F1B2D" flood-opacity=".12"/></filter>
+</defs>
+<style>
+.code-graph-context text{fill:#232F3E}
+.code-graph-context .fl .ln{fill:none;stroke:#545B64;stroke-width:1.7}
+.code-graph-context .fl.dsh .ln{stroke-dasharray:5 4}
+.code-graph-context .fl .ant{fill:none;stroke:#FF9900;stroke-width:3;stroke-dasharray:7 11;opacity:0}
+.code-graph-context .bdg circle{fill:#232F3E}
+.code-graph-context .bdg text{fill:#fff;font-weight:700;font-size:12px}
+.code-graph-context .future{opacity:.13;filter:grayscale(1)}
+.code-graph-context .deleted{opacity:.35;filter:grayscale(1)}
+.code-graph-context .new .ln{stroke:#E7157B;stroke-width:2.4}
+.code-graph-context .new .ant{opacity:1;stroke:#E7157B;animation:code-graph-context-ants 1.1s linear infinite}
+.code-graph-context .new .bdg circle{fill:#E7157B}
+.code-graph-context .nd.new .halo{opacity:1;animation:code-graph-context-pulse 1.6s ease-in-out infinite}
+.code-graph-context .nd .halo{opacity:0;fill:none;stroke:#E7157B;stroke-width:3}
+.code-graph-context .lg.new text{fill:#E7157B}
+.code-graph-context .lg.future{opacity:.25}
+.code-graph-context .cap text{fill:#fff}
+@keyframes code-graph-context-ants{to{stroke-dashoffset:-36}}
+@keyframes code-graph-context-pulse{0%,100%{stroke-opacity:.25}50%{stroke-opacity:1}}
+@media (prefers-reduced-motion:reduce){.code-graph-context *{animation:none!important}}
+.code-graph-context .fl.c0 .ln{stroke:#0F8F7E;stroke-width:2.2}.code-graph-context .fl .ant{animation:code-graph-context-ants 1.1s linear infinite}</style>
+<g class="code-graph-context">
+<rect x="0" y="0" width="2034" height="730" fill="#FFFFFF"/>
+<text x="36" y="44" font-size="22" font-weight="700">Precise context from the code graph</text>
+<text x="36" y="68" font-size="13" fill="#5F6B7A">Instead of reading the whole repository (~143k tokens), the agent asks the graph and gets a focused subgraph (~2.2k).</text>
+<g class="cap"><rect x="36" y="82" width="1500" height="32" rx="7" fill="#232F3E"/>
+<rect x="36" y="110" width="0" height="4" rx="2" fill="#FF9900"><animate attributeName="width" values="0;1500" dur="24.00s" repeatCount="indefinite"/></rect>
+<text x="48" y="103" font-size="13" font-weight="700" style="fill:#FF9900">▶ NOW</text>
+<text x="108" y="103" font-size="13.5" opacity="0">1 · The agent asks the graph instead of reading every file<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">2 · The graph locates the changed symbol<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">3 · Direct callers and callees are one hop away<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">4 · ...including the route that exposes it<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">5 · ...and the repository it reads from<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">6 · Indirect impact shows up two hops out<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">7 · ...so nothing downstream is missed<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">8 · Test targeting: run the tests that cover the change<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">9 · The focused subgraph returns as rich context: ~2.2k tokens, not ~143k<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/></text>
+<text x="108" y="103" font-size="13.5" opacity="0">10 · The agent edits with the right neighbours in view<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0040;0.0960;0.1000;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/></text>
+</g>
+<g class="fl f1 built " data-n="1" data-stage="0">
+<path class="ln" d="M350.2,387.2 L402.2,387.2" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M350.2,387.2 L402.2,387.2" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="361.6" cy="387.2" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/></circle><text x="361.6" y="391.2" text-anchor="middle">1</text></g></g>
+<g class="fl f2 built " data-n="2" data-stage="0">
+<path class="ln" d="M644.2,387.2 L721.4,387.2" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M644.2,387.2 L721.4,387.2" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="661.2" cy="387.2" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/></circle><text x="661.2" y="391.2" text-anchor="middle">2</text></g></g>
+<g class="fl f3 built " data-n="3" data-stage="0">
+<path class="ln" d="M929.8,387.2 L976.8,387.2 L976.8,246.4 L1023.8,246.4" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M929.8,387.2 L976.8,387.2 L976.8,246.4 L1023.8,246.4" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="976.8" cy="251.1" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/></circle><text x="976.8" y="255.1" text-anchor="middle">3</text></g></g>
+<g class="fl f4 built " data-n="4" data-stage="0">
+<path class="ln" d="M929.8,387.2 L1023.8,387.2" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M929.8,387.2 L1023.8,387.2" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="995.6" cy="387.2" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/></circle><text x="995.6" y="391.2" text-anchor="middle">4</text></g></g>
+<g class="fl f5 built " data-n="5" data-stage="0">
+<path class="ln" d="M929.8,387.2 L976.8,387.2 L976.8,528.0 L1023.8,528.0" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M929.8,387.2 L976.8,387.2 L976.8,528.0 L1023.8,528.0" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="976.8" cy="523.3" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/></circle><text x="976.8" y="527.3" text-anchor="middle">5</text></g></g>
+<g class="fl f6 built  dsh" data-n="6" data-stage="0">
+<path class="ln" d="M1232.2,246.4 L1326.2,246.4" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M1232.2,246.4 L1326.2,246.4" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="1252.9" cy="246.4" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/></circle><text x="1252.9" y="250.4" text-anchor="middle">6</text></g></g>
+<g class="fl f7 built  dsh" data-n="7" data-stage="0">
+<path class="ln" d="M1232.2,387.2 L1326.2,387.2" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M1232.2,387.2 L1326.2,387.2" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="1252.9" cy="387.2" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/></circle><text x="1252.9" y="391.2" text-anchor="middle">7</text></g></g>
+<g class="fl f8 built c0" data-n="8" data-stage="0">
+<path class="ln" d="M1232.2,528.0 L1326.2,528.0" marker-end="url(#code-graph-context-mc0)"/>
+<path class="ant" d="M1232.2,528.0 L1326.2,528.0" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="1252.9" cy="528.0" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/></circle><text x="1252.9" y="532.0" text-anchor="middle">8</text></g></g>
+<g class="fl f9 built c0" data-n="9" data-stage="0">
+<path class="ln" d="M825.6,420.2 L825.6,604.8 L677.8,604.8" marker-end="url(#code-graph-context-mc0)"/>
+<path class="ant" d="M825.6,420.2 L825.6,604.8 L677.8,604.8" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="825.6" cy="493.3" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/></circle><text x="825.6" y="497.3" text-anchor="middle">9</text></g></g>
+<g class="fl f10 built " data-n="10" data-stage="0">
+<path class="ln" d="M368.6,604.8 L237.6,604.8 L237.6,428.2" marker-end="url(#code-graph-context-ma)"/>
+<path class="ant" d="M368.6,604.8 L237.6,604.8 L237.6,428.2" opacity="0"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/></path>
+<g class="bdg"><circle cx="300.9" cy="604.8" r="11"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/></circle><text x="300.9" y="608.8" text-anchor="middle">10</text></g></g>
+<g class="nd built" data-id="agent" data-stage="0">
+<rect class="halo" x="123.0" y="344.2" width="229.2" height="86.0" rx="12"/>
+<rect x="129.0" y="350.2" width="217.2" height="74.0" rx="9" fill="#FFFFFF" stroke="#2F5BE7" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M129.0,378.2 V359.2 Q129.0,350.2 138.0,350.2 H337.2 Q346.2,350.2 346.2,359.2 V378.2 Z" fill="#2F5BE7"/>
+<text x="139.0" y="369.2" font-size="13" font-weight="700" style="fill:#FFFFFF">Agent</text>
+<text x="139.0" y="396.2" font-size="12.3">&quot;What&#x27;s affected by</text>
+<text x="139.0" y="412.2" font-size="12.3">this change?&quot;</text>
+</g>
+<g class="nd built" data-id="query" data-stage="0">
+<rect class="halo" x="400.2" y="344.2" width="246.0" height="86.0" rx="12"/>
+<rect x="406.2" y="350.2" width="234.0" height="74.0" rx="9" fill="#FFFFFF" stroke="#7C5CE6" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M406.2,378.2 V359.2 Q406.2,350.2 415.2,350.2 H631.2 Q640.2,350.2 640.2,359.2 V378.2 Z" fill="#7C5CE6"/>
+<text x="416.2" y="369.2" font-size="13" font-weight="700" style="fill:#FFFFFF">Graph query</text>
+<text x="416.2" y="396.2" font-size="12.3">ananke graph impact</text>
+<text x="416.2" y="412.2" font-size="12.3">--changed-file …</text>
+</g>
+<g class="nd built" data-id="changed" data-stage="0">
+<rect class="halo" x="719.4" y="352.2" width="212.4" height="70.0" rx="12"/>
+<rect x="725.4" y="358.2" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#C8354E" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M725.4,386.2 V367.2 Q725.4,358.2 734.4,358.2 H916.8 Q925.8,358.2 925.8,367.2 V386.2 Z" fill="#C8354E"/>
+<text x="735.4" y="377.2" font-size="13" font-weight="700" style="fill:#FFFFFF">update_user()</text>
+<text x="735.4" y="404.2" font-size="12.3">the change</text>
+</g>
+<g class="nd built" data-id="svc" data-stage="0">
+<rect class="halo" x="1021.8" y="211.4" width="212.4" height="70.0" rx="12"/>
+<rect x="1027.8" y="217.4" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#1D6FD8" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M1027.8,245.4 V226.4 Q1027.8,217.4 1036.8,217.4 H1219.2 Q1228.2,217.4 1228.2,226.4 V245.4 Z" fill="#1D6FD8"/>
+<text x="1037.8" y="236.4" font-size="13" font-weight="700" style="fill:#FFFFFF">UserService</text>
+<text x="1037.8" y="263.4" font-size="12.3">1 hop</text>
+</g>
+<g class="nd built" data-id="ctrl" data-stage="0">
+<rect class="halo" x="1021.8" y="352.2" width="212.4" height="70.0" rx="12"/>
+<rect x="1027.8" y="358.2" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#1D6FD8" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M1027.8,386.2 V367.2 Q1027.8,358.2 1036.8,358.2 H1219.2 Q1228.2,358.2 1228.2,367.2 V386.2 Z" fill="#1D6FD8"/>
+<text x="1037.8" y="377.2" font-size="13" font-weight="700" style="fill:#FFFFFF">UserController</text>
+<text x="1037.8" y="404.2" font-size="12.3">1 hop · route</text>
+</g>
+<g class="nd built" data-id="repo" data-stage="0">
+<rect class="halo" x="1021.8" y="493.0" width="212.4" height="70.0" rx="12"/>
+<rect x="1027.8" y="499.0" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#1D6FD8" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M1027.8,527.0 V508.0 Q1027.8,499.0 1036.8,499.0 H1219.2 Q1228.2,499.0 1228.2,508.0 V527.0 Z" fill="#1D6FD8"/>
+<text x="1037.8" y="518.0" font-size="13" font-weight="700" style="fill:#FFFFFF">UserRepository</text>
+<text x="1037.8" y="545.0" font-size="12.3">1 hop</text>
+</g>
+<g class="nd built" data-id="auth" data-stage="0">
+<rect class="halo" x="1324.2" y="211.4" width="212.4" height="70.0" rx="12"/>
+<rect x="1330.2" y="217.4" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#D9731F" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M1330.2,245.4 V226.4 Q1330.2,217.4 1339.2,217.4 H1521.6 Q1530.6,217.4 1530.6,226.4 V245.4 Z" fill="#D9731F"/>
+<text x="1340.2" y="236.4" font-size="13" font-weight="700" style="fill:#FFFFFF">AuthMiddleware</text>
+<text x="1340.2" y="263.4" font-size="12.3">2 hops</text>
+</g>
+<g class="nd built" data-id="audit" data-stage="0">
+<rect class="halo" x="1324.2" y="352.2" width="212.4" height="70.0" rx="12"/>
+<rect x="1330.2" y="358.2" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#D9731F" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M1330.2,386.2 V367.2 Q1330.2,358.2 1339.2,358.2 H1521.6 Q1530.6,358.2 1530.6,367.2 V386.2 Z" fill="#D9731F"/>
+<text x="1340.2" y="377.2" font-size="13" font-weight="700" style="fill:#FFFFFF">AuditLogger</text>
+<text x="1340.2" y="404.2" font-size="12.3">2 hops</text>
+</g>
+<g class="nd built" data-id="test" data-stage="0">
+<rect class="halo" x="1324.2" y="493.0" width="212.4" height="70.0" rx="12"/>
+<rect x="1330.2" y="499.0" width="200.4" height="58.0" rx="9" fill="#FFFFFF" stroke="#0F8F7E" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M1330.2,527.0 V508.0 Q1330.2,499.0 1339.2,499.0 H1521.6 Q1530.6,499.0 1530.6,508.0 V527.0 Z" fill="#0F8F7E"/>
+<text x="1340.2" y="518.0" font-size="13" font-weight="700" style="fill:#FFFFFF">user_test.py</text>
+<text x="1340.2" y="545.0" font-size="12.3">the test to run</text>
+</g>
+<g class="nd built" data-id="answer" data-stage="0">
+<rect class="halo" x="366.6" y="553.8" width="313.2" height="102.0" rx="12"/>
+<rect x="372.6" y="559.8" width="301.2" height="90.0" rx="9" fill="#FFFFFF" stroke="#0F8F7E" stroke-width="1.5" filter="url(#code-graph-context-shadow)"/>
+<path d="M372.6,587.8 V568.8 Q372.6,559.8 381.6,559.8 H664.8 Q673.8,559.8 673.8,568.8 V587.8 Z" fill="#0F8F7E"/>
+<text x="382.6" y="578.8" font-size="13" font-weight="700" style="fill:#FFFFFF">Focused context</text>
+<text x="382.6" y="605.8" font-size="12.3">relevant code · dependencies</text>
+<text x="382.6" y="621.8" font-size="12.3">tests · callers · routes</text>
+<text x="382.6" y="637.8" font-size="12.3">architecture context</text>
+</g>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-24.5" y="-27" width="49.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">query</text><animateMotion path="M350.2,387.2 L402.2,387.2" dur="24.00s" begin="0.00s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/></g>
+<circle cx="402.2" cy="387.2" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-21.0" y="-27" width="42.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">find</text><animateMotion path="M644.2,387.2 L721.4,387.2" dur="24.00s" begin="2.40s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/></g>
+<circle cx="721.4" cy="387.2" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-24.5" y="-27" width="49.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">1 hop</text><animateMotion path="M929.8,387.2 L976.8,387.2 L976.8,246.4 L1023.8,246.4" dur="24.00s" begin="4.80s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/></g>
+<circle cx="1023.8" cy="246.4" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-24.5" y="-27" width="49.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">1 hop</text><animateMotion path="M929.8,387.2 L1023.8,387.2" dur="24.00s" begin="7.20s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/></g>
+<circle cx="1023.8" cy="387.2" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-24.5" y="-27" width="49.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">1 hop</text><animateMotion path="M929.8,387.2 L976.8,387.2 L976.8,528.0 L1023.8,528.0" dur="24.00s" begin="9.60s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/></g>
+<circle cx="1023.8" cy="528.0" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-28.0" y="-27" width="56.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">2 hops</text><animateMotion path="M1232.2,246.4 L1326.2,246.4" dur="24.00s" begin="12.00s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/></g>
+<circle cx="1326.2" cy="246.4" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-28.0" y="-27" width="56.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">2 hops</text><animateMotion path="M1232.2,387.2 L1326.2,387.2" dur="24.00s" begin="14.40s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/></g>
+<circle cx="1326.2" cy="387.2" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#0F8F7E" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-21.0" y="-27" width="42.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">test</text><animateMotion path="M1232.2,528.0 L1326.2,528.0" dur="24.00s" begin="16.80s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/></g>
+<circle cx="1326.2" cy="528.0" r="10" fill="none" stroke="#0F8F7E" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#0F8F7E" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-21.0" y="-27" width="42.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">2.2k</text><animateMotion path="M825.6,420.2 L825.6,604.8 L677.8,604.8" dur="24.00s" begin="19.20s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/></g>
+<circle cx="677.8" cy="604.8" r="10" fill="none" stroke="#0F8F7E" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/></circle>
+<g opacity="0"><circle r="7.5" fill="#FF9900" stroke="#FFFFFF" stroke-width="2.5" filter="url(#code-graph-context-glow)"/><rect x="-31.5" y="-27" width="63.0" height="17" rx="8.5" fill="#232F3E"/><text x="0" y="-14.5" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">context</text><animateMotion path="M368.6,604.8 L237.6,604.8 L237.6,428.2" dur="24.00s" begin="21.60s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.0820;1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.0001;0.0820;0.0822;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/></g>
+<circle cx="237.6" cy="428.2" r="10" fill="none" stroke="#FF9900" stroke-width="3" opacity="0"><animate attributeName="r" values="10;10;34;34" keyTimes="0;0.0795;0.1189;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;.9;0;0" keyTimes="0;0.0794;0.0795;0.1189;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/></circle>
+<rect x="1560" y="0" width="474" height="730" fill="#F2F3F3"/>
+<text x="1572" y="44" font-size="15" font-weight="700">How it flows</text>
+<g class="lg l1 built" data-n="1"><g class="lb"><circle cx="1583" cy="72" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="0.00s" repeatCount="indefinite"/></circle><text x="1583" y="76" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">1</text></g>
+<text x="1602" y="76" font-size="12.5">The agent asks the graph instead of reading every file</text>
+</g>
+<g class="lg l2 built" data-n="2"><g class="lb"><circle cx="1583" cy="96" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="2.40s" repeatCount="indefinite"/></circle><text x="1583" y="100" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">2</text></g>
+<text x="1602" y="100" font-size="12.5">The graph locates the changed symbol</text>
+</g>
+<g class="lg l3 built" data-n="3"><g class="lb"><circle cx="1583" cy="120" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="4.80s" repeatCount="indefinite"/></circle><text x="1583" y="124" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">3</text></g>
+<text x="1602" y="124" font-size="12.5">Direct callers and callees are one hop away</text>
+</g>
+<g class="lg l4 built" data-n="4"><g class="lb"><circle cx="1583" cy="144" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="7.20s" repeatCount="indefinite"/></circle><text x="1583" y="148" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">4</text></g>
+<text x="1602" y="148" font-size="12.5">...including the route that exposes it</text>
+</g>
+<g class="lg l5 built" data-n="5"><g class="lb"><circle cx="1583" cy="168" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="9.60s" repeatCount="indefinite"/></circle><text x="1583" y="172" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">5</text></g>
+<text x="1602" y="172" font-size="12.5">...and the repository it reads from</text>
+</g>
+<g class="lg l6 built" data-n="6"><g class="lb"><circle cx="1583" cy="192" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="12.00s" repeatCount="indefinite"/></circle><text x="1583" y="196" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">6</text></g>
+<text x="1602" y="196" font-size="12.5">Indirect impact shows up two hops out</text>
+</g>
+<g class="lg l7 built" data-n="7"><g class="lb"><circle cx="1583" cy="216" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="14.40s" repeatCount="indefinite"/></circle><text x="1583" y="220" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">7</text></g>
+<text x="1602" y="220" font-size="12.5">...so nothing downstream is missed</text>
+</g>
+<g class="lg l8 built" data-n="8"><g class="lb"><circle cx="1583" cy="240" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="16.80s" repeatCount="indefinite"/></circle><text x="1583" y="244" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">8</text></g>
+<text x="1602" y="244" font-size="12.5">Test targeting: run the tests that cover the change</text>
+</g>
+<g class="lg l9 built" data-n="9"><g class="lb"><circle cx="1583" cy="264" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="19.20s" repeatCount="indefinite"/></circle><text x="1583" y="268" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">9</text></g>
+<text x="1602" y="268" font-size="12.5">The focused subgraph returns as rich context: ~2.2k</text>
+<text x="1602" y="283" font-size="12.5">tokens, not ~143k</text>
+</g>
+<g class="lg l10 built" data-n="10"><g class="lb"><circle cx="1583" cy="303" r="11" fill="#232F3E"><animate attributeName="fill" values="#FF9900;#FF9900;#232F3E;#232F3E" keyTimes="0;0.0970;0.1000;1" dur="24.00s" begin="21.60s" repeatCount="indefinite"/></circle><text x="1583" y="307" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" style="fill:#fff">10</text></g>
+<text x="1602" y="307" font-size="12.5">The agent edits with the right neighbours in view</text>
+</g>
+</g></svg>

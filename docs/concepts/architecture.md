@@ -4,6 +4,8 @@
 
 Ananke Plexus follows a **core + ports + adapters** hexagonal architecture. The stable center contains Ananke's governance semantics. External tooling remains fully replaceable.
 
+![Animated: the Hermes loop of plan, act, verify, recover and continue, inside execution controls](../assets/flows/governed-execution.svg)
+
 ```mermaid
 flowchart TB
     subgraph Entry["👤 Entrypoints"]

@@ -1,53 +1,159 @@
-<script>
-  const blocks = Array.from(
-    document.querySelectorAll<HTMLElement>("pre > code"),
-  ).filter((code) =>
-    /^(?:flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|xychart-beta|sankey-beta|block-beta|architecture-beta|requirementDiagram)(?:\s|$)/m.test(
-      code.textContent?.trimStart() ?? "",
-    ),
-  );
+---
+// Renders the `pre.mermaid-src` blocks that remark-mermaid marks at build time.
+// - Lazy: Mermaid (a large chunk) loads only when the first diagram nears the viewport.
+// - Themed from CSS tokens (--mmd-*, falling back to the site palette), and re-rendered when the theme toggles.
+// - Click "Expand" for a full-screen view. If a diagram fails, its source is shown with a note.
+// - Until it renders, the block shows a shimmering placeholder instead of raw source. Without JS, the source shows.
+---
 
-  if (blocks.length > 0) {
-    const { default: mermaid } = await import("mermaid");
+<noscript><style>pre.mermaid-src { color: inherit !important; background: var(--code-bg) !important; max-height: none !important; }</style></noscript>
+
+<script>
+  type MermaidAPI = typeof import("mermaid").default;
+  const root = document.documentElement;
+  const blocks = Array.from(document.querySelectorAll<HTMLPreElement>("pre.mermaid-src"));
+  let api: Promise<MermaidAPI> | undefined;
+  let queue: Promise<unknown> = Promise.resolve();
+  let seq = 0;
+
+  const token = (name: string, fallback: string) => getComputedStyle(root).getPropertyValue(name).trim() || fallback;
+  const dark = () => root.dataset.theme === "dark";
+
+  function configure(mermaid: MermaidAPI) {
+    const ink = token("--mmd-text", token("--ink", "#1f1d2b"));
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: "strict",
-      theme: document.documentElement.dataset.theme === "dark" ? "dark" : "base",
+      theme: "base",
+      darkMode: dark(),
+      fontFamily: token("--font", "Inter, ui-sans-serif, system-ui, sans-serif"),
       themeVariables: {
-        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-        primaryColor: "#e4ebfd",
-        primaryBorderColor: "#2f5be7",
-        primaryTextColor: "#0b1b3f",
-        lineColor: "#475676",
-        secondaryColor: "#f8f0dc",
-        tertiaryColor: "#e0f2fd",
-        clusterBkg: "#f4f7fc",
-        clusterBorder: "#d8e2f1",
+        fontFamily: token("--font", "Inter, ui-sans-serif, system-ui, sans-serif"),
+        background: token("--surface", "#ffffff"),
+        primaryColor: token("--mmd-node", "#fff6c7"),
+        primaryBorderColor: token("--mmd-border", "#ffd84d"),
+        primaryTextColor: ink,
+        secondaryColor: token("--mmd-alt", "#d6f6f3"),
+        secondaryBorderColor: token("--mmd-border", "#ffd84d"),
+        secondaryTextColor: ink,
+        tertiaryColor: token("--mmd-alt-2", "#ede6ff"),
+        tertiaryTextColor: ink,
+        lineColor: token("--mmd-line", token("--muted", "#5b5870")),
+        textColor: ink,
+        mainBkg: token("--mmd-node", "#fff6c7"),
+        nodeBorder: token("--mmd-border", "#ffd84d"),
+        clusterBkg: token("--mmd-cluster", token("--bg", "#fffaf0")),
+        clusterBorder: token("--mmd-cluster-border", token("--line", "#efe7d6")),
+        titleColor: ink,
+        edgeLabelBackground: token("--surface", "#ffffff"),
+        noteBkgColor: token("--mmd-note", "#fff6c7"),
+        noteTextColor: ink,
+        actorBkg: token("--mmd-node", "#fff6c7"),
+        actorBorder: token("--mmd-border", "#ffd84d"),
+        actorTextColor: ink,
+        signalColor: ink,
+        signalTextColor: ink,
+        labelBoxBkgColor: token("--mmd-node", "#fff6c7"),
+        labelTextColor: ink,
       },
     });
+  }
 
-    for (const [index, code] of Array.from(blocks).entries()) {
-      const pre = code.parentElement;
-      if (!pre) continue;
+  const load = () =>
+    (api ??= import("mermaid").then(({ default: mermaid }) => {
+      configure(mermaid);
+      return mermaid;
+    }));
 
-      try {
-        const source = code.textContent ?? "";
-        const { svg } = await mermaid.render(
-          `doc-diagram-${index}`,
-          source,
-        );
-        const diagram = document.createElement("div");
-        diagram.className = "mermaid-diagram";
-        diagram.innerHTML = svg;
-        pre.replaceWith(diagram);
-      } catch (error) {
-        console.error("Unable to render a Mermaid diagram.", error);
-        const message = document.createElement("p");
-        message.className = "diagram-error";
-        message.textContent =
-          "This diagram could not be rendered. The source is shown above.";
-        pre.after(message);
+  // Mermaid's render() isn't safe to run concurrently: chain every render.
+  const enqueue = (job: () => Promise<unknown>) => (queue = queue.then(job, job));
+
+  // Lets enhancers (e.g. living-diagrams' diagram-fx.js) wire up hover effects once a diagram exists.
+  const announce = (figure: HTMLElement) =>
+    figure.dispatchEvent(new CustomEvent("diagram:rendered", { bubbles: true, detail: { svg: figure.querySelector("svg") } }));
+
+  function figureFor(pre: HTMLPreElement, svg: string, source: string) {
+    const figure = document.createElement("figure");
+    figure.className = "mermaid-diagram";
+    figure.dataset.src = source;
+    figure.innerHTML = svg;
+    const expand = document.createElement("button");
+    expand.type = "button";
+    expand.className = "mermaid-expand";
+    expand.textContent = "Expand";
+    expand.setAttribute("aria-label", "Expand diagram");
+    expand.addEventListener("click", () => openDialog(figure));
+    figure.append(expand);
+    pre.replaceWith(figure);
+    announce(figure);
+    return figure;
+  }
+
+  async function render(target: HTMLPreElement | HTMLElement) {
+    const mermaid = await load();
+    // Text nodes only: never pick up a button another script may have appended to the <pre>.
+    const source =
+      target.dataset.src ??
+      Array.from(target.childNodes)
+        .filter((n) => n.nodeType === Node.TEXT_NODE)
+        .map((n) => n.textContent)
+        .join("");
+    const id = `mmd-${++seq}`;
+    try {
+      const { svg } = await mermaid.render(id, source);
+      if (target instanceof HTMLPreElement) figureFor(target, svg, source);
+      else {
+        target.querySelector("svg")?.remove();
+        target.insertAdjacentHTML("afterbegin", svg);
+        announce(target);
+      }
+    } catch (error) {
+      console.warn("Mermaid could not render a diagram.", error);
+      document.getElementById(`d${id}`)?.remove(); // Mermaid leaves its error SVG in <body>
+      target.classList.add("mermaid-failed");
+      if (!target.nextElementSibling?.classList.contains("diagram-error")) {
+        const note = document.createElement("p");
+        note.className = "diagram-error";
+        note.textContent = "This diagram could not be rendered, so its source is shown.";
+        target.after(note);
       }
     }
+  }
+
+  function openDialog(figure: HTMLElement) {
+    const dialog = document.createElement("dialog");
+    dialog.className = "mermaid-dialog";
+    dialog.innerHTML = figure.querySelector("svg")?.outerHTML ?? "";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "mermaid-close";
+    close.textContent = "Close";
+    close.addEventListener("click", () => dialog.close());
+    dialog.prepend(close);
+    dialog.addEventListener("click", (e) => e.target === dialog && dialog.close());
+    dialog.addEventListener("close", () => dialog.remove());
+    document.body.append(dialog);
+    dialog.showModal();
+  }
+
+  if (blocks.length > 0) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          io.unobserve(entry.target);
+          enqueue(() => render(entry.target as HTMLPreElement));
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    blocks.forEach((pre) => io.observe(pre));
+
+    // Re-theme rendered diagrams when the visitor flips light/dark.
+    new MutationObserver(() => {
+      if (!api) return;
+      enqueue(async () => configure(await load()));
+      document.querySelectorAll<HTMLElement>("figure.mermaid-diagram").forEach((f) => enqueue(() => render(f)));
+    }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   }
 </script>

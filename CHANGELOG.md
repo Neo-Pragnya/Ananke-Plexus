@@ -27,6 +27,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   from `mkdocs.yml`.
 - **Dex Trove guide** (`docs/guides/dex-trove.md`): how to load Dex Trove with `ananke registry learn python:dex-trove`
   or with `dex ananke sync`.
+- **See It in Action** (`docs/guides/walkthroughs.md`): animated flows extracted from the infographics, embedded on
+  the pages they explain:
+  - intent to implementation;
+  - governed execution with the Hermes loop;
+  - code-graph blast radius;
+  - the verifiable pipeline.
+  Three command walkthroughs (quickstart, Dex Trove in the registry, hooks and policy) replay real CLI output.
+  Sources: `docs/assets/flows/src/`.
+- Docs site: a PyPI link and a version chip, particle-text headline, rotating word, letter hover waves, and hover
+  effects on Mermaid diagrams (connected nodes light up and pulses travel the edges).
+
+### Fixed
+
+- Docs site: Mermaid fences are detected at build time, so code samples that contain Mermaid stay code. Syntax
+  highlighting survives the sanitiser, and diagrams render lazily, follow the theme and show their source if they
+  fail.
+- `.gitignore`'s Python `lib/` rule no longer hides `website/src/lib/`.
+- `release-testpypi.yml` passed `--trusted-publishing if-necessary`, which uv rejects; it now passes `automatic`.
+
+### Security
+
+- Bumped `aiohttp` to 3.14.5 (CVE-2026-111064, GHSA-2g87-pp6c-29x5) and `pydantic-ai-slim` to 2.58.0
+  (CVE-2026-107286), plus their companion packages. The Trivy release gate blocked the first 0.3.5 tag on these.
 
 ### Changed
 

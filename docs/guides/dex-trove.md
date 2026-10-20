@@ -19,6 +19,9 @@ flowchart LR
 
 ## Load everything
 
+![Animated: install Dex Trove, learn it into the registry, search, show and resolve a skill](../assets/flows/walkthrough-dex-trove.svg)
+
+
 ```bash
 pip install "ananke-plexus[dex]"     # same as: pip install ananke-plexus dex-trove
 ananke registry init

@@ -4,6 +4,8 @@ Ananke's policy engine is the "Ananke" layer — the hard constraints that gover
 
 ![Verifiable Pipeline](../assets/verifiable_pipeline_for_autonomous_engineering.jpg)
 
+![Animated: three gates and one evidence bundle; a failed check stops the change](../assets/flows/verifiable-pipeline.svg)
+
 ---
 
 ## Policy categories

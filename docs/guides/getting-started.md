@@ -4,6 +4,10 @@ This guide walks you through installing Ananke Plexus, initializing a project, a
 
 ![Getting Started](../assets/open_ecosystem_getting_started.jpg)
 
+The whole first run, animated with real output ([more walkthroughs](walkthroughs.md)):
+
+![Quickstart walkthrough: install, init, spec converge, graph build, graph impact, verify](../assets/flows/walkthrough-quickstart.svg)
+
 ---
 
 ## Installation

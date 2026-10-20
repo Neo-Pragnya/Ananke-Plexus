@@ -15,6 +15,10 @@ const titleOf = (id: string) =>
 const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//, "")}`);
 const images = import.meta.glob<{ default: ImageMetadata }>("../../../docs/assets/*.jpg", { eager: true });
 const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.default;
+// The released version, read from the package so the PyPI chip always matches what `pip install` gets.
+const versionFile = await import("../../../src/ananke/plexus/version.py?raw");
+const version = /__version__\s*=\s*"([^"]+)"/.exec(versionFile.default)?.[1] ?? "";
+const quickstart = (await import("../../../docs/assets/flows/walkthrough-quickstart.svg?url")).default;
 ---
 
 <Layout title={site.name}>
@@ -23,8 +27,8 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
     <div class="hero-content">
       <p class="eyebrow" data-reveal>{site.eyebrow}</p>
       <h1 data-reveal style="--d: .05s">
-        <span data-scramble>{site.headline}</span>
-        {site.highlight && <span class="hl">{site.highlight}</span>}
+        <span class="h1-lead" data-particles="#ffffff,#dfe8ff,#f0cf7a">{site.headline}</span>
+        <span class="hl">not their <span data-words="creativity|curiosity|imagination|craft" data-colors="#f6dc95,#d4a541,#f6dc95">creativity</span>.</span>
       </h1>
       <p class="lede" data-reveal style="--d: .1s">{site.lede}</p>
       <div class="hero-actions" data-reveal style="--d: .15s">
@@ -36,7 +40,16 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
           ))
         }
       </div>
-      {site.install && <div class="install-line" data-reveal style="--d: .2s"><span>$ {site.install}</span></div>}
+      {
+        site.install && (
+          <div class="install-row" data-reveal style="--d: .2s">
+            <div class="install-line"><span>$ {site.install}</span></div>
+            <a class="pypi-chip" href="https://pypi.org/project/ananke-plexus/" data-magnetic>
+              <span>PyPI</span><strong>v{version}</strong>
+            </a>
+          </div>
+        )
+      }
       <ul class="pillars" data-reveal style="--d: .25s">
         <li>Specify</li>
         <li>Build</li>
@@ -59,7 +72,7 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
     )
   }
 
-  <h2 class="home-h2" data-reveal>The harness, not the cage</h2>
+  <h2 class="home-h2" data-reveal data-letters>The harness, not the cage</h2>
   <div class="myth">
     <section class="card myth-story t-gold" data-reveal>
       <p class="eyebrow">Ἀνάγκη · Necessity</p>
@@ -90,7 +103,7 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
     </div>
   </div>
 
-  <h2 class="home-h2" data-reveal>Intent → Proof</h2>
+  <h2 class="home-h2" data-reveal data-letters>Intent → Proof</h2>
   <div class="pipeline-rail" aria-hidden="true"></div>
   <ol class="pipeline">
     {
@@ -104,7 +117,19 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
     }
   </ol>
 
-  <h2 class="home-h2" data-reveal>What's inside</h2>
+  <h2 class="home-h2" data-reveal data-letters>See it work</h2>
+  <p class="lede" data-reveal>
+    Six real commands, from install to a verified evidence bundle. This is genuine output from a sample project,
+    replayed.
+  </p>
+  <figure class="card walkthrough" data-reveal>
+    <img src={quickstart} alt="Animated terminal: uv tool install, ananke init, spec converge, graph build, graph impact and verify, with each step ticked off" width="1200" height="700" loading="lazy" />
+  </figure>
+  <p class="see-more" data-reveal>
+    <a href={`${base}docs/guides/walkthroughs/`}>Every animated flow and walkthrough →</a>
+  </p>
+
+  <h2 class="home-h2" data-reveal data-letters>What's inside</h2>
   <div class="grid-cards">
     {
       FEATURES.map((f, i) => (
@@ -117,7 +142,7 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
     }
   </div>
 
-  <h2 class="home-h2" data-reveal>The system at a glance</h2>
+  <h2 class="home-h2" data-reveal data-letters>The system at a glance</h2>
   <div class="plates">
     {
       PLATES.map((p, i) => {
@@ -137,7 +162,7 @@ const imageOf = (name: string) => images[`../../../docs/assets/${name}.jpg`]?.de
     }
   </div>
 
-  <h2 class="home-h2" data-reveal>Browse the documentation</h2>
+  <h2 class="home-h2" data-reveal data-letters>Browse the documentation</h2>
   <div class="grid-cards">
     {
       DOC_NAV.map((section) => (

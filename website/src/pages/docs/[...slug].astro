@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import Glyph from "../../components/Glyph.astro";
 import Layout from "../../components/Layout.astro";
 import Mermaid from "../../components/Mermaid.astro";
+import { hasMermaid } from "../../lib/remark-mermaid";
 import { DOC_NAV, DOC_TITLES, docHref, site } from "../../lib/site";
 
 export async function getStaticPaths() {
@@ -68,7 +69,7 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
       <p class="eyebrow">{section?.section ?? "Docs"}</p>
       {!h1 && <h1>{title}</h1>}
       <Content />
-      {entry.body?.includes("```mermaid") && <Mermaid />}
+      {hasMermaid(entry.body) && <Mermaid />}
       <nav class="pager" aria-label="Previous and next">
         {prev ? <a class="card" href={docHref(base, prev)}><small>← Previous</small>{titleOf(prev)}</a> : <span />}
         {next ? <a class="card next" href={docHref(base, next)}><small>Next →</small>{titleOf(next)}</a> : <span />}

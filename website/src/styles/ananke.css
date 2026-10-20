@@ -640,3 +640,95 @@ main {
     margin-right: 10px;
   }
 }
+
+/* Mermaid diagrams in the celestial palette */
+:root {
+  --mmd-node: var(--royal-soft);
+  --mmd-border: var(--royal);
+  --mmd-alt: var(--gold-soft);
+  --mmd-alt-2: var(--azure-soft);
+  --mmd-note: var(--gold-soft);
+  --mmd-cluster: var(--bg);
+  --mmd-cluster-border: var(--line);
+}
+
+:root[data-theme="dark"] {
+  --mmd-node: var(--surface-2);
+  --mmd-border: var(--gold);
+  --mmd-cluster: var(--bg-2);
+}
+
+/* motion-kit text effects: gold heat, heavier Cinzel, the hottest letters turn to Cormorant italic */
+:root {
+  --mk-hot: var(--gold);
+  --mk-w0: 600;
+  --mk-wd: 300;
+  --mk-alt-font: "Cormorant Garamond", Georgia, serif;
+  --mk-alt-style: italic;
+}
+
+.hero h1 .h1-lead {
+  display: inline-block;
+}
+
+/* living diagrams: gold pulses on hover */
+svg.dfx {
+  --fx-hot: var(--gold);
+}
+
+/* install line + PyPI chip, walkthrough figure */
+.install-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.install-row .install-line {
+  margin-top: 0;
+}
+
+.pypi-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+  font: 600 0.82rem/1 var(--font);
+  border: 1px solid rgb(240 207 122 / 55%);
+}
+
+.pypi-chip span,
+.pypi-chip strong {
+  padding: 9px 11px;
+}
+
+.pypi-chip span {
+  background: rgb(255 255 255 / 8%);
+  color: #d5def5;
+}
+
+.pypi-chip strong {
+  background: linear-gradient(180deg, #f3d687, var(--gold));
+  color: var(--night);
+}
+
+.walkthrough {
+  padding: 0;
+  overflow: hidden;
+  background: var(--night);
+  margin: 0;
+}
+
+.walkthrough img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+
+.see-more {
+  margin: 12px 0 0;
+  font-weight: 600;
+}

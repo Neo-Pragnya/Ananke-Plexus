@@ -6,7 +6,10 @@
  *
  *   <svg data-morph="blob>star" ...>          shape morphs on hover / focus (also: "circle star hex" cycles on click)
  *   <canvas data-field>                       ambient field of pastel shapes that flee and morph near the cursor
- *   <h1 data-scramble>                        text scrambles then resolves on hover / when revealed
+ *   <span data-words="a|b|c">a</span>          the word itself changes: letters tip out, the next word rises in
+ *   <h2 data-letters>                         hover wave: nearby letters lift, gain weight, shift colour / typeface
+ *   <span data-particles="#c1,#c2">           text drawn as particles that assemble, diffuse from the cursor, return
+ *   <h1 data-rise>                            letters rise into place when revealed (data-scramble is an alias)
  *   <div data-reveal style="--d:.1s">         fades + un-blurs + rises into view on scroll
  *   <span data-countup>968</span>             counts up from 0 when visible
  *   <a data-magnetic>                         drifts toward the pointer
@@ -29,7 +32,9 @@
   const params = new URLSearchParams(location.search);
   const reduced =
     params.get("motion") === "static" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ease = (t) => 1 - Math.pow(1 - t, 4); // easeOutQuart ≈ cubic-bezier(.22,1,.36,1)
+  // easeOutQuart ≈ cubic-bezier(.22,1,.36,1). Clamped: a rAF timestamp can precede performance.now(), and an
+  // unclamped negative t extrapolates paths into huge shards.
+  const ease = (t) => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 4);
 
   // ------------------------------------------------------------------ shapes as radius(theta) in [0, 1]
   function polygonRadius(vertices) {
@@ -150,7 +155,7 @@
       const dur = parseFloat(svg.dataset.morphDuration) || 650;
       const start = performance.now();
       const tick = (now) => {
-        const t = Math.min(1, (now - start) / dur);
+        const t = Math.max(0, Math.min(1, (now - start) / dur));
         const e = ease(t);
         current = from.map((v, i) => v + (to[i] - v) * e);
         rot = rot0 + (rot1 - rot0) * e;
@@ -285,37 +290,316 @@
     canvas.__stop = () => cancelAnimationFrame(raf);
   }
 
-  // ------------------------------------------------------------------ [data-scramble]
-  const GLYPHS = "abcdefghijklmnopqrstuvwxyz<>/*+=~#%&";  // light characters read as "decoding", not as blocks
-  function scramble(el) {
-    if (reduced || el.__scrambling) return;
-    const original = el.dataset.scrambleText || el.textContent || "";
-    el.dataset.scrambleText = original;
-    el.__scrambling = true;
-    const dur = parseFloat(el.dataset.scramble) || 650;
-    const start = performance.now();
-    const tick = (now) => {
-      const t = Math.min(1, (now - start) / dur);
-      const settled = Math.floor(original.length * ease(t));
-      el.textContent =
-        original.slice(0, settled) +
-        original
-          .slice(settled)
-          .replace(/\S/g, () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)]);
-      if (t < 1) requestAnimationFrame(tick);
-      else {
-        el.textContent = original;
-        el.__scrambling = false;
+  // ------------------------------------------------------------------ text effects
+  // Shared split: the real text stays in a visually hidden span for screen readers; the visible copy is
+  // aria-hidden letters (.mk-ch), grouped per word (.mk-wd) so lines never break inside a word.
+  function splitLetters(el, colors) {
+    if (el.__letters) return el.__letters;
+    const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+    el.textContent = "";
+    const sr = document.createElement("span");
+    sr.className = "mk-sr";
+    sr.textContent = text;
+    const vis = document.createElement("span");
+    vis.className = "mk-split";
+    vis.setAttribute("aria-hidden", "true");
+    const letters = [];
+    text.split(/( )/).forEach((part) => {
+      if (part === " ") return void vis.append(document.createTextNode(" "));
+      if (!part) return;
+      const w = document.createElement("span");
+      w.className = "mk-wd";
+      for (const ch of part) {
+        const s = document.createElement("span");
+        s.className = "mk-ch";
+        s.textContent = ch;
+        s.style.setProperty("--i", String(letters.length));
+        w.append(s);
+        letters.push(s);
       }
+      vis.append(w);
+    });
+    el.append(sr, vis);
+    paint(letters, colors);
+    return (el.__letters = letters);
+  }
+  // Per-letter colours across a palette (approximates a gradient on split text, where background-clip can't reach).
+  const colorList = (v) => (v || "").split(",").map((s) => s.trim()).filter(Boolean);
+  function paint(letters, colors) {
+    if (!colors || !colors.length) return;
+    letters.forEach((s, i) => {
+      const t = letters.length > 1 ? i / (letters.length - 1) : 0;
+      const pos = t * (colors.length - 1);
+      const a = colors[Math.floor(pos)];
+      const b = colors[Math.min(colors.length - 1, Math.floor(pos) + 1)];
+      s.style.setProperty("--c", `color-mix(in oklab, ${a}, ${b} ${Math.round((pos % 1) * 100)}%)`);
+    });
+  }
+
+  // [data-letters] — a hover wave: letters near the pointer lift, gain weight and shift colour (--mk-hot);
+  // with --mk-alt-font set, the hottest letters switch typeface. data-colors="#a,#b" paints a gradient.
+  function initLetters(el) {
+    if (el.__mkLetters) return;
+    el.__mkLetters = true;
+    const letters = splitLetters(el, colorList(el.dataset.colors));
+    el.classList.add("mk-letters");
+    if (reduced) return;
+    const host = el.closest("a, button, h1, h2, h3, [data-letters-host]") || el;
+    let centres = [];
+    let raf = 0;
+    const measure = () => {
+      centres = letters.map((s) => {
+        const r = s.getBoundingClientRect();
+        return [r.left + r.width / 2, r.top + r.height / 2];
+      });
     };
-    requestAnimationFrame(tick);
+    const radius = () => parseFloat(getComputedStyle(el).fontSize) * (parseFloat(el.dataset.letters) || 2.6);
+    host.addEventListener("pointerenter", measure);
+    host.addEventListener("pointermove", (e) => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (!centres.length) measure();
+        const R = radius();
+        letters.forEach((s, i) => {
+          const [x, y] = centres[i];
+          const p = Math.max(0, 1 - Math.hypot(e.clientX - x, e.clientY - y) / R);
+          s.style.setProperty("--p", p.toFixed(3));
+          s.classList.toggle("is-hot", p > 0.62);
+        });
+      });
+    });
+    host.addEventListener("pointerleave", () => {
+      letters.forEach((s) => {
+        s.style.setProperty("--p", "0");
+        s.classList.remove("is-hot");
+      });
+    });
+    window.addEventListener("resize", () => (centres = []), { passive: true });
   }
-  function initScramble(el) {
-    if (el.__mk) return;
-    el.__mk = true;
-    el.setAttribute("aria-label", el.textContent || "");
-    (el.closest("a, button") || el).addEventListener("pointerenter", () => scramble(el));
+
+  // [data-words="agents|copilots|teams"] — the word itself changes: letters of the old word tip away and the new
+  // word's letters rise in, staggered, while the slot's width glides to fit.
+  function initWords(el) {
+    if (el.__mkWords) return;
+    el.__mkWords = true;
+    const first = (el.textContent || "").trim();
+    const words = [first, ...el.dataset.words.split("|").map((s) => s.trim()).filter((w) => w && w !== first)];
+    const colors = colorList(el.dataset.colors);
+    el.textContent = "";
+    el.classList.add("mk-words");
+    const sr = document.createElement("span");
+    sr.className = "mk-sr";
+    sr.textContent = first;
+    const stage = document.createElement("span");
+    stage.className = "mk-words-stage";
+    stage.setAttribute("aria-hidden", "true");
+    el.append(sr, stage);
+    const make = (word) => {
+      const w = document.createElement("span");
+      w.className = "mk-word";
+      const letters = [...word].map((ch, i) => {
+        const s = document.createElement("span");
+        s.className = "mk-ch";
+        s.textContent = ch === " " ? " " : ch;
+        s.style.setProperty("--i", String(i));
+        w.append(s);
+        return s;
+      });
+      paint(letters, colors);
+      return w;
+    };
+    let current = make(words[0]);
+    stage.append(current);
+    const fit = (w) => (stage.style.width = `${w.getBoundingClientRect().width}px`);
+    requestAnimationFrame(() => fit(current));
+    if (reduced || words.length < 2) return;
+    let index = 0;
+    let visible = true;
+    new IntersectionObserver(([entry]) => (visible = entry.isIntersecting)).observe(el);
+    setInterval(() => {
+      if (!visible || document.hidden) return;
+      index = (index + 1) % words.length;
+      const next = make(words[index]);
+      next.classList.add("is-entering");
+      stage.append(next);
+      fit(next);
+      current.classList.add("is-leaving");
+      const old = current;
+      current = next;
+      void next.offsetWidth; // commit the entering state, then transition out of it
+      next.classList.remove("is-entering");
+      setTimeout(() => old.remove(), 900);
+    }, parseFloat(el.dataset.wordsInterval) || 2800);
   }
+
+  // [data-particles] — the text is drawn as particles that drift in to assemble, scatter (diffuse) away from the
+  // pointer, and spring back. data-particles="#c1,#c2" sets the colours (gradient left → right; defaults to the
+  // text colour). Single-line text only: wrapped text keeps the normal rendering.
+  function initParticles(el) {
+    if (el.__mkParticles || reduced) return;
+    el.__mkParticles = true;
+    const canvas = document.createElement("canvas");
+    canvas.className = "mk-particles";
+    canvas.setAttribute("aria-hidden", "true");
+    el.classList.add("mk-particles-host");
+    el.append(canvas);
+    const ctx = canvas.getContext("2d");
+    const PAD = 56;
+    let parts = [];
+    let W = 0;
+    let H = 0;
+    let dpr = 1;
+    let running = false;
+    let assembled = false;
+    let fontPx = 32;
+    const pointer = { x: -9999, y: -9999 };
+    const host = el.closest("[data-particles-host], section, header, .hero") || el;
+
+    function sample() {
+      const rect = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      fontPx = parseFloat(cs.fontSize) || 32;
+      const lineH = parseFloat(cs.lineHeight) || fontPx * 1.2;
+      const text = (el.querySelector(".mk-sr")?.textContent || el.textContent || "").trim();
+      if (!text || rect.width === 0 || rect.height > lineH * 1.6) {
+        el.classList.remove("mk-particles-on"); // wrapped or hidden: keep real text
+        parts = [];
+        return;
+      }
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = rect.width + PAD * 2;
+      H = rect.height + PAD * 2;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = `${W}px`;
+      canvas.style.height = `${H}px`;
+      const off = document.createElement("canvas");
+      off.width = canvas.width;
+      off.height = canvas.height;
+      const o = off.getContext("2d", { willReadFrequently: true });
+      o.scale(dpr, dpr);
+      o.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      if ("letterSpacing" in o) o.letterSpacing = cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
+      const m = o.measureText(text);
+      const asc = m.fontBoundingBoxAscent || parseFloat(cs.fontSize) * 0.8;
+      const desc = m.fontBoundingBoxDescent || parseFloat(cs.fontSize) * 0.2;
+      const baseline = PAD + (rect.height - (asc + desc)) / 2 + asc;
+      const colors = colorList(el.dataset.particles);
+      const fallback = cs.color && !/rgba?\(0, 0, 0, 0\)|transparent/.test(cs.color) ? cs.color : "#888";
+      const grad = o.createLinearGradient(PAD, 0, PAD + m.width, 0);
+      (colors.length ? colors : [fallback]).forEach((c, i, all) => grad.addColorStop(all.length > 1 ? i / (all.length - 1) : 0, c));
+      o.fillStyle = grad;
+      o.textBaseline = "alphabetic";
+      const align = cs.textAlign === "center" ? (rect.width - m.width) / 2 : cs.textAlign === "right" || cs.textAlign === "end" ? rect.width - m.width : 0;
+      o.fillText(text, PAD + align, baseline);
+      const data = o.getImageData(0, 0, off.width, off.height).data;
+      let step = Math.max(2, Math.round((parseFloat(cs.fontSize) / 30) * dpr));
+      const count = () => {
+        let n = 0;
+        for (let y = 0; y < off.height; y += step) for (let x = 0; x < off.width; x += step) if (data[(y * off.width + x) * 4 + 3] > 140) n++;
+        return n;
+      };
+      while (count() > 9000) step++;
+      const prev = parts;
+      parts = [];
+      for (let y = 0; y < off.height; y += step) {
+        for (let x = 0; x < off.width; x += step) {
+          const k = (y * off.width + x) * 4;
+          if (data[k + 3] <= 140) continue;
+          const hx = x / dpr;
+          const hy = y / dpr;
+          const from = prev[parts.length];
+          parts.push({
+            hx,
+            hy,
+            // first run: start loosely scattered around home and drift in
+            x: from ? from.x : assembled ? hx : hx + (Math.random() - 0.5) * fontPx * 3,
+            y: from ? from.y : assembled ? hy : hy + (Math.random() - 0.5) * fontPx * 1.6,
+            vx: 0,
+            vy: 0,
+            c: `rgb(${data[k]},${data[k + 1]},${data[k + 2]})`,
+            s: (step / dpr) * 0.92,
+          });
+        }
+      }
+      canvas.style.left = `${-PAD}px`;
+      canvas.style.top = `${-PAD}px`;
+      el.classList.add("mk-particles-on");
+      wake();
+    }
+
+    function frame() {
+      const rect = canvas.getBoundingClientRect();
+      const px = pointer.x - rect.left;
+      const py = pointer.y - rect.top;
+      const R = fontPx * (parseFloat(el.dataset.particlesRadius) || 1.15);
+      let energy = 0;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      for (const p of parts) {
+        const dx = p.x - px;
+        const dy = p.y - py;
+        const d = Math.hypot(dx, dy);
+        if (d < R) {
+          const f = (1 - d / R) ** 2 * 2.2;
+          p.vx += (dx / (d || 1)) * f + (Math.random() - 0.5) * f * 0.9; // push away, with diffusion jitter
+          p.vy += (dy / (d || 1)) * f + (Math.random() - 0.5) * f * 0.9;
+        }
+        p.vx = (p.vx + (p.hx - p.x) * 0.06) * 0.84;
+        p.vy = (p.vy + (p.hy - p.y) * 0.06) * 0.84;
+        p.x += p.vx;
+        p.y += p.vy;
+        energy += Math.abs(p.vx) + Math.abs(p.vy) + Math.abs(p.hx - p.x) * 0.1;
+        ctx.fillStyle = p.c;
+        ctx.fillRect(p.x, p.y, p.s, p.s);
+      }
+      if (energy / Math.max(1, parts.length) < 0.02 && pointer.x < -9000) {
+        running = false; // settled: stop the loop until the pointer comes back
+        assembled = true;
+        ctx.clearRect(0, 0, W, H);
+        for (const p of parts) {
+          p.x = p.hx;
+          p.y = p.hy;
+          ctx.fillStyle = p.c;
+          ctx.fillRect(p.x, p.y, p.s, p.s);
+        }
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+    function wake() {
+      if (running || !parts.length) return;
+      running = true;
+      requestAnimationFrame(frame);
+    }
+    host.addEventListener("pointermove", (e) => {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      wake();
+    });
+    host.addEventListener("pointerleave", () => {
+      pointer.x = pointer.y = -99999;
+      wake();
+    });
+    let timer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(timer);
+      timer = setTimeout(sample, 150);
+    });
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(sample));
+  }
+
+  // [data-rise] (and the old [data-scramble]) — letters rise and un-blur into place, staggered, when revealed.
+  function initRise(el) {
+    if (el.__mkRise) return;
+    el.__mkRise = true;
+    splitLetters(el, colorList(el.dataset.colors));
+    el.classList.add("mk-rise");
+    if (reduced) el.classList.add("is-risen");
+    else if (!el.closest("[data-reveal]")) setTimeout(() => rise(el), 60); // nothing else will reveal it
+  }
+  const rise = (el) => el.classList.add("is-risen");
 
   // ------------------------------------------------------------------ reveal + countup (IntersectionObserver)
   let onShow = () => {};
@@ -326,7 +610,7 @@
     const dur = parseFloat(el.dataset.countup) || 1100;
     const start = performance.now();
     const tick = (now) => {
-      const t = Math.min(1, (now - start) / dur);
+      const t = Math.max(0, Math.min(1, (now - start) / dur));
       el.textContent = Math.round(target * ease(t)).toLocaleString();
       if (t < 1) requestAnimationFrame(tick);
     };
@@ -399,7 +683,10 @@
       else lazy.observe(svg);
     });
     root.querySelectorAll("canvas[data-field]").forEach(initField);
-    root.querySelectorAll("[data-scramble]").forEach(initScramble);
+    root.querySelectorAll("[data-rise], [data-scramble]").forEach(initRise);
+    root.querySelectorAll("[data-letters]").forEach(initLetters);
+    root.querySelectorAll("[data-words]").forEach(initWords);
+    root.querySelectorAll("[data-particles]").forEach(initParticles);
     root.querySelectorAll("[data-magnetic]").forEach(initMagnetic);
     root.querySelectorAll("[data-tilt]").forEach(initTilt);
     const show = (el) => {
@@ -407,8 +694,8 @@
       el.classList.add("is-shown");
       if (el.hasAttribute("data-countup")) countUp(el);
       if (el.hasAttribute("data-reveal")) {
-        el.querySelectorAll("[data-scramble]").forEach((s) => scramble(s));
-        if (el.hasAttribute("data-scramble")) scramble(el);
+        el.querySelectorAll(".mk-rise").forEach(rise);
+        if (el.classList.contains("mk-rise")) rise(el);
       }
     };
     onShow = show;
@@ -426,6 +713,7 @@
   }
   function settle() {
     document.querySelectorAll("[data-reveal]").forEach((el) => el.classList.add("is-shown"));
+    document.querySelectorAll(".mk-rise").forEach(rise);
     document.querySelectorAll("[data-countup]").forEach((el) => {
       el.textContent = Number(el.dataset.countupTo || el.textContent).toLocaleString();
     });

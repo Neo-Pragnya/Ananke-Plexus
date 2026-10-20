@@ -6,6 +6,10 @@
 
 ![System Architecture Overview](assets/ananke_plexus_architecture_overview.jpg)
 
+![Animated: the spec-driven pipeline from intent to implementation](assets/flows/intent-to-proof.svg)
+
+See every animated flow and command walkthrough in [See It in Action](guides/walkthroughs.md).
+
 ---
 
 ## What it does

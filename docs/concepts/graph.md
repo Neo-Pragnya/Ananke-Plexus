@@ -4,6 +4,8 @@ Ananke treats your repository as a **graph of semantic relationships**, not a fl
 
 ![Code Graph Intelligence](../assets/code_graph_intelligence_infographic.jpg)
 
+![Animated: an agent asks the graph for the blast radius of a change and gets focused context back](../assets/flows/code-graph-context.svg)
+
 ---
 
 ## Why graph context changes everything

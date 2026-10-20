@@ -88,6 +88,7 @@ nav:
       - Testing & Quality Harness: concepts/testing.md
   - Guides:
       - Getting Started: guides/getting-started.md
+      - See It in Action: guides/walkthroughs.md
       - Setup & Capabilities: guides/setup-and-capabilities.md
       - Registry Guide: guides/registry-guide.md
       - Dex Trove Skill Library: guides/dex-trove.md

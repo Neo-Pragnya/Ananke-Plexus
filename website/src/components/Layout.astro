@@ -29,9 +29,10 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@1,500&family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;600&display=swap"
     />
     <link rel="stylesheet" href={`${base}motion-kit/motion-kit.css`} />
+    <link rel="stylesheet" href={`${base}diagram-fx/diagram-fx.css`} />
     <script is:inline>
       try {
         if (localStorage.getItem("site-theme") === "dark") document.documentElement.dataset.theme = "dark";
@@ -72,6 +73,7 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
       </span>
     </footer>
     <script is:inline src={`${base}motion-kit/motion-kit.js`} defer></script>
+    <script is:inline src={`${base}diagram-fx/diagram-fx.js`} defer></script>
     <script>
       document.getElementById("theme-toggle")?.addEventListener("click", () => {
         const root = document.documentElement;
@@ -83,7 +85,7 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
         } catch {}
       });
       for (const pre of document.querySelectorAll<HTMLPreElement>("pre")) {
-        if (pre.closest(".mermaid-diagram")) continue;
+        if (pre.matches(".mermaid-src") || pre.closest(".mermaid-diagram")) continue;
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "copy";

@@ -24,6 +24,14 @@ export const site = {
   "footer": "Ananke Plexus — Apache-2.0 · Neo Pragnya",
   "footerLinks": [
     {
+      "label": "PyPI ↗",
+      "href": "https://pypi.org/project/ananke-plexus/"
+    },
+    {
+      "label": "Dex Trove ↗",
+      "href": "https://neo-pragnya.github.io/Dex-Trove/"
+    },
+    {
       "label": "GitHub ↗",
       "href": "https://github.com/Neo-Pragnya/Ananke-Plexus"
     }
@@ -38,6 +46,10 @@ export const NAV: { label: string; href: string }[] = [
   {
     "label": "Dex Trove ↗",
     "href": "https://neo-pragnya.github.io/Dex-Trove/"
+  },
+  {
+    "label": "PyPI ↗",
+    "href": "https://pypi.org/project/ananke-plexus/"
   },
   {
     "label": "GitHub ↗",
@@ -75,6 +87,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
     "section": "Guides",
     "items": [
       "guides/getting-started",
+      "guides/walkthroughs",
       "guides/setup-and-capabilities",
       "guides/registry-guide",
       "guides/dex-trove",
@@ -113,6 +126,7 @@ export const DOC_TITLES: Record<string, string> = {
   "concepts/registry": "Skill & Agent Registry",
   "concepts/testing": "Testing & Quality Harness",
   "guides/getting-started": "Getting Started",
+  "guides/walkthroughs": "See It in Action",
   "guides/setup-and-capabilities": "Setup & Capabilities",
   "guides/registry-guide": "Registry Guide",
   "guides/dex-trove": "Dex Trove Skill Library",
@@ -144,7 +158,7 @@ export const FEATURES: { title: string; text: string; href: string; shapes: stri
   },
   {
     "title": "Guides",
-    "text": "Getting Started · Setup & Capabilities · Registry Guide · …",
+    "text": "Getting Started · See It in Action · Setup & Capabilities · …",
     "href": "docs/guides/getting-started/",
     "shapes": "diamond>star4",
     "tint": "azure"
