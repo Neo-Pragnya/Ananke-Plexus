@@ -16,6 +16,7 @@ import contextlib
 import functools
 import http.server
 import importlib.resources
+import re
 import shutil
 import socket
 import tempfile
@@ -85,12 +86,34 @@ def _mkdocs_available() -> bool:
     return True
 
 
+def _mkdocs_inputs(source: Path) -> list[str]:
+    """What MkDocs actually reads: the config, ``docs_dir`` and any theme ``custom_dir``.
+
+    A source checkout also holds ``.venv``, ``node_modules``, build output and more; copying all of it made
+    ``ananke docs build --source <checkout>`` (and dev installs) take minutes instead of seconds.
+    """
+    config = (source / "mkdocs.yml").read_text(encoding="utf-8")
+    names = ["mkdocs.yml"]
+    docs_dir = re.search(r"^docs_dir:\s*['\"]?([^'\"\n#]+)", config, re.M)
+    names.append(docs_dir.group(1).strip() if docs_dir else "docs")
+    names += [m.strip() for m in re.findall(r"^\s+custom_dir:\s*['\"]?([^'\"\n#]+)", config, re.M)]
+    return [n for n in dict.fromkeys(names) if (source / n).exists()]
+
+
 @contextlib.contextmanager
 def _materialized(source: Path) -> Iterator[Path]:
-    """A private, writable copy of ``source`` — MkDocs writes cache files next to the config."""
+    """A private, writable copy of the MkDocs inputs: MkDocs writes cache files next to the config."""
     with tempfile.TemporaryDirectory(prefix="ananke-docs-src-") as tmp:
         work = Path(tmp) / "site"
-        shutil.copytree(source, work, ignore=shutil.ignore_patterns(".git", "site", "__pycache__"))
+        work.mkdir()
+        ignore = shutil.ignore_patterns(".git", "site", "__pycache__")
+        for name in _mkdocs_inputs(source):
+            src = source / name
+            if src.is_dir():
+                shutil.copytree(src, work / name, ignore=ignore)
+            else:
+                (work / name).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, work / name)
         yield work
 
 

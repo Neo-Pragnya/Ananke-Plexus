@@ -229,6 +229,9 @@ ignore = ["B008", "E501"]
 # S311: seeded random.Random drives property-style tests, never crypto
 # S608: test-only SQL built from literal column names
 "tests/**/*.py" = ["S101", "S603", "S604", "S607", "S314", "S105", "S106", "B017", "S311", "S608"]
+# acceptance/: Gherkin step code drives the CLI in sandboxes (asserts + subprocess by design); the fixture
+# trap skill deliberately names a temp path so the suite can prove it is never executed.
+"acceptance/**/*.py" = ["S101", "S603", "S607", "S108"]
 # S604: BackendCapabilities(shell=True) is a Pydantic field, not subprocess
 # S607: all subprocess calls use static commands; shutil.which used for full path
 "src/ananke/plexus/backends/adapters/*.py" = ["S604", "S607"]

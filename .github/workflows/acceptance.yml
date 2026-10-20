@@ -1,0 +1,44 @@
+name: acceptance
+
+# Capability scenarios (acceptance/features) against a freshly built wheel, with the release gate
+# (PROMOTE / CONDITIONAL / BLOCK). The gate summary is written to the job summary; BLOCK fails the job.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  acceptance:
+    name: capability acceptance (built wheel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+        with:
+          version: "latest"
+
+      - name: Build the wheel and run the scenarios against it
+        run: make acceptance-wheel
+
+      - name: Upload acceptance report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: acceptance-report
+          path: acceptance/report/
+          if-no-files-found: warn

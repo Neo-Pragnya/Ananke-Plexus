@@ -257,3 +257,7 @@ Debug-Specs/**
 
 # The docs website keeps TypeScript sources in website/src/lib (not a Python build dir)
 !website/src/lib/
+
+# Acceptance suite: wheel-under-test venv and generated reports
+.acceptance-venv/
+acceptance/report/

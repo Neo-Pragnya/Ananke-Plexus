@@ -8,6 +8,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **Capability acceptance suite** (`acceptance/`): 65 Gherkin scenarios across 22 capabilities drive the real CLI
+  in sandbox projects. Each scenario gets a fresh git repo and an isolated HOME. Scenarios cover install, specs,
+  BMAD, graph, CALM, policy, hooks, verify and evidence, the registry and its lifecycle, Dex Trove, apm, workflows,
+  runs, MCP, offline docs and the testing harness. They include adversarial probes with legitimate twins.
+- A Week-12-style **release gate** (PROMOTE / CONDITIONAL / BLOCK) writes `acceptance/report/`.
+  `make acceptance` runs the suite on the dev environment and `make acceptance-wheel` on the built wheel. A new
+  `acceptance.yml` workflow runs it on every push and PR. `release-pypi` now gates publishing on the suite running
+  against the exact wheel.
+
+### Fixed
+
+- Failures were printed with a green ✓ (`spec diff`, `spec validate`, `hooks run`, `run status`, unknown
+  workflow/policy packs). `render_result` now takes `ok=` and prints ✗.
+- `ananke docs build` copied the entire source checkout (`.venv`, `node_modules`, `dist`) before building, which
+  took minutes for dev installs and `--source <checkout>`. It now stages only `mkdocs.yml`, `docs_dir` and the
+  theme `custom_dir`.
+- `docs.yml` wiped `docs/assets` before copying, deleting `docs/assets/flows`. It now overlays instead.
+
+### Known issues (tracked as `@known_issue` scenarios)
+
+- `serve-mcp` is not MCP JSON-RPC 2.0, so standard MCP clients cannot initialise.
+- `registry promote --trust <invalid>` crashes, and `--channel <unknown>` is accepted.
+- `apm audit --manifest <non-APM file>` crashes.
+- `run start` worktrees live inside the project and are not git-ignored.
+- `ananke test run` passes when no tests ran.
+
 ---
 
 ## [0.3.5] — 2026-10-20

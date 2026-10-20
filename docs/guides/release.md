@@ -38,7 +38,23 @@ make install       # uv sync --all-extras
 make verify        # ruff + mypy + pytest
 make trivy-scan    # Trivy filesystem CVE scan (blocks on CRITICAL/HIGH)
 make coverage      # coverage report
+make acceptance-wheel  # capability scenarios against the built wheel + release gate
 ```
+
+The **acceptance gate** (`acceptance/`) installs the built wheel into a fresh virtual environment and runs more than
+60 Gherkin scenarios against the real CLI, each in its own sandbox project. The scenarios cover install, specs,
+graph, policy, hooks, verify, the registry and its security, Dex Trove, MCP, workflows, docs and the testing harness.
+The gate decides:
+
+| Decision | When | Release |
+| --- | --- | --- |
+| **PROMOTE** | every capability passed | ship |
+| **CONDITIONAL** | known issues, unverified or non-blocker gaps (all listed in `acceptance/report/summary.md`) | ship deliberately, with the list in the release notes |
+| **BLOCK** | a blocker capability failed or has no scenario | do not ship |
+
+The `release-pypi` workflow runs the same gate on the exact wheel it publishes, and publishing waits for it. See
+[`acceptance/README.md`](https://github.com/Neo-Pragnya/Ananke-Plexus/blob/main/acceptance/README.md) to add
+scenarios.
 
 ---
 

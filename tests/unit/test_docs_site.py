@@ -302,3 +302,21 @@ class TestDocsCli:
         # rich hard-wraps long paths mid-word with no separator inserted at the break
         unwrapped = res.output.replace("\n", "")
         assert res.exit_code == 0 and str(src.resolve()) in unwrapped
+
+
+def test_materialized_copies_only_mkdocs_inputs(tmp_path: Path) -> None:
+    """A checkout's .venv / node_modules / build output must not be copied (it made builds take minutes)."""
+    from ananke.plexus.docs_site import _materialized
+
+    root = _minimal_site(tmp_path)
+    (root / "node_modules" / "huge").mkdir(parents=True)
+    (root / "node_modules" / "huge" / "blob.js").write_text("x" * 10)
+    (root / ".venv").mkdir()
+    (root / "overrides").mkdir()
+    (root / "overrides" / "main.html").write_text("{% extends 'base.html' %}")
+    cfg = root / "mkdocs.yml"
+    cfg.write_text(cfg.read_text() + "\ntheme:\n  name: mkdocs\n  custom_dir: overrides\n")
+    with _materialized(root) as work:
+        names = {p.name for p in work.iterdir()}
+    assert "node_modules" not in names and ".venv" not in names
+    assert {"mkdocs.yml", "docs", "overrides"} <= names

@@ -253,7 +253,9 @@ def workflow_install_pack(
 
     preset = BUILTIN_PRESETS.get(name)
     if preset is None:
-        render_result(f"unknown preset: {name}", {"available": ", ".join(BUILTIN_PRESETS)})
+        render_result(
+            f"unknown preset: {name}", {"available": ", ".join(BUILTIN_PRESETS)}, ok=False
+        )
         raise typer.Exit(code=2)
     try:
         path = save_workflow(project, preset, force=force)
@@ -318,7 +320,7 @@ def workflow_run(
                 typer.echo(f"      {s.error}")
             elif not s.ok and s.stderr:
                 typer.echo(f"      {s.stderr.strip()[:500]}")
-        render_result(f"workflow {name}: {verb}, ok={result.ok}", {})
+        render_result(f"workflow {name}: {verb}, ok={result.ok}", {}, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=1)
 
@@ -326,7 +328,7 @@ def workflow_run(
 @app.command("init")
 def init(project: Path = typer.Option(Path("."), "--project", help="Repository root")) -> None:
     result = Ananke.open(project).init_project()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @app.command("doctor")
@@ -338,13 +340,13 @@ def doctor(
     if as_json:
         typer.echo(json.dumps(result.model_dump(), indent=2))
         return
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @app.command("verify")
 def verify(project: Path = typer.Option(Path("."), "--project", help="Repository root")) -> None:
     result = Ananke.open(project).verify()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @app.command("serve-mcp")
@@ -389,7 +391,7 @@ def spec_create(
         acceptance_criteria=acceptance,
     )
     result = Ananke.open(project).create_spec(requirement, provider_name=provider or None)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @spec_app.command("plan")
@@ -403,7 +405,7 @@ def spec_plan(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).plan(feature_dir, provider_name=provider or None)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @spec_app.command("tasks")
@@ -417,7 +419,7 @@ def spec_tasks(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).tasks(feature_dir, provider_name=provider or None)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @spec_app.command("lock")
@@ -426,7 +428,7 @@ def spec_lock(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).lock(feature_dir)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @spec_app.command("validate")
@@ -435,7 +437,7 @@ def spec_validate(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).validate(feature_dir)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=4)
 
@@ -446,7 +448,7 @@ def spec_diff(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).diff(feature_dir)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=8)
 
@@ -475,7 +477,7 @@ def spec_converge(
         acceptance_criteria=acceptance,
     )
     result = Ananke.open(project).converge(requirement, provider_name=provider or None)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @spec_app.command("superpowers")
@@ -503,7 +505,7 @@ def spec_superpowers(
         acceptance_criteria=acceptance,
     )
     result = Ananke.open(project).converge(requirement, provider_name=provider or None)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @graph_app.command("build")
@@ -511,7 +513,7 @@ def graph_build(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).graph_build()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @graph_app.command("query")
@@ -520,7 +522,7 @@ def graph_query(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).graph_query(text)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @graph_app.command("impact")
@@ -533,7 +535,7 @@ def graph_impact(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).graph_impact(changed_file)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @graph_app.command("export")
@@ -542,7 +544,7 @@ def graph_export(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).graph_export(fmt)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @arch_app.command("init")
@@ -550,7 +552,7 @@ def arch_init(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).arch_init()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @arch_app.command("validate")
@@ -558,7 +560,7 @@ def arch_validate(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).arch_validate()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=5)
 
@@ -568,7 +570,7 @@ def arch_diff(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).arch_diff()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @arch_app.command("reconcile")
@@ -577,7 +579,7 @@ def arch_reconcile(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).arch_reconcile(apply=apply)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @arch_app.command("render")
@@ -585,7 +587,7 @@ def arch_render(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).arch_render()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @run_app.command("start")
@@ -594,7 +596,7 @@ def run_start(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).run_start(spec_id)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @run_app.command("status")
@@ -603,7 +605,7 @@ def run_status(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).run_status(run_id)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=1)
 
@@ -614,7 +616,7 @@ def run_cancel(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).run_cancel(run_id)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=10)
 
@@ -625,7 +627,7 @@ def run_replay(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).run_replay(run_id)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=1)
 
@@ -677,7 +679,7 @@ def plugin_list(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).plugin_list()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("branch")
@@ -688,7 +690,7 @@ def lifecycle_branch(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).lifecycle_branch(change_type, ticket, slug)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("issue-transition")
@@ -705,7 +707,7 @@ def lifecycle_issue_transition(
         idempotency_key,
         mode,
     )
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("pr-create")
@@ -722,7 +724,7 @@ def lifecycle_pr_create(
         idempotency_key,
         mode,
     )
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("worktrees")
@@ -730,7 +732,7 @@ def lifecycle_worktrees(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).lifecycle_worktrees()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("telemetry")
@@ -738,7 +740,7 @@ def lifecycle_telemetry(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).lifecycle_telemetry()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("evidence")
@@ -786,7 +788,7 @@ def lifecycle_evidence(
         trend=trend or None,
         csv_path=csv_path or None,
     )
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @lifecycle_app.command("confluence-upsert")
@@ -805,7 +807,7 @@ def lifecycle_confluence_upsert(
         idempotency_key,
         mode,
     )
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @configure_app.command("auth")
@@ -944,7 +946,7 @@ def configure_auth(
         mcp_http_token=mcp_http_token or None,
         mcp_http_token_cmd=mcp_http_token_cmd or None,
     )
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @configure_app.command("auth-export")
@@ -957,7 +959,7 @@ def configure_auth_export(
     ),
 ) -> None:
     result = Ananke.open(project).configure_auth_export(shell)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @configure_app.command("auth-validate")
@@ -965,7 +967,7 @@ def configure_auth_validate(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).configure_auth_validate()
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=2)
 
@@ -1117,7 +1119,7 @@ def configure_auth_interactive(
         mcp_http_token=mcp_http_token or None,
         mcp_http_token_cmd=mcp_http_token_cmd or None,
     )
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @config_app.command("migrate")
@@ -1130,7 +1132,7 @@ def config_migrate(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).config_migrate(apply=apply)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=2)
 
@@ -1142,7 +1144,7 @@ def evidence_prune(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).evidence_prune(older_than=older_than, apply=apply)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=2)
 
@@ -1153,7 +1155,7 @@ def policy_explain(
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
     result = Ananke.open(project).policy_explain(stage=stage)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
 
 
 @policy_app.command("list")
@@ -1182,7 +1184,7 @@ def policy_check(
     """Run policy evaluation for a stage and exit 3 on block."""
     result = Ananke.open(project).policy_explain(stage=stage)
     blocked = result.details.get("blocked_count", 0)
-    render_result(result.summary, result.details)
+    render_result(result.summary, result.details, ok=result.ok)
     if blocked:
         raise typer.Exit(code=3)
 
@@ -1201,7 +1203,9 @@ def policy_install_pack(
         dest = install_pack(project, name)
         render_result(f"pack installed: {name}", {"path": str(dest)})
     except ValueError:
-        render_result(f"unknown pack: {name}", {"available": ", ".join(list_builtin_packs())})
+        render_result(
+            f"unknown pack: {name}", {"available": ", ".join(list_builtin_packs())}, ok=False
+        )
         raise typer.Exit(code=2) from None
 
 
@@ -1310,7 +1314,7 @@ def hooks_run(
     from ananke.plexus.hooks.runner import dispatch
 
     result = dispatch(project, stage, verbose=verbose)  # type: ignore[arg-type]
-    render_result(result.summary, {"ok": result.ok, "checks": len(result.checks)})
+    render_result(result.summary, {"ok": result.ok, "checks": len(result.checks)}, ok=result.ok)
     if not result.ok:
         raise typer.Exit(code=1)
 
@@ -1349,7 +1353,7 @@ def backend_doctor(
 
     reg = BackendRegistry.load(project)
     result = reg.doctor(name)
-    render_result(result["summary"], result)
+    render_result(result["summary"], result, ok=bool(result.get("ok", True)))
 
 
 @backend_app.command("test")
@@ -1362,7 +1366,7 @@ def backend_test(
 
     reg = BackendRegistry.load(project)
     result = reg.test(name)
-    render_result(result["summary"], result)
+    render_result(result["summary"], result, ok=bool(result.get("ok", True)))
     if not result.get("ok"):
         raise typer.Exit(code=1)
 
@@ -1437,6 +1441,7 @@ def bmad_verify(
     render_result(
         "BMAD verify: ok" if ok else f"BMAD verify: missing {len(missing)} artifacts",
         {"missing": ", ".join(missing) if missing else "none"},
+        ok=ok,
     )
     if not ok:
         raise typer.Exit(code=4)
@@ -1821,7 +1826,7 @@ def eval_judge_test(
             f"judge test: {provider}", {"score": result.normalized_score, "passed": result.passed}
         )
     except Exception as exc:
-        render_result(f"judge test failed: {exc}", {})
+        render_result(f"judge test failed: {exc}", {}, ok=False)
         raise typer.Exit(code=1) from None
 
 

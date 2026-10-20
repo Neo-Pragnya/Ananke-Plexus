@@ -1,0 +1,154 @@
+# What Ananke Plexus must be able to do before a release, and how much of the CLI the scenarios exercise.
+# Scenarios prove capabilities by tagging themselves @cap_<id> (dots and dashes become underscores).
+# blocker: true means a failing or unproven capability BLOCKs the release; the rest hold it at CONDITIONAL.
+product: Ananke Plexus
+default_fixture: shop
+binaries: [ananke, apm]
+surface_target: 0.6
+
+capabilities:
+  - { id: packaging, title: "Installs cleanly: entry points, version, extras, bundled docs", dimension: release, blocker: true }
+  - { id: bootstrap, title: "init / doctor / config: a project becomes Ananke-ready", dimension: core, blocker: true }
+  - { id: spec, title: "Spec pipeline: create, plan, tasks, lock, validate, drift, converge", dimension: core, blocker: true }
+  - { id: bmad, title: "BMAD contracts: compile, show, trace, verify", dimension: core, blocker: false }
+  - { id: graph, title: "Code graph: build, query, impact, export", dimension: core, blocker: true }
+  - { id: arch, title: "CALM architecture: init, validate, diff, reconcile, render", dimension: core, blocker: false }
+  - { id: policy, title: "Policy engine: list, explain, check, packs", dimension: governance, blocker: true }
+  - { id: hooks, title: "Git hooks: install, status, run, uninstall", dimension: governance, blocker: true }
+  - { id: verify, title: "verify: gates run and an evidence bundle is written", dimension: governance, blocker: true }
+  - { id: evidence, title: "Evidence housekeeping (prune is a dry run by default)", dimension: governance, blocker: false }
+  - { id: registry, title: "Registry: learn, list, search, show, resolve, lock, verify", dimension: registry, blocker: true }
+  - { id: registry-lifecycle, title: "Registry lifecycle: promote, quarantine, yank, deprecate", dimension: registry, blocker: false }
+  - { id: registry-security, title: "Registry security: secrets denied, code never executed, legit twins pass", dimension: safety, blocker: true }
+  - { id: dex, title: "Dex Trove integration: learn python:dex-trove and resolve its skills", dimension: ecosystem, blocker: true }
+  - { id: apm, title: "apm: install, list, verify, audit", dimension: ecosystem, blocker: false }
+  - { id: workflows, title: "Workflows: packs, create, show, run (dry and real), delete", dimension: automation, blocker: false }
+  - { id: runs, title: "Run state machine: start, status, approvals, cancel", dimension: automation, blocker: false }
+  - { id: backends, title: "Agent backends and plugins are discoverable", dimension: automation, blocker: false }
+  - { id: mcp, title: "MCP server answers initialize and lists its tools over stdio", dimension: ecosystem, blocker: true }
+  - { id: docs, title: "Offline docs: source resolution and build", dimension: docs, blocker: false }
+  - { id: testing, title: "Testing harness: discover, run, quality gate", dimension: quality, blocker: false }
+  - { id: cli-ux, title: "Errors are clean: no tracebacks, no success marks on failure", dimension: usability, blocker: false }
+
+# Every user-facing command (from `ananke --help` and `apm --help`), for coverage reporting.
+surface:
+  - ananke version
+  - ananke init
+  - ananke doctor
+  - ananke verify
+  - ananke serve-mcp
+  - ananke sync
+  - ananke config migrate
+  - ananke configure auth
+  - ananke configure auth-export
+  - ananke configure auth-validate
+  - ananke evidence prune
+  - ananke spec create
+  - ananke spec plan
+  - ananke spec tasks
+  - ananke spec lock
+  - ananke spec validate
+  - ananke spec diff
+  - ananke spec converge
+  - ananke spec superpowers
+  - ananke bmad compile
+  - ananke bmad show
+  - ananke bmad trace
+  - ananke bmad verify
+  - ananke graph build
+  - ananke graph query
+  - ananke graph impact
+  - ananke graph export
+  - ananke arch init
+  - ananke arch validate
+  - ananke arch diff
+  - ananke arch reconcile
+  - ananke arch render
+  - ananke policy explain
+  - ananke policy list
+  - ananke policy check
+  - ananke policy install-pack
+  - ananke hooks install
+  - ananke hooks uninstall
+  - ananke hooks status
+  - ananke hooks run
+  - ananke run start
+  - ananke run status
+  - ananke run cancel
+  - ananke run replay
+  - ananke run approvals
+  - ananke run approve
+  - ananke backend list
+  - ananke backend doctor
+  - ananke backend test
+  - ananke plugin list
+  - ananke lifecycle branch
+  - ananke lifecycle worktrees
+  - ananke lifecycle evidence
+  - ananke eval run
+  - ananke eval report
+  - ananke eval compare
+  - ananke test run
+  - ananke test discover
+  - ananke test list
+  - ananke test report
+  - ananke workflow list
+  - ananke workflow show
+  - ananke workflow create
+  - ananke workflow install-pack
+  - ananke workflow delete
+  - ananke workflow run
+  - ananke docs build
+  - ananke docs where
+  - ananke registry init
+  - ananke registry learn
+  - ananke registry register
+  - ananke registry unregister
+  - ananke registry inspect
+  - ananke registry show
+  - ananke registry list
+  - ananke registry search
+  - ananke registry diff
+  - ananke registry resolve
+  - ananke registry promote
+  - ananke registry yank
+  - ananke registry unyank
+  - ananke registry deprecate
+  - ananke registry quarantine
+  - ananke registry release-quarantine
+  - ananke registry activate
+  - ananke registry deactivate
+  - ananke registry verify
+  - ananke registry doctor
+  - ananke registry export
+  - ananke registry import
+  - ananke registry backup
+  - ananke registry restore
+  - ananke registry gc
+  - ananke registry lock
+  - ananke registry verify-lock
+  - ananke registry key generate
+  - ananke registry key list
+  - ananke registry sign
+  - ananke registry signatures
+  - ananke registry docs build
+  - ananke registry report
+  - ananke registry duplicates
+  - ananke skill list
+  - ananke skill show
+  - ananke skill search
+  - ananke skill resolve
+  - ananke agent list
+  - ananke agent search
+  - apm list
+  - apm search
+  - apm install
+  - apm activate
+  - apm deactivate
+  - apm lock
+  - apm info
+  - apm verify
+  - apm resolve
+  - apm audit
+  - apm sandbox-check
+  - apm import-copilot

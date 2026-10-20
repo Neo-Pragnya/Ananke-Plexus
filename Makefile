@@ -1,6 +1,7 @@
 .PHONY: install lint format format-check typecheck test coverage verify \
         build build-check sbom trivy-scan trivy-scan-json trivy-scan-sarif \
-        security docs-build docs-serve publish-testpypi publish-pypi clean check-uv
+        security docs-build docs-serve publish-testpypi publish-pypi clean check-uv \
+        acceptance acceptance-wheel acceptance-dist
 
 UV := uv
 
@@ -102,7 +103,31 @@ publish-pypi: build trivy-scan
 	@echo "Publishing to PyPI via uv..."
 	$(UV) publish --token "$$UV_PUBLISH_TOKEN"
 
+# ── Acceptance (capability scenarios + release gate) ─────────────────────────
+# Gherkin scenarios in acceptance/features drive the real CLI in sandbox projects; the gate writes
+# acceptance/report/{acceptance.json,summary.md} and fails on BLOCK. See acceptance/README.md.
+ACCEPTANCE_VENV := .acceptance-venv
+ACCEPTANCE_EXTRAS := dex,docs,mcp,test-python
+ACCEPTANCE_ARGS ?=
+
+acceptance:
+	$(UV) run --frozen pytest acceptance -n auto -p no:cacheprovider $(ACCEPTANCE_ARGS)
+
+# What ships: build the wheel, install it (with extras and the project tooling verify runs) into a fresh venv,
+# and run the suite from that venv. Release workflows run exactly this.
+acceptance-wheel: build acceptance-dist
+
+# Run the suite against an already-built dist/*.whl (CI uses this to test the exact artifact it publishes).
+acceptance-dist:
+	rm -rf $(ACCEPTANCE_VENV)
+	$(UV) venv -q --python 3.12 $(ACCEPTANCE_VENV)
+	$(UV) pip install -q --python $(ACCEPTANCE_VENV)/bin/python "$$(ls dist/*.whl | head -1)[$(ACCEPTANCE_EXTRAS)]" \
+	  ruff mypy pytest pytest-bdd pytest-xdist pyyaml
+	ACCEPTANCE_BIN_DIR=$(CURDIR)/$(ACCEPTANCE_VENV)/bin $(ACCEPTANCE_VENV)/bin/python -m pytest acceptance \
+	  -n auto -p no:cacheprovider $(ACCEPTANCE_ARGS)
+
 # ── Clean ──────────────────────────────────────────────────────────────────
 clean:
 	rm -rf build dist .pytest_cache .mypy_cache .ruff_cache htmlcov \
-	       trivy-report.txt trivy-report.json trivy-results.sarif site/
+	       trivy-report.txt trivy-report.json trivy-results.sarif site/ \
+	       $(ACCEPTANCE_VENV) acceptance/report
