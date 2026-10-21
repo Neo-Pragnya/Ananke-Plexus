@@ -63,6 +63,10 @@ registry_app.add_typer(policy_app, name="policy")
 registry_app.add_typer(analytics_app, name="analytics")
 registry_app.add_typer(key_app, name="key")
 registry_app.add_typer(remote_app, name="remote")
+troves_app = typer.Typer(
+    help="Installed troves (e.g. Dex Trove): list, enable, sync into the registry"
+)
+registry_app.add_typer(troves_app, name="troves")
 
 _PROJECT = typer.Option(Path("."), "--project", help="Project root")
 _USER = typer.Option(False, "--user", help="Use the user-level registry (~/.ananke/registry)")
@@ -1886,3 +1890,133 @@ def _kind_shortcuts(app: typer.Typer, kind: ArtifactKind) -> None:
 
 _kind_shortcuts(skill_app, ArtifactKind.SKILL)
 _kind_shortcuts(agent_app, ArtifactKind.AGENT)
+
+
+# --------------------------------------------------------------------------------------------- troves
+@troves_app.command("list")
+def troves_list(project: Path = _PROJECT, as_json: bool = _JSON) -> None:
+    """Installed troves and whether this project has them switched on."""
+    from ananke.plexus.config.loader import load_config
+    from ananke.plexus.registry.troves import discover
+
+    configured = load_config(project.resolve()).troves
+    rows = [
+        {
+            "name": t.name,
+            "package": f"{t.distribution} {t.version}".strip(),
+            "items": t.items,
+            "enabled": bool(configured.get(t.name) and configured[t.name].enabled),
+            "filters": configured[t.name].model_dump(exclude={"enabled"})
+            if t.name in configured
+            else {},
+            "error": t.error,
+        }
+        for t in discover()
+    ]
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+    if not rows:
+        typer.echo("no troves installed (try: pip install dex-trove, or ananke-plexus[dex])")
+        return
+    for r in rows:
+        state = "on " if r["enabled"] else "off"
+        typer.echo(
+            f"[{state}] {r['name']:<16} {r['package']:<24} {r['items']} items {r['error']}".rstrip()
+        )
+
+
+def _set_trove(
+    project: Path,
+    name: str,
+    enabled: bool,
+    kinds: list[str] | None,
+    namespaces: list[str] | None,
+    include_flagged: bool | None,
+) -> None:
+    from ananke.plexus.config.loader import load_config
+    from ananke.plexus.config.models import TroveConfig
+    from ananke.plexus.core.paths import project_ananke_dir
+    from ananke.plexus.registry.troves import discover, write_config
+
+    if name not in {t.name for t in discover()}:
+        installed = ", ".join(t.name for t in discover()) or "none"
+        typer.echo(f"error: no installed trove named {name!r} (installed: {installed})", err=True)
+        raise typer.Exit(code=2)
+    current = load_config(project.resolve()).troves.get(name, TroveConfig())
+    updated = current.model_copy(
+        update={
+            "enabled": enabled,
+            **({"kinds": kinds} if kinds is not None else {}),
+            **({"namespaces": namespaces} if namespaces is not None else {}),
+            **({"include_flagged": include_flagged} if include_flagged is not None else {}),
+        }
+    )
+    config_path = project_ananke_dir(project.resolve()) / "config.toml"
+    if not config_path.exists():
+        typer.echo("error: not an Ananke project (run `ananke init` first)", err=True)
+        raise typer.Exit(code=2)
+    write_config(config_path, name, updated)
+    filters = ", ".join(f"{k}={v}" for k, v in updated.model_dump(exclude={"enabled"}).items() if v)
+    typer.echo(
+        f"✓ trove {name}: {'enabled' if enabled else 'disabled'}{f' ({filters})' if filters else ''}"
+    )
+
+
+@troves_app.command("enable")
+def troves_enable(
+    name: str = typer.Argument(..., help="trove name, e.g. dex-trove"),
+    project: Path = _PROJECT,
+    kind: list[str] = typer.Option(None, "--kind", help="only this kind (repeatable)"),
+    namespace: list[str] = typer.Option(
+        None, "--namespace", help="only this namespace (repeatable)"
+    ),
+    include_flagged: bool = typer.Option(
+        False, "--include-flagged", help="also items flagged by the secret scanner"
+    ),
+) -> None:
+    """Switch a trove on in .ananke/config.toml (then: ananke registry troves sync)."""
+    _set_trove(project, name, True, kind or None, namespace or None, include_flagged)
+
+
+@troves_app.command("disable")
+def troves_disable(name: str = typer.Argument(...), project: Path = _PROJECT) -> None:
+    """Switch a trove off (already-registered versions stay; use unregister to remove them)."""
+    _set_trove(project, name, False, None, None, None)
+
+
+@troves_app.command("sync")
+@guarded
+def troves_sync(
+    project: Path = _PROJECT,
+    user: bool = _USER,
+    dry_run: bool = typer.Option(False, "--dry-run", help="report only"),
+    as_json: bool = _JSON,
+) -> None:
+    """Learn every enabled trove into the registry (normal importers, policy and secret scanning apply)."""
+    from ananke.plexus.config.loader import load_config
+    from ananke.plexus.registry.troves import sync as sync_troves
+
+    configs = load_config(project.resolve()).troves
+    if not any(c.enabled for c in configs.values()):
+        typer.echo(
+            "no troves enabled: run `ananke registry troves enable <name>` (see `ananke registry troves list`)"
+        )
+        raise typer.Exit(code=1)
+    with open_registry(project, user, create=True) as reg:
+        results = sync_troves(reg, configs, dry_run=dry_run)
+    if as_json:
+        typer.echo(json.dumps([r.__dict__ for r in results], indent=2))
+    else:
+        for r in results:
+            if r.error:
+                typer.echo(f"✗ {r.name}: {r.error}")
+                continue
+            verb = "would register" if dry_run else "registered"
+            typer.echo(
+                f"✓ {r.name}: {r.selected} selected · {r.registered} {verb} · {r.unchanged} unchanged · {r.denied} denied"
+            )
+            for example in r.denied_examples:
+                typer.echo(f"    denied {example}")
+    if any(r.error for r in results):
+        raise typer.Exit(code=1)

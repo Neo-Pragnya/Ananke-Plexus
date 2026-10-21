@@ -79,7 +79,7 @@ bug is fixed they start passing, the suite fails, and the tag must be removed. T
    that is free to change.
 4. If the product is wrong, still write the correct expectation and tag it `@known_issue`. Then file the bug.
 
-## Found by this suite (all fixed in 0.3.6)
+## Found by this suite (all fixed in 0.3.6 and 0.3.7)
 
 The first runs, against a mature package with about 1,800 unit tests, found:
 
@@ -93,6 +93,8 @@ The first runs, against a mature package with about 1,800 unit tests, found:
 | A run in which no test executed does not pass | `ananke test run` reported PASS |
 | Failures are not reported with a success mark | `spec diff/validate`, `hooks run`, `run status` printed ✓ |
 | The offline docs build within 120 s | `docs build` copied the whole checkout (about 6 minutes) |
+| An eval run with nothing to score warns | `eval run` reported PASS with zero scores (0.3.7) |
+| MCP tools stay inside the project | `feature_dir` arguments could point anywhere on disk (0.3.7) |
 
 When a new problem is found, add a `@known_issue` scenario that states the correct behaviour, and list it here.
 

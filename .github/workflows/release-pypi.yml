@@ -19,10 +19,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
         with:
+          enable-cache: false # release job: never restore a cache a PR could have poisoned
           version: "latest"
 
       - name: Verify package version matches release tag
@@ -101,9 +104,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.3.1
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
           version: v0.74.0
 
@@ -174,6 +179,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
         with:
+          enable-cache: false # release job: never restore a cache a PR could have poisoned
           version: "latest"
 
       - name: Publish to PyPI (OIDC Trusted Publishing)

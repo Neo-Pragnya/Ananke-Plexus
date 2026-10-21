@@ -27,3 +27,26 @@ Feature: Dex Trove plugs into the registry
     Then it succeeds
     When I run "ananke skill list"
     Then the output contains "neo-pragnya/living-diagrams"
+
+  Scenario: A project switches the trove on with [troves] and syncs a slice
+    When I run "ananke registry troves list --json"
+    Then it succeeds
+    And the JSON output at "name" contains "dex-trove"
+    When I run "ananke registry troves enable dex-trove --kind skill --namespace neo-pragnya"
+    Then it succeeds
+    And the file ".ananke/config.toml" contains "[troves.dex-trove]"
+    When I run "ananke config migrate --project ."
+    Then it succeeds
+    And the output contains "unknown_count │ 0"
+    When I run "ananke registry troves sync --json"
+    Then it succeeds
+    And the JSON output at "[0].denied" equals 0
+    When I run "ananke skill list"
+    Then the output contains "neo-pragnya/capability-acceptance"
+    And the output does not contain "awesome-copilot/"
+
+  Scenario: An unknown trove name is a clean error
+    When I run "ananke registry troves enable no-such-trove"
+    Then it fails cleanly
+    And the output contains "no installed trove"
+

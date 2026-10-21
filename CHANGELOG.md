@@ -10,6 +10,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.7] — 2026-10-21
+
+### Added
+
+- **`[troves]`: installed skill libraries switch on per project.** This replaces the roadmap item.
+  - `ananke registry troves list | enable | disable | sync` discovers packages exposing an `ananke.troves` entry
+    point (such as Dex Trove).
+  - Each trove is configured in a validated `[troves.<name>]` table (`enabled`, `kinds`, `namespaces`,
+    `include_flagged`).
+  - `sync` learns the selected slice through the normal importers, policy and secret scanner.
+  - `config migrate` understands the new table.
+- MCP tool `ananke.bmad.get_contract` (the compiled BMAD contract of a spec). It was declared before but had no
+  handler.
+- Acceptance: 81 scenarios across 26 capabilities (registry operations, signing, lifecycle, eval, troves). CLI
+  coverage went from 63% to 89%, and the gate target is now 85%.
+
+### Fixed
+
+- **Security:** MCP tools that take `feature_dir` (`spec.get`, `spec.validate`, `bmad.get_contract`) are confined to
+  the project. Before, an MCP client could list or read folders anywhere on disk.
+- `ananke eval run` with nothing to score now reports **WARN** ("nothing was evaluated") instead of PASS.
+- `bmad show` on a missing contract printed a success mark.
+- CI hardening (zizmor clean):
+  - actions pinned to commit SHAs;
+  - `persist-credentials: false` on every checkout;
+  - no uv cache in tag-triggered release jobs;
+  - `security-events: write` only on the jobs that upload SARIF.
+- TestPyPI publishing only runs when `TESTPYPI_ENABLED` is set. Otherwise it skips with setup instructions instead of
+  failing.
+
+---
+
 ## [0.3.6] — 2026-10-20
 
 ### Added

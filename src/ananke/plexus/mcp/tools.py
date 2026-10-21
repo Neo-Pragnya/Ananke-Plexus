@@ -7,6 +7,24 @@ from pathlib import Path
 from ananke.plexus.api import Ananke
 
 
+def _feature_dir(repository_root: Path, args: dict[str, object]) -> Path | dict[str, object]:
+    """``feature_dir`` resolved inside the repository; MCP clients must not read outside the project."""
+    raw = str(args.get("feature_dir", ""))
+    if not raw:
+        return {"ok": False, "summary": "feature_dir required", "details": {}}
+    root = repository_root.resolve()
+    path = (root / raw).resolve() if not Path(raw).is_absolute() else Path(raw).resolve()
+    if path != root and root not in path.parents:
+        return {
+            "ok": False,
+            "summary": "feature_dir must be inside the project",
+            "details": {"feature_dir": raw},
+        }
+    if not path.is_dir():
+        return {"ok": False, "summary": "feature_dir not found", "details": {"feature_dir": raw}}
+    return path
+
+
 def call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -> dict[str, object]:
     if tool_name.startswith("registry_"):
         from ananke.plexus.registry.mcp_interface import call_registry_tool
@@ -23,20 +41,34 @@ def call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) ->
         return app.doctor().model_dump()
 
     if tool_name == "ananke.spec.get":
-        feature_dir = str(args.get("feature_dir", ""))
-        if not feature_dir:
-            return {"ok": False, "summary": "feature_dir required", "details": {}}
-        path = Path(feature_dir)
-        if not path.exists():
-            return {"ok": False, "summary": "feature_dir not found", "details": {}}
+        path = _feature_dir(repository_root, args)
+        if isinstance(path, dict):
+            return path
         files = sorted(item.name for item in path.iterdir() if item.is_file())
         return {"ok": True, "summary": "spec fetched", "details": {"files": ",".join(files)}}
 
     if tool_name == "ananke.spec.validate":
-        feature_dir = str(args.get("feature_dir", ""))
-        if not feature_dir:
-            return {"ok": False, "summary": "feature_dir required", "details": {}}
-        return app.validate(Path(feature_dir)).model_dump()
+        path = _feature_dir(repository_root, args)
+        if isinstance(path, dict):
+            return path
+        return app.validate(path).model_dump()
+
+    if tool_name == "ananke.bmad.get_contract":
+        path = _feature_dir(repository_root, args)
+        if isinstance(path, dict):
+            return path
+        contract = path / "bmad.yaml"
+        if not contract.is_file():
+            return {
+                "ok": False,
+                "summary": "no bmad.yaml: run `ananke bmad compile --feature-dir …` first",
+                "details": {"feature_dir": str(path.relative_to(repository_root.resolve()))},
+            }
+        return {
+            "ok": True,
+            "summary": "BMAD contract",
+            "details": {"bmad": contract.read_text(encoding="utf-8")},
+        }
 
     if tool_name == "ananke.graph.query":
         text = str(args.get("text", ""))

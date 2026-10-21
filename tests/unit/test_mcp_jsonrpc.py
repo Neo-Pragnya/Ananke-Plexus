@@ -57,7 +57,7 @@ def test_tools_have_schemas_and_mutations_are_opt_in(tmp_path: Path) -> None:
     assert "ananke.verify.run" in names and "registry_search" in names
     assert "ananke.git.commit" not in names
     assert all(t["inputSchema"]["type"] == "object" for t in tools)
-    assert "ananke.bmad.get_contract" not in names  # declared but has no handler yet
+    assert "ananke.bmad.get_contract" in names
     with_mut = {
         t["name"] for t in _call(tmp_path, "tools/list", allow_mutations=True)["result"]["tools"]
     }
@@ -123,3 +123,30 @@ def test_the_official_mcp_client_can_talk_to_serve_mcp(tmp_path: Path) -> None:
     assert name == "ananke-plexus"
     assert "ananke.graph.impact" in tool_names
     assert json.loads(status)["ok"] in (True, False)
+
+
+def test_feature_dir_tools_stay_inside_the_project(tmp_path: Path) -> None:
+    outside = tmp_path.parent
+    for tool in ("ananke.spec.get", "ananke.bmad.get_contract", "ananke.spec.validate"):
+        reply = _call(
+            tmp_path, "tools/call", {"name": tool, "arguments": {"feature_dir": str(outside)}}
+        )
+        assert reply["result"]["isError"] is True
+        assert "inside the project" in reply["result"]["content"][0]["text"]
+    reply = _call(
+        tmp_path, "tools/call", {"name": "ananke.spec.get", "arguments": {"feature_dir": "../"}}
+    )
+    assert "inside the project" in reply["result"]["content"][0]["text"]
+
+
+def test_bmad_contract_is_returned(tmp_path: Path) -> None:
+    feature = tmp_path / ".ananke" / "specs" / "P-1-x"
+    feature.mkdir(parents=True)
+    (feature / "bmad.yaml").write_text("behavior: []\n")
+    reply = _call(
+        tmp_path,
+        "tools/call",
+        {"name": "ananke.bmad.get_contract", "arguments": {"feature_dir": ".ananke/specs/P-1-x"}},
+    )
+    assert reply["result"]["isError"] is False
+    assert "behavior" in reply["result"]["structuredContent"]["details"]["bmad"]

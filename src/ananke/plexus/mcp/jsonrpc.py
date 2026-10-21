@@ -48,6 +48,10 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         "Validate a spec folder and report lock drift.",
         _obj({"feature_dir": _FEATURE_DIR}, ["feature_dir"]),
     ),
+    "ananke.bmad.get_contract": (
+        "The compiled BMAD contract (behaviour, model, architecture) of a spec.",
+        _obj({"feature_dir": _FEATURE_DIR}, ["feature_dir"]),
+    ),
     "ananke.spec.create": (
         "Create a requirement, spec and BMAD bundle.",
         _obj(

@@ -12,6 +12,23 @@ permissions:
   contents: read
 
 jobs:
+  # TestPyPI is optional. Enable it once TestPyPI has a trusted publisher (or a UV_PUBLISH_TOKEN_TESTPYPI secret):
+  #   gh variable set TESTPYPI_ENABLED --body true
+  testpypi-disabled:
+    name: TestPyPI not configured (skipped)
+    runs-on: ubuntu-latest
+    if: vars.TESTPYPI_ENABLED != 'true'
+    steps:
+      - name: Explain how to enable TestPyPI
+        run: |
+          {
+            echo "### TestPyPI publishing is off"
+            echo "Add a trusted publisher on https://test.pypi.org/manage/account/publishing/ for this repository"
+            echo "(workflow \`release-testpypi.yml\`, environment \`testpypi\`), then run:"
+            echo ""
+            echo "    gh variable set TESTPYPI_ENABLED --body true"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   # ── 1. Build ───────────────────────────────────────────────────────────────
   build:
     name: build artifacts
@@ -19,10 +36,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
         with:
+          enable-cache: false # release job: never restore a cache a PR could have poisoned
           version: "latest"
 
       - name: Verify package version matches release tag
@@ -60,9 +80,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.3.1
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
           version: v0.74.0
 
@@ -119,6 +141,7 @@ jobs:
     name: publish to TestPyPI
     runs-on: ubuntu-latest
     needs: [build, trivy, provenance]
+    if: vars.TESTPYPI_ENABLED == 'true'
     environment: testpypi
     permissions:
       id-token: write
@@ -133,6 +156,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
         with:
+          enable-cache: false # release job: never restore a cache a PR could have poisoned
           version: "latest"
 
       - name: Publish to TestPyPI

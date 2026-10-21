@@ -95,17 +95,33 @@ ananke apm upgrade --dry-run
 Each Dex item has its own SemVer, bumped only when its upstream content changes, so upgrades are quiet and
 reviewable.
 
-## Roadmap: `[troves]`
+## Switch it on with `[troves]` (recommended)
 
-A planned policy setting will make installed troves load automatically:
+Ananke finds every installed **trove**, meaning any package exposing an `ananke.troves` entry point (Dex Trove does).
+A project chooses which troves it uses, and which slice of each, in `.ananke/config.toml`:
 
-```toml
-[troves]
-dex-trove = { enabled = true, kinds = ["skill", "agent"], sources = ["*"], channel = "candidate" }
+```bash
+pip install "ananke-plexus[dex]"
+ananke init
+ananke registry troves list                                   # [off] dex-trove  dex-trove 0.1.2  972 items
+ananke registry troves enable dex-trove --kind skill --kind agent
+ananke registry troves sync                                   # ✓ dex-trove: … registered · 0 denied
 ```
 
-Dex Trove already exposes the `ananke.troves` entry point that Ananke will use to discover trove packages
-generically.
+`enable` writes a validated table, which you can also edit by hand:
+
+```toml
+[troves.dex-trove]
+enabled = true
+kinds = ["skill", "agent"]      # empty = every kind
+namespaces = []                 # e.g. ["neo-pragnya"]; empty = every namespace
+include_flagged = false         # true also learns items whose placeholders trip the secret scanner
+```
+
+`sync` learns every enabled trove through the normal importers, policy and secret scanner, so a trove gets no
+special trust. Re-run it after upgrading the package: unchanged items stay as they are, and changed ones get a new
+version. `ananke registry troves disable dex-trove` switches it off. Versions already registered stay until you
+`unregister` them. Use `--json` on `list` and `sync` in scripts and CI.
 
 See the Dex Trove docs for the [licence policy](https://neo-pragnya.github.io/Dex-Trove/docs/concepts/licence-policy/)
 and the [full integration guide](https://neo-pragnya.github.io/Dex-Trove/docs/guides/ananke-integration/).

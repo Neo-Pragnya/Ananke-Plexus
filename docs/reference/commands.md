@@ -234,6 +234,7 @@ The unified quality test harness CLI.
 Full reference: [Registry Reference](registry.md). Every command accepts `--project PATH` and `--user`.
 
 - `ananke registry init [--policy default|enterprise]`: create the registry and policy file.
+- `ananke registry troves list [--json]` / `enable NAME [--kind K]… [--namespace NS]… [--include-flagged]` / `disable NAME` / `sync [--dry-run] [--json]`: installed troves (packages exposing an `ananke.troves` entry point, such as Dex Trove), switched on per project in `[troves.<name>]` and learned into the registry.
 - `ananke registry learn SOURCE [--kind --namespace --name --version X|auto --license --channel --allow-dynamic --allow-network --plugin --dry-run --force --interactive --json]`: discover a source (path, `python:`, `rust:`, `mcp:`, `mcp-stdio:`, `mcp-http:`, `git:`, archive, `framework:`, `dynamic:`) and register new immutable versions.
 - `ananke registry register PATH`, `unregister REF [--purge]`, `inspect REF | --source SRC [--report FILE.html]`, `show REF`, `list [REF] [--versions]`, `search [QUERY] [--kind --runtime --trust --channel --capability --tag --license]`.
 - `ananke registry diff A B`: capability/permission/schema/dependency diff with suggested SemVer.

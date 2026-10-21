@@ -78,6 +78,7 @@ works for existing scripts. A message is treated as MCP whenever it carries `"js
 | `ananke.spec.get` | Retrieve spec artifacts for a feature |
 | `ananke.spec.validate` | Validate spec contract completeness |
 | `ananke.spec.create` | Create a spec from requirement |
+| `ananke.bmad.get_contract` | Get the compiled BMAD contract for a feature (paths are confined to the project) |
 | `ananke.arch.get` | Get the CALM system document |
 | `ananke.arch.validate` | Validate architecture against CALM |
 | `ananke.arch.render` | Render architecture as Mermaid |

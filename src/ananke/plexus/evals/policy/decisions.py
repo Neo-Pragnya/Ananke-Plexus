@@ -52,6 +52,11 @@ def apply_gate_policy(
             elif rule.on_failure == "review":
                 review.append(score.dimension)
 
+    if not scores:
+        # Nothing was scored: that is not evidence of quality, so it must not read as a pass.
+        warning.append("no-scores")
+        evidence.append("no scores: nothing was evaluated (pass --case, --trace or --output)")
+
     if blocking:
         verdict = GateVerdict.BLOCK
     elif review:

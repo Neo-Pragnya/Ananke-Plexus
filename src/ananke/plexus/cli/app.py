@@ -1400,7 +1400,7 @@ def bmad_show(
     """Show the compiled BMAD contract for a feature."""
     bmad_path = feature_dir / "bmad.yaml"
     if not bmad_path.exists():
-        render_result("no bmad.yaml found — run `ananke bmad compile` first", {})
+        render_result("no bmad.yaml found — run `ananke bmad compile` first", {}, ok=False)
         raise typer.Exit(code=2)
     typer.echo(bmad_path.read_text(encoding="utf-8"))
 

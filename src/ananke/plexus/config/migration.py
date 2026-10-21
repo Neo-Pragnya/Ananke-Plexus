@@ -5,10 +5,14 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from ananke.plexus.config.models import ConfigModel
+from pydantic import ValidationError
+
+from ananke.plexus.config.models import ConfigModel, TroveConfig
 from ananke.plexus.core.paths import project_ananke_dir
 
 SECTION_ORDER = ["project", "ananke", "spec", "security"]
+# Free-form map sections: ``[troves.<name>]`` tables, each validated by its own model and kept verbatim.
+MAP_SECTIONS = {"troves": TroveConfig}
 
 
 def _default_tree() -> dict[str, dict[str, object]]:
@@ -21,6 +25,8 @@ def _default_tree() -> dict[str, dict[str, object]]:
 
 
 def _format_toml_value(value: object) -> str:
+    if isinstance(value, list):
+        return "[" + ", ".join(_format_toml_value(v) for v in value) + "]"
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, (int, float)):
@@ -37,6 +43,18 @@ def _render_config_toml(values: dict[str, dict[str, object]]) -> str:
         for key, value in section_values.items():
             lines.append(f"{key} = {_format_toml_value(value)}")
         lines.append("")
+    for section in MAP_SECTIONS:
+        for name, table in (values.get(section) or {}).items():
+            if not isinstance(table, dict):
+                continue
+            lines.append(
+                f'[{section}."{name}"]'
+                if not name.replace("-", "").replace("_", "").isalnum()
+                else f"[{section}.{name}]"
+            )
+            for key, value in table.items():
+                lines.append(f"{key} = {_format_toml_value(value)}")
+            lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -87,8 +105,25 @@ def migrate_config_file(repository_root: Path, apply: bool = False) -> dict[str,
                 missing_keys.append(f"{section}.{key}")
         merged[section] = target
 
+    for section, model in MAP_SECTIONS.items():
+        tables = parsed.get(section, {})
+        if not isinstance(tables, dict):
+            unknown_sections.append(section)
+            continue
+        kept: dict[str, object] = {}
+        for name, table in tables.items():
+            try:
+                model.model_validate(table)
+            except ValidationError as exc:
+                unknown_keys += [
+                    f"{section}.{name}.{'.'.join(str(p) for p in e['loc'])}" for e in exc.errors()
+                ]
+                continue
+            kept[name] = table
+        merged[section] = kept
+
     for section in parsed:
-        if section not in defaults:
+        if section not in defaults and section not in MAP_SECTIONS:
             unknown_sections.append(section)
 
     unknown_count = len(unknown_sections) + len(unknown_keys)

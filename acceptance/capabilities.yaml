@@ -4,7 +4,7 @@
 product: Ananke Plexus
 default_fixture: shop
 binaries: [ananke, apm]
-surface_target: 0.6
+surface_target: 0.85
 
 capabilities:
   - { id: packaging, title: "Installs cleanly: entry points, version, extras, bundled docs", dimension: release, blocker: true }
@@ -28,6 +28,10 @@ capabilities:
   - { id: mcp, title: "MCP server answers initialize and lists its tools over stdio", dimension: ecosystem, blocker: true }
   - { id: docs, title: "Offline docs: source resolution and build", dimension: docs, blocker: false }
   - { id: testing, title: "Testing harness: discover, run, quality gate", dimension: quality, blocker: false }
+  - { id: registry-ops, title: "Registry operations: export/import, backup/restore, reports, docs, diff, gc", dimension: registry, blocker: false }
+  - { id: signing, title: "Supply chain: signing keys, signatures that verify", dimension: safety, blocker: false }
+  - { id: lifecycle, title: "Lifecycle helpers: branches, worktrees, evidence events, adapter auth", dimension: automation, blocker: false }
+  - { id: eval, title: "Eval harness: runs report a gate decision; nothing scored is never a pass", dimension: quality, blocker: false }
   - { id: cli-ux, title: "Errors are clean: no tracebacks, no success marks on failure", dimension: usability, blocker: false }
 
 # Every user-facing command (from `ananke --help` and `apm --help`), for coverage reporting.
@@ -134,6 +138,10 @@ surface:
   - ananke registry docs build
   - ananke registry report
   - ananke registry duplicates
+  - ananke registry troves list
+  - ananke registry troves enable
+  - ananke registry troves disable
+  - ananke registry troves sync
   - ananke skill list
   - ananke skill show
   - ananke skill search
