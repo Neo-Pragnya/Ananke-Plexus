@@ -598,6 +598,9 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
             cur["outcome"], cur["error"] = ev["outcome"], ev["error"]
 
 
+_PARTIAL = {"value": False}
+
+
 def evaluate(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
     caps = []
     for cap in CATALOG["capabilities"]:
@@ -605,7 +608,7 @@ def evaluate(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
         mine = [r for r in results.values() if marker in r["caps"]]
         outcomes = [r["outcome"] for r in mine]
         if not mine:
-            status = "missing"
+            status = "not_run" if _PARTIAL["value"] else "missing"
         elif "failed" in outcomes:
             status = "fail"
         elif "known_issue" in outcomes:
@@ -638,13 +641,13 @@ def evaluate(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
     target = float(CATALOG.get("surface_target", 0.6))
     rules = []
     for c in caps:
-        if c["status"] == "pass":
+        if c["status"] in ("pass", "not_run"):
             continue
         level = "block" if c["blocker"] and c["status"] in ("fail", "missing") else "hold"
         rules.append(
             {"rule": f"{c['id']}: {c['status']}", "level": level, "evidence": c["evidence"]}
         )
-    if coverage < target:
+    if coverage < target and not _PARTIAL["value"]:
         rules.append(
             {
                 "rule": f"CLI surface coverage {coverage:.0%} < {target:.0%}",
@@ -661,6 +664,7 @@ def evaluate(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
     )
     return {
         "decision": decision,
+        "partial": _PARTIAL["value"],
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "target": str(bin_dir()),
         "capabilities": caps,
@@ -676,14 +680,22 @@ def evaluate(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-ICON = {"pass": "✅", "fail": "❌", "missing": "⬜", "unverified": "❔", "known_issue": "⚠️"}
+ICON = {
+    "pass": "✅",
+    "fail": "❌",
+    "missing": "⬜",
+    "unverified": "❔",
+    "known_issue": "⚠️",
+    "not_run": "·",
+}
 
 
 def render_markdown(report: dict[str, Any]) -> str:
     lines = [
         f"# Acceptance report: {CATALOG.get('product', REPO.name)}",
         "",
-        f"**Decision: {report['decision']}** · {report['generated_at']} · target `{report['target']}`",
+        f"**Decision: {report['decision']}**{' (partial run: only the selected scenarios)' if report.get('partial') else ''}"
+        f" · {report['generated_at']} · target `{report['target']}`",
         "",
         "| | Capability | Dimension | Blocker | Scenarios |",
         "| --- | --- | --- | --- | --- |",
@@ -725,9 +737,19 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
+def _is_partial(config: pytest.Config) -> bool:
+    """A run filtered with -k / -m or pointed at single files judges only what it ran."""
+    if config.getoption("keyword", "") or config.getoption("markexpr", ""):
+        return True
+    return any(
+        Path(a.split("::")[0]).suffix in (".py", ".feature") or "::" in a for a in config.args
+    )
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     if hasattr(session.config, "workerinput") or not _RESULTS:
         return  # xdist workers report to the controller, which writes the gate
+    _PARTIAL["value"] = _is_partial(session.config)
     report = evaluate(_RESULTS)
     REPORT_DIR.mkdir(exist_ok=True)
     (REPORT_DIR / "acceptance.json").write_text(
@@ -751,7 +773,9 @@ def pytest_terminal_summary(terminalreporter: Any) -> None:
         return
     report = json.loads(path.read_text(encoding="utf-8"))
     tr = terminalreporter
-    tr.section(f"acceptance gate: {report['decision']}")
+    tr.section(
+        f"acceptance gate: {report['decision']}{' (partial run)' if report.get('partial') else ''}"
+    )
     for c in report["capabilities"]:
         tr.write_line(
             f"  {ICON[c['status']]} {c['id']:<28} {c['status']:<12} {'(blocker)' if c['blocker'] else ''}"
