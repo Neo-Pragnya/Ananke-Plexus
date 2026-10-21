@@ -47,6 +47,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   instead of a traceback.
 - `ananke test run` reports **WARN ("no tests ran")** instead of PASS when nothing executed.
 
+### Security
+
+- Bumped `certifi` to 2026.10.19 (GHSA-6q48-6c7w-9gw2: compromised emSign root CAs) and `pillow` to 13.0.0
+  (CVE-2026-112403, pulled in only by the eval extras). The Trivy release gate blocked the first 0.3.6 tag on these.
+
 ---
 
 ## [0.3.5] — 2026-10-20
