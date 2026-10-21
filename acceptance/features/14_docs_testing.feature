@@ -47,7 +47,7 @@ Feature: Offline docs and the testing harness
     When I run "ananke test run --profile fast --json"
     Then the output does not contain "\"kind\": \"mutation\""
 
-  @cap_testing @known_issue
+  @cap_testing
   Scenario: A run in which no test executed does not pass the gate
     Given a fresh project
     And I have run "ananke init"

@@ -8,9 +8,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+---
+
+## [0.3.6] — 2026-10-20
+
 ### Added
 
-- **Capability acceptance suite** (`acceptance/`): 65 Gherkin scenarios across 22 capabilities drive the real CLI
+- **Capability acceptance suite** (`acceptance/`): 67 Gherkin scenarios across 22 capabilities drive the real CLI
   in sandbox projects. Each scenario gets a fresh git repo and an isolated HOME. Scenarios cover install, specs,
   BMAD, graph, CALM, policy, hooks, verify and evidence, the registry and its lifecycle, Dex Trove, apm, workflows,
   runs, MCP, offline docs and the testing harness. They include adversarial probes with legitimate twins.
@@ -27,14 +31,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   took minutes for dev installs and `--source <checkout>`. It now stages only `mkdocs.yml`, `docs_dir` and the
   theme `custom_dir`.
 - `docs.yml` wiped `docs/assets` before copying, deleting `docs/assets/flows`. It now overlays instead.
-
-### Known issues (tracked as `@known_issue` scenarios)
-
-- `serve-mcp` is not MCP JSON-RPC 2.0, so standard MCP clients cannot initialise.
-- `registry promote --trust <invalid>` crashes, and `--channel <unknown>` is accepted.
-- `apm audit --manifest <non-APM file>` crashes.
-- `run start` worktrees live inside the project and are not git-ignored.
-- `ananke test run` passes when no tests ran.
+- **`serve-mcp` now speaks the Model Context Protocol (JSON-RPC 2.0).**
+  - Supported methods: `initialize` (with protocol negotiation), `tools/list` with input schemas and annotations,
+    `tools/call` with structured content and `isError`, `resources/*`, `prompts/*`, `ping` and notifications.
+  - It is verified end to end with the official MCP Python SDK.
+  - The original `{"action": …}` protocol still works.
+  - `ananke.bmad.get_contract` is no longer advertised, because it has no handler.
+- `ananke init` (and every command that ensures the project layout) writes `.ananke/.gitignore`. Adapter
+  credentials (`secrets/`), `config.local.toml`, run worktrees, `tmp/` and `state/` could otherwise be committed by
+  `git add -A`. **Security fix**: if you initialised a project with an earlier version, check that
+  `.ananke/secrets/` was never committed.
+- `registry promote` rejects an unknown `--trust` or `--channel` with a clean error listing the valid values. Before,
+  a bad trust value crashed and any channel was accepted.
+- `apm audit` and `apm sandbox-check` report a missing, non-TOML or non-APM manifest as a clean error (exit 2)
+  instead of a traceback.
+- `ananke test run` reports **WARN ("no tests ran")** instead of PASS when nothing executed.
 
 ---
 

@@ -20,7 +20,7 @@ def handle_http_payload(
         if auth_header != expected:
             return {"ok": False, "error": "unauthorized"}
 
-    return handle_message(repository_root, payload)
+    return handle_message(repository_root, payload) or {}
 
 
 def serve_http(

@@ -3,7 +3,7 @@
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 
 class SkillSection(BaseModel):
@@ -43,6 +43,19 @@ class SkillManifest(BaseModel):
     provenance: ProvenanceSection = Field(default_factory=ProvenanceSection)
 
 
+class ManifestError(ValueError):
+    """The file is missing, is not TOML, or is not an APM skill manifest."""
+
+
 def load_manifest(path: Path) -> SkillManifest:
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
-    return SkillManifest.model_validate(data)
+    if not path.is_file():
+        raise ManifestError(f"{path}: no such manifest")
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        raise ManifestError(f"{path}: not a TOML APM manifest (ananke-skill.toml): {exc}") from None
+    try:
+        return SkillManifest.model_validate(data)
+    except ValidationError as exc:
+        fields = ", ".join(".".join(str(p) for p in e["loc"]) for e in exc.errors()[:5])
+        raise ManifestError(f"{path}: not a valid APM skill manifest (check: {fields})") from None

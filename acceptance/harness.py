@@ -48,6 +48,7 @@ GENERIC_TAGS = {
     "slow": "takes more than ~20 s",
     "needs_network": "needs internet access (skipped when ACCEPTANCE_OFFLINE=1)",
     "needs_chrome": "needs Google Chrome for browser journeys",
+    "needs_site": "needs a built docs site (ACCEPTANCE_SITE_DIST=path/to/dist)",
 }
 DEFAULT_TIMEOUT = int(os.environ.get("ACCEPTANCE_TIMEOUT", "600"))
 
@@ -123,6 +124,7 @@ class Sandbox:
             FIXTURES=str(FIXTURES),
             REPO=str(REPO),
             SANDBOX=str(self.base),
+            SITE_DIST=os.environ.get("ACCEPTANCE_SITE_DIST", ""),
         )
         env.update(self.extra_env)
         return env
@@ -293,6 +295,14 @@ def write_file_with_credential(sandbox: Sandbox, path: str, kind: str, docstring
 
 @given(parsers.parse('the environment variable "{name}" is "{value}"'))
 def set_env(sandbox: Sandbox, name: str, value: str) -> None:
+    """``$PROJECT``, ``$SANDBOX``, ``$HOME`` and ``$FIXTURES`` in the value are expanded."""
+    for var, path in (
+        ("$PROJECT", sandbox.project),
+        ("$SANDBOX", sandbox.base),
+        ("$HOME", sandbox.home),
+        ("$FIXTURES", FIXTURES),
+    ):
+        value = value.replace(var, str(path))
     sandbox.extra_env[name] = value
 
 
@@ -404,6 +414,12 @@ def file_contains(sandbox: Sandbox, path: str, text: str) -> None:
     assert text in content, f"{path} lacks {text!r}:\n{content[:1500]}"
 
 
+@then(parsers.parse('the file "{path}" does not contain "{text}"'))
+def file_lacks(sandbox: Sandbox, path: str, text: str) -> None:
+    content = (sandbox.project / path).read_text(encoding="utf-8", errors="replace")
+    assert text not in content, f"{path} unexpectedly contains {text!r}"
+
+
 @then(parsers.parse('a file matching "{pattern}" exists'))
 def glob_exists(sandbox: Sandbox, pattern: str) -> None:
     assert list(sandbox.project.glob(pattern)), f"nothing matches {pattern}"
@@ -455,6 +471,15 @@ def json_file_equals(sandbox: Sandbox, pattern: str, path: str, value: str) -> N
     assert files, f"nothing matches {pattern}"
     got = json_get(json.loads(files[-1].read_text(encoding="utf-8")), path)
     assert got == _literal(value), f"{files[-1].name}:{path} = {got!r}, expected {value}"
+
+
+@then(parsers.parse('the JSON file "{pattern}" at "{path}" contains {value}'))
+def json_file_contains(sandbox: Sandbox, pattern: str, path: str, value: str) -> None:
+    files = sorted(sandbox.project.glob(pattern), key=lambda p: p.stat().st_mtime)
+    assert files, f"nothing matches {pattern}"
+    got = json_get(json.loads(files[-1].read_text(encoding="utf-8")), path)
+    want = _literal(value)
+    assert want in got, f"{files[-1].name}:{path} = {str(got)[:400]!r} lacks {want!r}"
 
 
 @then(parsers.parse("it finishes within {seconds:g} seconds"))
@@ -514,6 +539,10 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(pytest.mark.skip(reason="ACCEPTANCE_OFFLINE=1"))
         if not chrome and item.get_closest_marker("needs_chrome"):
             item.add_marker(pytest.mark.skip(reason="Google Chrome not found (set CHROME=…)"))
+        if not os.environ.get("ACCEPTANCE_SITE_DIST") and item.get_closest_marker("needs_site"):
+            item.add_marker(
+                pytest.mark.skip(reason="no built site (set ACCEPTANCE_SITE_DIST=…/dist)")
+            )
 
 
 @pytest.hookimpl(wrapper=True)

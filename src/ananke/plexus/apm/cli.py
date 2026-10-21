@@ -11,7 +11,7 @@ from ananke.plexus.apm.audit import audit_manifest
 from ananke.plexus.apm.bundle import export_bundle, install_bundle, list_bundle_members
 from ananke.plexus.apm.installer import install_local_skill
 from ananke.plexus.apm.lockfile import read_lock
-from ananke.plexus.apm.manifest import load_manifest
+from ananke.plexus.apm.manifest import ManifestError, load_manifest
 from ananke.plexus.apm.registry import (
     activate_skill,
     deactivate_skill,
@@ -368,7 +368,11 @@ def resolve(
 def audit(
     manifest: Path = typer.Option(..., "--manifest", help="Path to ananke-skill.toml"),
 ) -> None:
-    findings = audit_manifest(manifest)
+    try:
+        findings = audit_manifest(manifest)
+    except ManifestError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from None
     for item in findings:
         typer.echo(item)
 
@@ -380,7 +384,11 @@ def sandbox_check(
     network_host: str = typer.Option("", "--network", help="Network host to validate"),
     write_path: str = typer.Option("", "--write", help="Write path to validate"),
 ) -> None:
-    model = load_manifest(manifest)
+    try:
+        model = load_manifest(manifest)
+    except ManifestError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from None
     if shell_command:
         typer.echo(f"shell={permission_allows_shell(model, shell_command)}")
     if network_host:

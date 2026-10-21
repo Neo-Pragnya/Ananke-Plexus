@@ -1033,20 +1033,35 @@ class Registry:
         ref: str,
         *,
         channel: str | None = None,
-        trust: TrustStatus | None = None,
+        trust: TrustStatus | str | None = None,
         reason: str | None = None,
         reviewed_by: str | None = None,
         run_gate: bool = True,
         run_tests: bool | None = None,
     ) -> VersionRecord:
         """Promote channel/trust without changing the version (spec §154)."""
+        from ananke.plexus.registry.models import BUILTIN_CHANNELS, CUSTOM_CHANNELS
         from ananke.plexus.registry.quality import QualityGate
 
-        trust = TrustStatus(trust) if trust is not None else None
+        target: TrustStatus | None = None
+        if trust is not None:
+            try:
+                target = TrustStatus(trust)
+            except ValueError:
+                valid = ", ".join(t.value for t in TrustStatus)
+                raise RegistryError(
+                    f"unknown trust {trust!r}; use one of: {valid}", code="INVALID_TRUST"
+                ) from None
+        known = (*BUILTIN_CHANNELS, *CUSTOM_CHANNELS)
+        if channel is not None and channel not in known:
+            raise RegistryError(
+                f"unknown channel {channel!r}; use one of: {', '.join(known)}",
+                code="INVALID_CHANNEL",
+            )
         rec = self.exact_version(ref)
-        if trust in {TrustStatus.VERIFIED, TrustStatus.APPROVED} and run_gate:
+        if target in {TrustStatus.VERIFIED, TrustStatus.APPROVED} and run_gate:
             report = QualityGate(self).run(
-                rec, run_tests=run_tests, target=trust, reviewed_by=reviewed_by
+                rec, run_tests=run_tests, target=target, reviewed_by=reviewed_by
             )
             if not report.passed:
                 raise PolicyViolationError(
@@ -1055,13 +1070,13 @@ class Registry:
                     code="QUALITY_GATE_FAILED",
                 )
             rec = self.exact_version(ref)
-        if trust is not None:
+        if target is not None:
             steps = (
                 [TrustStatus.VERIFIED, TrustStatus.APPROVED]
-                if trust is TrustStatus.APPROVED
+                if target is TrustStatus.APPROVED
                 and rec.trust
                 in {TrustStatus.UNKNOWN, TrustStatus.DISCOVERED, TrustStatus.RESTRICTED}
-                else [trust]
+                else [target]
             )
             for step in steps:
                 rec = self.set_trust(

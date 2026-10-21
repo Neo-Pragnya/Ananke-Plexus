@@ -27,7 +27,7 @@ from ananke.plexus.registry.errors import (
     RemoteSourceError,
     SecretDetectedError,
 )
-from ananke.plexus.registry.models import ArtifactKind, ResolutionMode, TrustStatus
+from ananke.plexus.registry.models import ArtifactKind, ResolutionMode
 from ananke.plexus.registry.policy import (
     PRESETS,
     TrustedKey,
@@ -640,7 +640,7 @@ def promote_cmd(
         rec = reg.promote(
             ref,
             channel=channel,
-            trust=TrustStatus(trust) if trust else None,
+            trust=trust,  # validated, with a clean error, by Registry.promote
             reason=reason,
             reviewed_by=reviewed_by,
             run_gate=not skip_gate,

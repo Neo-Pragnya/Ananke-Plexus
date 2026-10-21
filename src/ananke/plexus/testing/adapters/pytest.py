@@ -176,7 +176,12 @@ class PytestAdapter:
             passed = summary.get("passed", 0)
             failed = summary.get("failed", 0)
             errors = summary.get("error", 0)
+            total = summary.get("total", passed + failed + errors)
             total_status = TestStatus.PASS if (failed + errors) == 0 else TestStatus.FAIL
+            message = None
+            if total_status is TestStatus.PASS and total == 0:
+                # Nothing ran: that is not evidence of quality, so it must not read as a pass.
+                total_status, message = TestStatus.WARN, "no tests ran"
             return [
                 TestResult(
                     test_id="pytest-suite",
@@ -190,9 +195,10 @@ class PytestAdapter:
                         "passed": passed,
                         "failed": failed,
                         "errors": errors,
-                        "total": summary.get("total", passed + failed + errors),
+                        "total": total,
                     },
                     tool_version=self.version(),
+                    message=message,
                 )
             ]
         except Exception:
@@ -218,6 +224,9 @@ class PytestAdapter:
         duration_ms: float,
     ) -> list[TestResult]:
         status = TestStatus.PASS if returncode == 0 else TestStatus.FAIL
+        message = None
+        if returncode == 5:  # pytest's "no tests collected"
+            status, message = TestStatus.WARN, "no tests ran"
         metrics: dict[str, Any] = {}
         for line in stdout.splitlines():
             if "passed" in line or "failed" in line or "error" in line:
@@ -234,6 +243,7 @@ class PytestAdapter:
                 duration_ms=duration_ms,
                 metrics=metrics,
                 tool_version=self.version(),
+                message=message,
             )
         ]
 

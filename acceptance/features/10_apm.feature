@@ -22,7 +22,7 @@ Feature: apm installs and audits agent packages
     Then it succeeds
     And the output contains "good-skill"
 
-  @cap_cli_ux @known_issue
+  @cap_cli_ux
   Scenario: Auditing a file that is not an APM manifest is a clean error
     When I run "apm audit --manifest skills/good-skill/SKILL.md"
     Then it fails cleanly

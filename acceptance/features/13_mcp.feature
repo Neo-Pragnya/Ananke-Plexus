@@ -18,7 +18,7 @@ Feature: IDEs and agents reach Ananke over MCP
       registry_resolve
       """
 
-  @known_issue
+ 
   Scenario: A standard MCP client can initialise and list tools (JSON-RPC 2.0)
     When I run "ananke serve-mcp --project ." with input:
       """
@@ -28,4 +28,17 @@ Feature: IDEs and agents reach Ananke over MCP
       """
     Then it succeeds
     And the output contains "protocolVersion"
-    And the output contains "\"tools\""
+    And the output contains "ananke-plexus"
+    And the output contains "inputSchema"
+
+  Scenario: An MCP client calls a tool and gets structured content back
+    When I run "ananke serve-mcp --project ." with input:
+      """
+      {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "acceptance", "version": "1"}}}
+      {"jsonrpc": "2.0", "method": "notifications/initialized"}
+      {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "ananke.policy.explain", "arguments": {"stage": "verify"}}}
+      {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "ananke.git.commit", "arguments": {"message": "x"}}}
+      """
+    Then it succeeds
+    And the output contains "policy.core.fail-closed"
+    And the output contains "--allow-mutations"

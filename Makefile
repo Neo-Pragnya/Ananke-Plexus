@@ -71,6 +71,7 @@ security: trivy-scan
 
 # ── Build ──────────────────────────────────────────────────────────────────
 build: check-uv
+	rm -rf dist
 	$(UV) build
 	@echo "Artifacts in dist/:"
 	@ls -lh dist/
@@ -121,7 +122,7 @@ acceptance-wheel: build acceptance-dist
 acceptance-dist:
 	rm -rf $(ACCEPTANCE_VENV)
 	$(UV) venv -q --python 3.12 $(ACCEPTANCE_VENV)
-	$(UV) pip install -q --python $(ACCEPTANCE_VENV)/bin/python "$$(ls dist/*.whl | head -1)[$(ACCEPTANCE_EXTRAS)]" \
+	$(UV) pip install -q --python $(ACCEPTANCE_VENV)/bin/python "$$(ls -t dist/*.whl | head -1)[$(ACCEPTANCE_EXTRAS)]" \
 	  ruff mypy pytest pytest-bdd pytest-xdist pyyaml
 	ACCEPTANCE_BIN_DIR=$(CURDIR)/$(ACCEPTANCE_VENV)/bin $(ACCEPTANCE_VENV)/bin/python -m pytest acceptance \
 	  -n auto -p no:cacheprovider $(ACCEPTANCE_ARGS)

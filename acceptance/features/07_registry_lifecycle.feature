@@ -51,13 +51,13 @@ Feature: Versions move through trust and lifecycle states, and resolution respec
     Then it fails cleanly
     And the output contains "must include a version"
 
-  @cap_cli_ux @known_issue
+  @cap_cli_ux
   Scenario: An unknown trust level is a clean error, not a crash
     When I run "ananke registry promote good-skill@0.1.0 --trust reviewed"
     Then it fails cleanly
     And the output contains "approved"
 
-  @known_issue
+ 
   Scenario: An unknown channel is refused
     When I run "ananke registry promote good-skill@0.1.0 --channel bogus"
     Then it fails cleanly

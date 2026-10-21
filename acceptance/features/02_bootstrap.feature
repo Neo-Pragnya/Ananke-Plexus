@@ -15,6 +15,25 @@ Feature: A repository becomes Ananke-ready
     And the file ".ananke/architecture/system.calm.json" exists
     And the file ".ananke/config.toml" contains "fail_closed = true"
 
+  @adversarial
+  Scenario: Adapter credentials and local config are never staged by git add -A
+    Given I have run "ananke init"
+    And the file ".ananke/secrets/adapters.env" with content containing a fake "github-token" credential:
+      """
+      ANANKE_BITBUCKET_APP_PASSWORD={credential}
+      """
+    When I run "git add -A && git status --porcelain"
+    Then it succeeds
+    And the output does not contain "secrets/"
+    And the output contains ".ananke/config.toml"
+    When I run "git check-ignore .ananke/config.local.toml .ananke/secrets/adapters.env"
+    Then it succeeds
+    And the output contains each of:
+      """
+      .ananke/config.local.toml
+      .ananke/secrets/adapters.env
+      """
+
   Scenario: init is safe to run twice
     Given I have run "ananke init"
     When I run "ananke init"
@@ -32,7 +51,7 @@ Feature: A repository becomes Ananke-ready
     Then it succeeds
     And it does not crash
 
-  @cap_runs @known_issue
+  @cap_runs
   Scenario: Run worktrees never end up inside the project's git index
     Given I have run "ananke init"
     And I have run "ananke spec converge --id PROJ-1 --title 'Lock accounts' --acceptance 'Five failures lock the account'"

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from ananke.plexus.mcp.auth import DEFAULT_PERMISSION_MAP, MAX_REQUEST_BYTES
+from ananke.plexus.mcp.jsonrpc import PARSE_ERROR, handle_jsonrpc
 from ananke.plexus.mcp.prompts import get_prompt, list_prompts
 from ananke.plexus.mcp.resources import list_resources, read_resource
 from ananke.plexus.mcp.tools import call_tool
@@ -19,7 +20,11 @@ def handle_message(
     message: dict[str, Any],
     *,
     allow_mutations: bool = False,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
+    """One request. MCP JSON-RPC 2.0 messages (``"jsonrpc"``) go to :mod:`ananke.plexus.mcp.jsonrpc`; the
+    original ``{"action": …}`` protocol is answered here. ``None`` means a notification: send nothing back."""
+    if "jsonrpc" in message:
+        return handle_jsonrpc(repository_root, message, allow_mutations=allow_mutations)
     action = message.get("action")
 
     if action == "ping":
@@ -77,7 +82,16 @@ def serve_stdio(repository_root: Path | None = None, *, allow_mutations: bool = 
         try:
             message = json.loads(raw)
         except json.JSONDecodeError:
-            _response({"ok": False, "error": "invalid_json"})
+            if '"jsonrpc"' in raw:
+                _response(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": None,
+                        "error": {"code": PARSE_ERROR, "message": "parse error"},
+                    }
+                )
+            else:
+                _response({"ok": False, "error": "invalid_json"})
             continue
 
         if not isinstance(message, dict):
@@ -85,6 +99,7 @@ def serve_stdio(repository_root: Path | None = None, *, allow_mutations: bool = 
             continue
 
         response = handle_message(root, message, allow_mutations=allow_mutations)
-        _response(response)
+        if response is not None:
+            _response(response)
         if message.get("action") == "shutdown":
             break

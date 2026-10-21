@@ -79,17 +79,22 @@ bug is fixed they start passing, the suite fails, and the tag must be removed. T
    that is free to change.
 4. If the product is wrong, still write the correct expectation and tag it `@known_issue`. Then file the bug.
 
-## Known issues (as of 0.3.5)
+## Found by this suite (all fixed in 0.3.6)
 
-| Scenario | What's wrong |
+The first runs, against a mature package with about 1,800 unit tests, found:
+
+| What the scenario expected | What was wrong |
 | --- | --- |
-| A standard MCP client can initialise and list tools | `serve-mcp` speaks a custom `{"action": …}` protocol, not MCP JSON-RPC 2.0, so IDE MCP clients cannot connect |
-| An unknown trust level is a clean error | `registry promote --trust reviewed` crashes with a `ValueError` traceback |
-| An unknown channel is refused | `registry promote --channel bogus` is accepted and stored |
-| Auditing a file that is not an APM manifest | `apm audit --manifest SKILL.md` crashes with a traceback |
-| Run worktrees never end up in the project's git index | `run start` creates `.ananke/runs/<id>/worktree` (a nested git repo) inside the project, unignored |
-| A run in which no test executed does not pass | `ananke test run` reports PASS when zero tests ran |
+| A standard MCP client can initialise and list tools | `serve-mcp` spoke a custom `{"action": …}` protocol, not MCP JSON-RPC 2.0 |
+| Adapter credentials are never staged by `git add -A` | nothing git-ignored `.ananke/secrets/` or `config.local.toml` |
+| An unknown trust level is a clean error / an unknown channel is refused | a `ValueError` traceback / any channel was stored |
+| Auditing a non-APM file is a clean error | `apm audit` crashed |
+| Run worktrees never end up in the project's git index | `.ananke/runs/<id>/worktree` was unignored |
+| A run in which no test executed does not pass | `ananke test run` reported PASS |
+| Failures are not reported with a success mark | `spec diff/validate`, `hooks run`, `run status` printed ✓ |
+| The offline docs build within 120 s | `docs build` copied the whole checkout (about 6 minutes) |
 
-Fixed while building the suite: failures were printed with a green ✓ (`spec diff/validate`, `hooks run`,
-`run status`). `docs build` copied the whole source checkout (`.venv`, `node_modules`), which took about 6 minutes;
-it now takes seconds.
+When a new problem is found, add a `@known_issue` scenario that states the correct behaviour, and list it here.
+
+The harness, scaffolder and probe ship as the **capability-acceptance** skill in Dex Trove, so other repos can
+adopt the same suite.

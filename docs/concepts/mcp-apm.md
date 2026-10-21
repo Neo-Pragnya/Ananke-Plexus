@@ -37,6 +37,37 @@ ananke serve-mcp --allow-mutations
 
 Default transport is **stdio** (for IDE integration). HTTP transport binds to loopback only by default.
 
+### Connecting an MCP client
+
+`serve-mcp` speaks the **Model Context Protocol (JSON-RPC 2.0)**, protocol versions `2025-06-18`, `2025-03-26` and
+`2024-11-05`. Any MCP client can use it: VS Code / GitHub Copilot, Claude Code, Kiro, or the official SDKs. Tools
+come with input schemas and read-only or destructive annotations. Tool failures return `isError: true` with the
+details. Mutation tools are listed and callable only with `--allow-mutations`.
+
+```jsonc
+// .vscode/mcp.json (GitHub Copilot)
+{ "servers": { "ananke": { "type": "stdio", "command": "ananke", "args": ["serve-mcp", "--project", "${workspaceFolder}"] } } }
+```
+
+```bash
+# Claude Code
+claude mcp add ananke -- ananke serve-mcp --project .
+```
+
+```python
+# Python, with the official SDK (pip install "ananke-plexus[mcp]")
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+async with stdio_client(StdioServerParameters(command="ananke", args=["serve-mcp"])) as (r, w), ClientSession(r, w) as s:
+    await s.initialize()
+    tools = await s.list_tools()
+    impact = await s.call_tool("ananke.graph.impact", {"changed_files": ["src/app/users.py"]})
+```
+
+The original line protocol (`{"action": "tools.list"}`, `{"action": "tools.call", "tool": …, "args": …}`) still
+works for existing scripts. A message is treated as MCP whenever it carries `"jsonrpc"`.
+
 ---
 
 ## Read-only tools
@@ -47,7 +78,6 @@ Default transport is **stdio** (for IDE integration). HTTP transport binds to lo
 | `ananke.spec.get` | Retrieve spec artifacts for a feature |
 | `ananke.spec.validate` | Validate spec contract completeness |
 | `ananke.spec.create` | Create a spec from requirement |
-| `ananke.bmad.get_contract` | Get BMAD contract for a feature |
 | `ananke.arch.get` | Get the CALM system document |
 | `ananke.arch.validate` | Validate architecture against CALM |
 | `ananke.arch.render` | Render architecture as Mermaid |

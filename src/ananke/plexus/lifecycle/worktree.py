@@ -20,6 +20,11 @@ def create_isolated_worktree(
     Falls back to a plain directory otherwise.
     """
     worktree_path = repository_root / ".ananke" / "runs" / run_id / "worktree"
+    from ananke.plexus.core.paths import ensure_runtime_gitignore
+
+    ensure_runtime_gitignore(
+        repository_root
+    )  # the worktree is a nested checkout: keep it out of the index
 
     if use_git_worktree:
         branch = branch_name or f"ananke-run-{run_id}"

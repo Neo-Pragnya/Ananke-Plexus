@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Works under any pytest import mode (Dex uses importlib, which does not put this folder on sys.path).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 import re
 
 from harness import *  # noqa: F403  (steps, sandbox fixture and the release-gate hooks)
