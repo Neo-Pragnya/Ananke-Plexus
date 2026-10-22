@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.9] — 2026-10-21
+
+### Security
+
+- **`virtualenv` 21.14.1 → 21.14.12** (dev dependency) for five HIGH advisories published on release day:
+  CVE-2026-113722, -113725, -113726, -113732 and -113776.
+  - They made the Trivy gate block the v0.3.8 PyPI release.
+  - 0.3.8 therefore exists only on TestPyPI.
+  - No other changes since 0.3.8.
+
 ## [0.3.8] — 2026-10-21
 
 ### Changed
