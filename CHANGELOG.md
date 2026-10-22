@@ -10,6 +10,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.8] — 2026-10-21
+
+### Changed
+
+- **Release pipeline verified end to end.** Pushing a `v*` tag now publishes to TestPyPI and to PyPI from CI.
+  - TestPyPI publishing is switched on (`TESTPYPI_ENABLED`, `testpypi` environment secret).
+  - The PyPI token fallback secret is refreshed.
+  - No code changes since 0.3.7.
+
+---
+
 ## [0.3.7] — 2026-10-21
 
 ### Added
