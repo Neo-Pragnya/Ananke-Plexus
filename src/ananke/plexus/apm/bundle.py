@@ -59,12 +59,28 @@ def list_bundle_members(bundle_path: Path) -> list[str]:
     return [str(item) for item in members] if isinstance(members, list) else []
 
 
+def _safe_extract(archive: tarfile.TarFile, dest: Path) -> None:
+    """Extract only regular files and directories that land inside ``dest``: a bundle may come from anyone."""
+    root = dest.resolve()
+    for member in archive.getmembers():
+        target = (dest / member.name).resolve()
+        if not (member.isfile() or member.isdir()) or not target.is_relative_to(root):
+            raise ValueError(f"Unsafe bundle member: {member.name!r}")
+    if hasattr(tarfile, "data_filter"):  # Python 3.11.4+: the stdlib re-checks every member
+        archive.extractall(dest, filter="data")
+    else:  # every member was checked above
+        archive.extractall(dest)  # nosec B202
+
+
 def install_bundle(repository_root: Path, bundle_path: Path) -> list[str]:
     members = list_bundle_members(bundle_path)
+    for name in members:
+        if not name or name in {".", ".."} or "/" in name or "\\" in name:
+            raise ValueError(f"Unsafe bundle member name: {name!r}")
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_root = Path(temp_dir)
         with tarfile.open(bundle_path, "r:gz") as archive:
-            archive.extractall(temp_root)
+            _safe_extract(archive, temp_root)
 
         installed: list[str] = []
         for name in members:

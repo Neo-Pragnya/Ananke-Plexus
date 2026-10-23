@@ -42,3 +42,33 @@ def test_apm_bundle_cli_json_manifest_contents(tmp_path: Path) -> None:
     bundle_path = export_bundle(project, [installed_name])
     members = list_bundle_members(bundle_path)
     assert json.loads(json.dumps({"members": members}))["members"] == [installed_name]
+
+
+def _bundle(path: Path, members: list[str], entries: dict[str, bytes]) -> Path:
+    import io
+    import tarfile
+
+    with tarfile.open(path, "w:gz") as archive:
+        for name, data in {
+            "ananke-bundle.json": json.dumps({"members": members}).encode(),
+            **entries,
+        }.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+    return path
+
+
+def test_install_bundle_refuses_members_that_escape(tmp_path: Path) -> None:
+    import pytest
+
+    project = tmp_path / "project"
+    project.mkdir()
+    traversal = _bundle(tmp_path / "a.tar.gz", ["ok"], {"../../escaped.txt": b"x"})
+    with pytest.raises(ValueError, match="Unsafe bundle member"):
+        install_bundle(project, traversal)
+    assert not list(tmp_path.rglob("escaped.txt"))
+
+    bad_name = _bundle(tmp_path / "b.tar.gz", ["../outside"], {})
+    with pytest.raises(ValueError, match="Unsafe bundle member name"):
+        install_bundle(project, bad_name)

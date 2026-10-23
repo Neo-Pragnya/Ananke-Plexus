@@ -1,6 +1,7 @@
 """APM CLI baseline."""
 
 import json
+import tarfile
 from pathlib import Path
 from typing import Any
 
@@ -433,5 +434,9 @@ def bundle_install(
     bundle: Path = typer.Option(..., "--bundle", help="Path to exported bundle archive"),
     project: Path = typer.Option(Path("."), "--project", help="Repository root"),
 ) -> None:
-    installed = install_bundle(project, bundle)
+    try:
+        installed = install_bundle(project, bundle)
+    except (ValueError, OSError, tarfile.TarError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from None
     typer.echo(json.dumps({"installed": installed}, indent=2))

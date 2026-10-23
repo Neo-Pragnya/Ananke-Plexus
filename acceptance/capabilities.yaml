@@ -22,6 +22,7 @@ capabilities:
   - { id: registry-security, title: "Registry security: secrets denied, code never executed, legit twins pass", dimension: safety, blocker: true }
   - { id: dex, title: "Dex Trove integration: learn python:dex-trove and resolve its skills", dimension: ecosystem, blocker: true }
   - { id: apm, title: "apm: install, list, verify, audit", dimension: ecosystem, blocker: false }
+  - { id: apm_security, title: "apm bundles cannot write outside the project", dimension: security, blocker: true }
   - { id: workflows, title: "Workflows: packs, create, show, run (dry and real), delete", dimension: automation, blocker: false }
   - { id: runs, title: "Run state machine: start, status, approvals, cancel", dimension: automation, blocker: false }
   - { id: backends, title: "Agent backends and plugins are discoverable", dimension: automation, blocker: false }
@@ -160,3 +161,5 @@ surface:
   - apm audit
   - apm sandbox-check
   - apm import-copilot
+  - apm bundle export
+  - apm bundle install

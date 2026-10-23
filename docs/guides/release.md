@@ -39,6 +39,7 @@ make verify        # ruff + mypy + pytest
 make trivy-scan    # Trivy filesystem CVE scan (blocks on CRITICAL/HIGH)
 make coverage      # coverage report
 make acceptance-wheel  # capability scenarios against the built wheel + release gate
+make scan          # what package firewalls check, on the built wheel and sdist (scan-report/summary.md)
 ```
 
 The **acceptance gate** (`acceptance/`) installs the built wheel into a fresh virtual environment and runs more than
@@ -99,6 +100,8 @@ The workflows run in this order:
 ```
 release-testpypi.yml        release-pypi.yml
   └─ build                    └─ build
+                              └─ acceptance (built wheel)
+                              └─ dist-scan (blocking: secrets, vulnerable dependencies)
   └─ trivy (blocking)         └─ trivy (blocking)
   └─ provenance               └─ provenance
   └─ publish TestPyPI         └─ publish PyPI
@@ -117,6 +120,7 @@ release-testpypi.yml        release-pypi.yml
 | `dist/*.tar.gz` | Source distribution |
 | `dist/sbom.cdx.json` | CycloneDX SBOM |
 | `trivy-results.sarif` | Trivy SARIF (uploaded to GitHub Security) |
+| `dist-scan-<tag>` | Distribution scan report: `summary.md` and `scan.json` |
 | Build attestation | GitHub artifact provenance via `actions/attest-build-provenance` |
 
 ---
@@ -130,6 +134,32 @@ trivy job (CRITICAL + HIGH, unfixed) → exit-code 1 → blocks publish job
 ```
 
 This means a release cannot proceed if there are unfixed CRITICAL or HIGH CVEs in the package or its dependencies.
+
+### Distribution scan: what package firewalls see
+
+Trivy scans the repository. Package firewalls and SCA tools (Black Duck, JFrog Xray and Curation, Sonatype, Socket)
+scan the **published files**, and quarantine a release for secret-shaped strings, vulnerable dependencies,
+malicious-code heuristics or licence mismatches. The `dist-scan` job runs `scripts/scan_dist.py` on the exact wheel
+and sdist the release will publish, using free tools at pinned versions:
+
+| Check | Tool | Effect |
+| --- | --- | --- |
+| Secrets in the wheel and sdist | gitleaks | blocks publish |
+| Vulnerable dependencies in the tree the wheel resolves to (`all,mcp,dex` extras) | pip-audit | blocks publish |
+| Malicious-package heuristics | GuardDog | reported |
+| High-severity code issues in the shipped code | Bandit | reported |
+| Inventory: scripts, binaries, minified JS, declared licence | built in | reported |
+
+Run it locally with `make scan` (it needs `gitleaks` and `uv`; the Python tools come through `uvx`).
+
+**Reviewed heuristic hits (0.3.10):**
+- GuardDog's obfuscation, network and process rules match the vendored `mermaid.min.js` (MIT, 11.17.2, no known
+  advisories). It ships so `ananke docs` renders diagrams offline.
+- `threat-filesystem-destruction` matches the `rm -rf /` string in the governance evaluator's *deny* list.
+- `threat-filesystem-read` matches `adapters.env`, Ananke's own git-ignored credentials file.
+
+If your organisation's firewall quarantines a release, ask for the policy violation names and compare them with
+this report. Packages only days old are often held by maturity rules regardless of content.
 
 Additionally the weekly `security.yml` workflow runs:
 - Trivy filesystem scan (SARIF + blocking)

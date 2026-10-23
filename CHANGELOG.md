@@ -10,6 +10,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.10] — 2026-10-22
+
+### Security
+
+- **`apm bundle install` can no longer write outside the project.** A crafted bundle (`../../file` members,
+  links or devices, or a manifest member name like `../x`) is refused with exit 2 before anything is
+  extracted. Bandit reported the unfiltered `tarfile.extractall` (B202). Python 3.11.4+ also applies the stdlib
+  `data` filter.
+
+### Added
+
+- **Distribution scan.** `scripts/scan_dist.py` and `make scan` check the built wheel and sdist the way package
+  firewalls do, with free tools:
+  - gitleaks and pip-audit block on any finding;
+  - GuardDog, Bandit and an inventory of scripts and minified files are reported.
+
+  The new `dist-scan` release job runs it, and publishing waits for it. The release guide lists the reviewed
+  heuristic hits.
+- Acceptance: the `apm_security` capability (blocker) covers bundle path traversal, next to a legitimate
+  bundle round trip.
+
+### Known issues
+
+- A skill installed from the registry can't be re-installed from a bundle, because the bundle expects
+  `ananke-skill.toml`. This is recorded as a `@known_issue` scenario.
+
 ## [0.3.9] — 2026-10-21
 
 ### Security

@@ -261,3 +261,4 @@ Debug-Specs/**
 # Acceptance suite: wheel-under-test venv and generated reports
 .acceptance-venv/
 acceptance/report/
+scan-report/

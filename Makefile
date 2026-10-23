@@ -1,7 +1,7 @@
 .PHONY: install lint format format-check typecheck test coverage verify \
         build build-check sbom trivy-scan trivy-scan-json trivy-scan-sarif \
         security docs-build docs-serve publish-testpypi publish-pypi clean check-uv \
-        acceptance acceptance-wheel acceptance-dist
+        acceptance acceptance-wheel acceptance-dist scan scan-dist
 
 UV := uv
 
@@ -116,6 +116,14 @@ acceptance:
 
 # What ships: build the wheel, install it (with extras and the project tooling verify runs) into a fresh venv,
 # and run the suite from that venv. Release workflows run exactly this.
+# Scan the built wheel and sdist the way package firewalls do (secrets, vulnerable dependencies, malicious-code
+# heuristics, inventory) with free tools: gitleaks, pip-audit, GuardDog, Bandit. Report in scan-report/.
+SCAN_EXTRAS ?= all,mcp,dex
+scan: build scan-dist
+
+scan-dist:
+	$(UV) run --no-project python scripts/scan_dist.py --dist dist --out scan-report $(if $(SCAN_EXTRAS),--extras $(SCAN_EXTRAS)) $(SCAN_ARGS)
+
 acceptance-wheel: build acceptance-dist
 
 # Run the suite against an already-built dist/*.whl (CI uses this to test the exact artifact it publishes).
