@@ -152,7 +152,7 @@ and sdist the release will publish, using free tools at pinned versions:
 
 Run it locally with `make scan` (it needs `gitleaks` and `uv`; the Python tools come through `uvx`).
 
-**Reviewed heuristic hits (0.3.10):**
+**Reviewed heuristic hits (0.3.11):**
 - GuardDog's obfuscation, network and process rules match the vendored `mermaid.min.js` (MIT, 11.17.2, no known
   advisories). It ships so `ananke docs` renders diagrams offline.
 - `threat-filesystem-destruction` matches the `rm -rf /` string in the governance evaluator's *deny* list.

@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.11] — 2026-10-22
+
+### Security
+
+- **GitPython 3.1.62 → 3.2.1** in the lockfile, for CVE-2026-114145 (HIGH), which was published on release day.
+  - GitPython reaches Ananke only through `mlflow`, in the optional `all`, `eval-mlflow` and
+    `eval-enterprise` extras. A fresh install already resolves the fixed version.
+  - The advisory made the Trivy gate block the v0.3.10 PyPI release, so 0.3.10 exists only on TestPyPI.
+  - 0.3.11 ships everything listed under 0.3.10.
+
 ## [0.3.10] — 2026-10-22
 
 ### Security
