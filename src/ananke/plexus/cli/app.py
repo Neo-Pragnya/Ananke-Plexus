@@ -8,6 +8,7 @@ import typer
 
 from ananke.plexus import __version__
 from ananke.plexus.api import Ananke
+from ananke.plexus.cli.app_facade_cli import app_app as app_facade_app
 from ananke.plexus.cli.rendering import render_result
 from ananke.plexus.mcp.http import serve_http
 from ananke.plexus.mcp.server import serve_stdio
@@ -56,6 +57,7 @@ app.add_typer(backend_app, name="backend")
 app.add_typer(bmad_app, name="bmad")
 app.add_typer(eval_app, name="eval")
 app.add_typer(registry_app, name="registry")
+app.add_typer(app_facade_app, name="app")
 app.add_typer(skill_app, name="skill")
 app.add_typer(agent_app, name="agent")
 app.command("sync")(sync_command)

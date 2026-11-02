@@ -24,6 +24,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   - a project without troves never imports a trove package;
   - **private Git sources** (`type = "git"`): pinned to a full commit, credentials by environment-variable name only,
     hooks, LFS and submodules disabled, and served offline from a cache; no fallback when unavailable.
+- **App facade** (`ananke.plexus.app`, `ananke app …` JSON commands), protocol `ananke-app/1`:
+  - negotiation, capabilities, prepare, submit (idempotent), status and cooperative cancellation;
+  - ordered, resumable events with gap reporting;
+  - artifacts with digests, producers and input refs;
+  - external renderers register their output or a visible failure;
+  - plans bound to the source snapshot (`STALE_PLAN`).
+  - Run kinds `graph.build` and `graph.impact` call the real harness. Reference:
+    [App facade](docs/reference/app-facade.md).
 - Guide: [Capability sources](docs/guides/capability-sources.md).
 
 ### Fixed

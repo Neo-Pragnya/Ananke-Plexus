@@ -103,6 +103,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
     "section": "Reference",
     "items": [
       "reference/commands",
+      "reference/app-facade",
       "reference/configuration",
       "reference/policy",
       "reference/eval-harness",
@@ -133,6 +134,7 @@ export const DOC_TITLES: Record<string, string> = {
   "guides/registry-guide": "Registry Guide",
   "guides/dex-trove": "Dex Trove Skill Library",
   "guides/capability-sources": "Capability Sources",
+  "reference/app-facade": "App Facade",
   "guides/workflows": "Workflows",
   "guides/release": "Release Guide",
   "guides/implementation-log": "Implementation Log",

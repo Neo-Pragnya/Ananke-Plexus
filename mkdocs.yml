@@ -98,6 +98,7 @@ nav:
       - Implementation Log: guides/implementation-log.md
   - Reference:
       - CLI Commands: reference/commands.md
+      - App Facade: reference/app-facade.md
       - Configuration: reference/configuration.md
       - Policy Language: reference/policy.md
       - Eval Harness API: reference/eval-harness.md

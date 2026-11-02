@@ -30,6 +30,7 @@ capabilities:
   - { id: docs, title: "Offline docs: source resolution and build", dimension: docs, blocker: false }
   - { id: testing, title: "Testing harness: discover, run, quality gate", dimension: quality, blocker: false }
   - { id: sources, title: "Capability sources: approved folders and troves via one port; exact identity; locks reject moved digests", dimension: registry, blocker: true }
+  - { id: app-facade, title: "App facade: negotiated protocol, idempotent runs on the real harness, ordered events, verified artifacts", dimension: integration, blocker: true }
   - { id: registry-ops, title: "Registry operations: export/import, backup/restore, reports, docs, diff, gc", dimension: registry, blocker: false }
   - { id: signing, title: "Supply chain: signing keys, signatures that verify", dimension: safety, blocker: false }
   - { id: lifecycle, title: "Lifecycle helpers: branches, worktrees, evidence events, adapter auth", dimension: automation, blocker: false }
@@ -142,6 +143,13 @@ surface:
   - ananke registry duplicates
   - ananke registry troves list
   - ananke registry providers list
+  - ananke app capabilities
+  - ananke app run
+  - ananke app status
+  - ananke app events
+  - ananke app cancel
+  - ananke app artifacts
+  - ananke app read
   - ananke registry providers discover
   - ananke registry providers resolve
   - ananke registry providers check-lock
