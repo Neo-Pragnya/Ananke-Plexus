@@ -60,6 +60,9 @@ class CapabilitySourceConfig(BaseModel):
     url: str = Field(default="", description="git: the repository URL, without credentials")
     commit: str = Field(default="", description="git: a full 40-character commit sha")
     credential_env: str = Field(default="", description="git: environment variable holding a token")
+    visibility: str = Field(
+        default="internal", description="internal or public: who may read this source"
+    )
     namespace: str = Field(description="namespace every capability from this source gets")
     writable: bool = Field(default=False, description="allow reviewed publishes into this folder")
     enabled: bool = True

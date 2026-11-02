@@ -32,6 +32,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   - plans bound to the source snapshot (`STALE_PLAN`).
   - Run kinds `graph.build` and `graph.impact` call the real harness. Reference:
     [App facade](docs/reference/app-facade.md).
+- **Learning candidates** (`ananke.plexus.learning`, `ananke learning capture|evaluate|review|promote|list`):
+  - capture redacts secrets and paths, then re-scans;
+  - evaluation (positive and regression cases) runs only with opt-in;
+  - promotion needs an approval newer than the evaluation, a writable source and matching visibility, and never
+    overwrites an existing capability;
+  - candidate folders use Dex Trove's candidate format. Guide:
+    [Learning candidates](docs/guides/learning-candidates.md).
 - Guide: [Capability sources](docs/guides/capability-sources.md).
 
 ### Fixed

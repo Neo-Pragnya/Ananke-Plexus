@@ -214,7 +214,13 @@ class LocalDirectoryProvider:
     """An approved folder of capabilities. Read-only unless ``writable=True`` (then publish needs an approver)."""
 
     def __init__(
-        self, source_id: str, root: Path, *, namespace: str, writable: bool = False
+        self,
+        source_id: str,
+        root: Path,
+        *,
+        namespace: str,
+        writable: bool = False,
+        visibility: str = "internal",
     ) -> None:
         if not _NAME.match(source_id) or not _NAME.match(namespace):
             raise _err(
@@ -222,6 +228,7 @@ class LocalDirectoryProvider:
                 f"source id and namespace must be lowercase names: {source_id!r}, {namespace!r}",
             )
         self.source_id, self.namespace, self.writable = source_id, namespace, writable
+        self.visibility = visibility  # "public" sources never receive internal-only lessons
         self.root = root.expanduser().resolve()
         self._index: list[Descriptor] | None = None
 
@@ -728,6 +735,7 @@ def from_project(project: Path) -> ProviderSet:
                 root if root.is_absolute() else project / root,
                 namespace=src.namespace,
                 writable=src.writable,
+                visibility=src.visibility,
             )
         )
     enabled = {name for name, t in cfg.troves.items() if t.enabled}
