@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -102,7 +103,8 @@ class PytestAdapter:
         timeout: int | None,
     ) -> list[TestResult]:
         started = datetime.now(tz=UTC)
-        args = ["python", "-m", "pytest", "--tb=short", "-q"]
+        # this interpreter, not whatever `python` is first on PATH (which may lack pytest, or be another venv)
+        args = [sys.executable, "-m", "pytest", "--tb=short", "-q"]
         use_json = self._json_report_available()
         json_report_path = project_root / ".ananke" / "tmp" / "pytest-report.json"
         if use_json:

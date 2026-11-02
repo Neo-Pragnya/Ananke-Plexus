@@ -46,9 +46,24 @@ class TroveConfig(BaseModel):
     )
 
 
+class CapabilitySourceConfig(BaseModel):
+    """An approved local folder of capabilities, e.g. ``[capability_sources.team]`` (see registry/providers.py)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: str = Field(
+        default="local", description="local (an approved folder); troves are added from [troves]"
+    )
+    root: str = Field(description="folder of skills, relative to the project or absolute")
+    namespace: str = Field(description="namespace every capability from this source gets")
+    writable: bool = Field(default=False, description="allow reviewed publishes into this folder")
+    enabled: bool = True
+
+
 class ConfigModel(BaseModel):
     project: ProjectConfig = Field(default_factory=ProjectConfig)
     ananke: AnankeConfig = Field(default_factory=AnankeConfig)
     spec: SpecConfig = Field(default_factory=SpecConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     troves: dict[str, TroveConfig] = Field(default_factory=dict)
+    capability_sources: dict[str, CapabilitySourceConfig] = Field(default_factory=dict)

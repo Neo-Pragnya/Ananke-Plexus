@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -82,7 +83,7 @@ class SchemathesisAdapter:
             started = datetime.now(tz=UTC)
             try:
                 proc = subprocess.run(
-                    ["python", "-m", "schemathesis", "run", test.source],
+                    [sys.executable, "-m", "schemathesis", "run", test.source],
                     shell=False,
                     cwd=str(project_root),
                     capture_output=True,

@@ -29,6 +29,7 @@ capabilities:
   - { id: mcp, title: "MCP server answers initialize and lists its tools over stdio", dimension: ecosystem, blocker: true }
   - { id: docs, title: "Offline docs: source resolution and build", dimension: docs, blocker: false }
   - { id: testing, title: "Testing harness: discover, run, quality gate", dimension: quality, blocker: false }
+  - { id: sources, title: "Capability sources: approved folders and troves via one port; exact identity; locks reject moved digests", dimension: registry, blocker: true }
   - { id: registry-ops, title: "Registry operations: export/import, backup/restore, reports, docs, diff, gc", dimension: registry, blocker: false }
   - { id: signing, title: "Supply chain: signing keys, signatures that verify", dimension: safety, blocker: false }
   - { id: lifecycle, title: "Lifecycle helpers: branches, worktrees, evidence events, adapter auth", dimension: automation, blocker: false }
@@ -140,6 +141,10 @@ surface:
   - ananke registry report
   - ananke registry duplicates
   - ananke registry troves list
+  - ananke registry providers list
+  - ananke registry providers discover
+  - ananke registry providers resolve
+  - ananke registry providers check-lock
   - ananke registry troves enable
   - ananke registry troves disable
   - ananke registry troves sync

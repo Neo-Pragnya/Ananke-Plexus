@@ -91,6 +91,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
       "guides/setup-and-capabilities",
       "guides/registry-guide",
       "guides/dex-trove",
+      "guides/capability-sources",
       "guides/workflows",
       "guides/release",
       "guides/implementation-log"
@@ -131,6 +132,7 @@ export const DOC_TITLES: Record<string, string> = {
   "guides/setup-and-capabilities": "Setup & Capabilities",
   "guides/registry-guide": "Registry Guide",
   "guides/dex-trove": "Dex Trove Skill Library",
+  "guides/capability-sources": "Capability Sources",
   "guides/workflows": "Workflows",
   "guides/release": "Release Guide",
   "guides/implementation-log": "Implementation Log",

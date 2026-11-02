@@ -2020,3 +2020,122 @@ def troves_sync(
                 typer.echo(f"    denied {example}")
     if any(r.error for r in results):
         raise typer.Exit(code=1)
+
+
+# --------------------------------------------------------------------------------------------- providers
+providers_app = typer.Typer(
+    help="Capability sources through the provider port: approved folders ([capability_sources]) and enabled troves.",
+    no_args_is_help=True,
+)
+registry_app.add_typer(providers_app, name="providers")
+
+
+def _provider_set(project: Path):  # type: ignore[no-untyped-def]
+    from ananke.plexus.registry.providers import SourceError, from_project
+
+    try:
+        return from_project(project.resolve())
+    except SourceError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
+
+
+@providers_app.command("list")
+def providers_list(project: Path = _PROJECT, as_json: bool = _JSON) -> None:
+    """Configured sources, in priority order, with what each holds."""
+    ps = _provider_set(project)
+    rows = []
+    for sid, p in ps.providers.items():
+        items = p.discover("", None, 100000).items
+        rows.append(
+            {"source": sid, "type": type(p).__name__, "writable": p.writable, "items": len(items)}
+        )
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+    if not rows:
+        typer.echo(
+            "no capability sources: add [capability_sources.<id>] to .ananke/config.toml, or enable a trove"
+        )
+    for r in rows:
+        typer.echo(
+            f"{r['source']:<20} {r['type']:<24} {'writable' if r['writable'] else 'read-only':<10} {r['items']} items"
+        )
+
+
+@providers_app.command("discover")
+def providers_discover(
+    query: str = typer.Argument("", help="Words to match"),
+    project: Path = _PROJECT,
+    limit: int = typer.Option(50, "--limit", "-n"),
+    as_json: bool = _JSON,
+) -> None:
+    """Find capabilities across sources. Nothing is executed or installed."""
+    from ananke.plexus.registry.providers import SourceError
+
+    try:
+        found = _provider_set(project).discover(query, limit)
+    except SourceError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
+    if as_json:
+        typer.echo(
+            json.dumps(
+                [d.sidecar() | {"identity": d.identity, "summary": d.summary} for d in found],
+                indent=2,
+            )
+        )
+        return
+    for d in found:
+        typer.echo(f"{d.ref:<56} {d.summary[:70]}")
+
+
+@providers_app.command("resolve")
+def providers_resolve(
+    ref: str = typer.Argument(..., help="[source:]namespace/name[@version|@sha256:digest]"),
+    project: Path = _PROJECT,
+    lock: Path | None = typer.Option(None, "--lock", help="Add the result to this source lock"),
+    as_json: bool = _JSON,
+) -> None:
+    """Resolve one exact capability. An ambiguous name is refused: name the source."""
+    from ananke.plexus.registry.providers import SourceError, SourceLock
+
+    try:
+        d = _provider_set(project).resolve(ref)
+        if lock is not None:
+            held = (
+                SourceLock.load(lock.read_text(encoding="utf-8"))
+                if lock.is_file()
+                else SourceLock()
+            )
+            held.add(d)
+            lock.write_text(held.dump(), encoding="utf-8")
+    except SourceError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
+    if as_json:
+        typer.echo(json.dumps(d.sidecar() | {"identity": d.identity}, indent=2))
+        return
+    typer.echo(f"{d.ref}  sha256:{d.digest}" + (f"  (locked in {lock})" if lock else ""))
+    if d.unknown:
+        typer.echo(f"  unknown metadata: {', '.join(d.unknown)}")
+
+
+@providers_app.command("check-lock")
+def providers_check_lock(
+    lock: Path = typer.Argument(..., help="A source lock"), project: Path = _PROJECT
+) -> None:
+    """Every locked capability is still available with its exact digest. A moved digest fails; it isn't followed."""
+    from ananke.plexus.registry.providers import SourceError, SourceLock
+
+    try:
+        held = SourceLock.load(lock.read_text(encoding="utf-8"))
+    except (OSError, ValueError, SourceError) as exc:
+        typer.echo(f"cannot read {lock}: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    problems = held.check(_provider_set(project))
+    for p in problems:
+        typer.echo(f"✗ {p}", err=True)
+    if problems:
+        raise typer.Exit(1)
+    typer.echo(f"✓ {len(held.entries)} locked capabilities verified")

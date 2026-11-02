@@ -10,6 +10,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.13] — 2026-11-02
+
+### Added
+
+- **Capability provider port** (`ananke.plexus.registry.providers`, `ananke registry providers
+  list|discover|resolve|check-lock`):
+  - `discover`, `resolve`, `fetch`, `refresh` and `publish` over approved local folders
+    (`[capability_sources.<id>]`) and enabled troves;
+  - exact identity `source:namespace/name[@version|@sha256:…]`; an ambiguous name is refused, never guessed;
+  - path and symlink escapes, namespace collisions, read-only publishes and changed digests fail with stable codes;
+  - source locks survive refreshes and reject moved digests;
+  - a project without troves never imports a trove package.
+- Guide: [Capability sources](docs/guides/capability-sources.md).
+
+### Fixed
+
+- The pytest and schemathesis test adapters run with Ananke's own interpreter (`sys.executable`). They used to run
+  the first `python` on PATH, which could lack pytest or be another project's virtual environment.
+
+---
+
 ## [0.3.12] — 2026-11-02
 
 ### Added

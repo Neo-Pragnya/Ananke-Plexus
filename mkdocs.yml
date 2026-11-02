@@ -92,6 +92,7 @@ nav:
       - Setup & Capabilities: guides/setup-and-capabilities.md
       - Registry Guide: guides/registry-guide.md
       - Dex Trove Skill Library: guides/dex-trove.md
+      - Capability Sources: guides/capability-sources.md
       - Workflows: guides/workflows.md
       - Release Guide: guides/release.md
       - Implementation Log: guides/implementation-log.md
