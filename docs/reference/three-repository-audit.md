@@ -1,11 +1,11 @@
 ---
 title: Three-repository audit
-description: ADR-0001 and the audit behind it. What Ananke Plexus and Dex Trove actually expose today, how Dev Guru connects to them, what can be reused, and the gaps the three-repository plan has to close.
+description: What Ananke Plexus and Dex Trove actually expose today, how Dev Guru connects to them, what can be reused, and the gaps the three-repository plan has to close.
 ---
 
-# Three-repository audit (ADR-0001)
+# Three-repository audit
 
-**Status:** accepted · **Date:** 2026-11-01 · **Backlog task:** `ARC-AUDIT-3REPO`
+*Recorded 2026-11-01.*
 
 Dev Guru (product and presentation), Ananke Plexus (harness and compute) and Dex Trove (reusable capability memory)
 are being built as three repositories. Before writing contracts, the plan requires recording what the existing code
@@ -13,7 +13,7 @@ are being built as three repositories. Before writing contracts, the plan requir
 record. The planned names in the design bundle are targets; everything below was read from source or observed by
 running it.
 
-## Decision
+## How the three fit together
 
 1. **Ananke is the only harness.** Dev Guru calls Ananke through one client port and never analyses code itself. Dex
    never imports Ananke or Dev Guru to publish or browse its catalog.
@@ -149,14 +149,14 @@ flowchart LR
 ## Dev Guru scaffold (`DG-PACKAGE`)
 
 The repository is [Neo-Pragnya/Dev-Guru](https://github.com/Neo-Pragnya/Dev-Guru). Package `dev-guru`, module
-`dev_guru` and command `devguru` are provisional; the names are free on PyPI and TestPyPI, and nothing is reserved.
+`dev_guru` and command `dev` are provisional; the names are free on PyPI and TestPyPI, and nothing is reserved.
 
 - `dev_guru.client`: the port (`AnankeClient` protocol, `HarnessInfo`, `GraphSummary`), `connect(transport)` and
   the `in-process` adapter. Negotiation checks the installed version against the supported range and probes six
   capabilities, two of them required (`graph.build`, `graph.load`).
 - `dev_guru.errors.GuruError` with stable codes: `HARNESS_MISSING`, `HARNESS_INCOMPATIBLE`, `CAPABILITY_MISSING`,
   `UNSUPPORTED_TRANSPORT`, `WORKSPACE_INVALID` and `HARNESS_FAILED`.
-- `devguru doctor [--json]` reports the harness. `graph_summary(workspace)` runs **real** Ananke analysis; the tests
+- `dev doctor [--json]` reports the harness. `graph_summary(workspace)` runs **real** Ananke analysis; the tests
   use a fixture project, not a mock.
 - The same tooling as Ananke and Dex: uv + hatchling, ruff, strict mypy, pytest, the capability-acceptance harness
   (byte-identical), `scripts/scan_dist.py` (byte-identical), and CI pinned to the same action SHAs.
