@@ -52,9 +52,14 @@ class CapabilitySourceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: str = Field(
-        default="local", description="local (an approved folder); troves are added from [troves]"
+        default="local", description="local (an approved folder) or git (a pinned private repo)"
     )
-    root: str = Field(description="folder of skills, relative to the project or absolute")
+    root: str = Field(
+        default="", description="local: the folder; git: the subfolder inside the repo"
+    )
+    url: str = Field(default="", description="git: the repository URL, without credentials")
+    commit: str = Field(default="", description="git: a full 40-character commit sha")
+    credential_env: str = Field(default="", description="git: environment variable holding a token")
     namespace: str = Field(description="namespace every capability from this source gets")
     writable: bool = Field(default=False, description="allow reviewed publishes into this folder")
     enabled: bool = True

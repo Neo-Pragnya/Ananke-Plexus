@@ -56,6 +56,28 @@ writable = false            # true allows reviewed publishes into it
   source, namespace, relative path, digest, kind, licence, declared requirements and unknown fields. The source
   folder itself is never written to.
 
+## Add a private Git repository
+
+```toml
+[capability_sources.platform]
+type = "git"
+url = "https://git.example.com/platform/skills.git"   # no credentials in the URL
+commit = "4f1c…"            # a full 40-character commit: branches and tags can move under a lock
+root = "skills"             # subfolder inside the repository
+namespace = "platform"
+credential_env = "PLATFORM_GIT_TOKEN"   # the *name* of a variable that holds the token
+```
+
+- **Pinned.** Only a full commit sha is accepted (`UNPINNED_SOURCE` otherwise), and later commits upstream never
+  change what the pin serves.
+- **Credentials by reference.** The token is read from the named variable at fetch time and handed to Git through
+  the environment. It never appears in config, URLs, sidecars, locks or logs. A token in the URL is refused
+  (`CREDENTIAL_IN_URL`), and a missing variable is `CREDENTIAL_MISSING`.
+- **Nothing runs.** Git hooks, LFS smudge filters and submodules are disabled during the fetch.
+- **Offline after the first fetch.** The commit is cached under `.ananke/sources/<id>/<commit>/` and served from
+  there with no network. If neither the cache nor the remote is available, the error is `SOURCE_UNAVAILABLE`.
+  There is no fallback to another source with a similar name.
+
 ## Add a trove
 
 Installed troves are switched on as before:

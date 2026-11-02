@@ -248,3 +248,106 @@ def test_a_project_without_troves_never_imports_one(tmp_path: Path) -> None:
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     ).stdout.split()
     assert out == ["team:acme/local-only", "False"]
+
+
+# ---------------------------------------------------------------------------------------------- private git
+def _git(*args: str, cwd: Path) -> str:
+    import subprocess
+
+    env = {
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@e",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@e",
+        "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+    }
+    return subprocess.run(
+        ["git", *args], cwd=cwd, env=env, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+@pytest.fixture
+def remote(tmp_path: Path) -> tuple[Path, str]:
+    repo = tmp_path / "remote"
+    skill(
+        repo / "skills",
+        "deploy-check",
+        "description: Check a deploy\nversion: 1.0.0\nlicense: MIT\n",
+    )
+    _git("init", "-q", cwd=repo)
+    _git("add", "-A", cwd=repo)
+    _git("commit", "-qm", "v1", cwd=repo)
+    return repo, _git("rev-parse", "HEAD", cwd=repo)
+
+
+def test_git_source_is_pinned_cached_and_never_falls_back(
+    tmp_path: Path, remote: tuple[Path, str]
+) -> None:
+    import shutil
+
+    from ananke.plexus.registry.providers import GitProvider
+
+    repo, commit = remote
+    cache = tmp_path / "cache"
+    p = GitProvider(
+        "ops", f"file://{repo}", commit, namespace="ops", subdir="skills", cache_dir=cache
+    )
+    d = p.resolve(CapabilityRef.parse("deploy-check"))
+    assert d.identity == "ops:ops/deploy-check" and d.version == "1.0.0"
+    # a later commit upstream doesn't change what this pin serves
+    (repo / "skills/deploy-check/SKILL.md").write_text("---\nname: deploy-check\n---\nv2\n")
+    _git("commit", "-qam", "v2", cwd=repo)
+    assert (
+        p.fetch(d)
+        .files["SKILL.md"]
+        .startswith(b"---\nname: deploy-check\ndescription: Check a deploy")
+    )
+    # offline: the remote is gone, the cached commit still serves
+    shutil.rmtree(repo)
+    again = GitProvider(
+        "ops", f"file://{repo}", commit, namespace="ops", subdir="skills", cache_dir=cache
+    )
+    assert again.resolve(CapabilityRef.parse("deploy-check")).digest == d.digest
+    other = GitProvider("ops", f"file://{repo}", "a" * 40, namespace="ops", cache_dir=cache)
+    with pytest.raises(SourceError) as gone:
+        other.discover()
+    assert gone.value.code == "SOURCE_UNAVAILABLE"
+
+
+def test_git_source_refuses_unpinned_refs_and_inline_credentials(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ananke.plexus.registry.providers import GitProvider
+
+    with pytest.raises(SourceError) as moving:
+        GitProvider("x", "https://example.com/r.git", "main", namespace="x", cache_dir=tmp_path)
+    assert moving.value.code == "UNPINNED_SOURCE"
+    with pytest.raises(SourceError) as inline:
+        GitProvider(
+            "x",
+            "https://user:" + "tok" + "en@example.com/r.git",
+            "b" * 40,
+            namespace="x",
+            cache_dir=tmp_path,
+        )
+    assert inline.value.code == "CREDENTIAL_IN_URL"
+    p = GitProvider(
+        "x",
+        "https://example.com/r.git",
+        "b" * 40,
+        namespace="x",
+        cache_dir=tmp_path,
+        credential_env="TEAM_GIT_TOKEN",
+    )
+    monkeypatch.delenv("TEAM_GIT_TOKEN", raising=False)
+    with pytest.raises(SourceError) as missing:
+        p.discover()
+    assert missing.value.code == "CREDENTIAL_MISSING"
+    monkeypatch.setenv("TEAM_GIT_TOKEN", "value-that-must-not-leak")
+    env = p._git_env()
+    assert (
+        "value-that-must-not-leak" in env["GIT_CONFIG_VALUE_0"]
+    )  # passed to git through the environment only
+    assert "value-that-must-not-leak" not in repr(
+        vars(p)
+    )  # the provider keeps the variable's name, not its value

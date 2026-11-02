@@ -359,6 +359,117 @@ class LocalDirectoryProvider:
         }
 
 
+class GitProvider(LocalDirectoryProvider):
+    """A private Git repository pinned to a commit, cached for offline use.
+
+    * The ref must be a full 40-character commit: a branch or tag could move under a lock.
+    * Credentials are named, never stored: ``credential_env`` is the name of an environment variable holding a
+      token, read at fetch time and passed to Git through the environment only. It never appears in a sidecar,
+      lock or log.
+    * Git hooks, LFS smudge filters and submodules never run during a fetch.
+    * After the first fetch the commit is served from ``cache_dir`` with no network. If neither the cache nor the
+      remote is available, the error is ``SOURCE_UNAVAILABLE``; there is no fallback to another source.
+    """
+
+    def __init__(
+        self,
+        source_id: str,
+        url: str,
+        commit: str,
+        *,
+        namespace: str,
+        cache_dir: Path,
+        subdir: str = "",
+        credential_env: str = "",
+    ) -> None:
+        if not re.fullmatch(r"[0-9a-f]{40}", commit):
+            raise _err(
+                "UNPINNED_SOURCE", f"source {source_id}: pin a full commit sha, not {commit!r}"
+            )
+        if re.search(r"://[^/@]*:[^/@]*@", url):
+            raise _err(
+                "CREDENTIAL_IN_URL",
+                f"source {source_id}: put the token in an environment variable named by credential_env, not in the URL",
+            )
+        self.url, self.commit, self.credential_env = url, commit, credential_env
+        self.checkout = cache_dir.expanduser().resolve() / source_id / commit
+        super().__init__(
+            source_id, self.checkout / subdir if subdir else self.checkout, namespace=namespace
+        )
+
+    def _git_env(self) -> dict[str, str]:
+        import os
+
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        env.update(
+            {"GIT_TERMINAL_PROMPT": "0", "GIT_LFS_SKIP_SMUDGE": "1", "GIT_CONFIG_NOSYSTEM": "1"}
+        )
+        if self.credential_env:
+            token = os.environ.get(self.credential_env)
+            if not token:
+                raise _err(
+                    "CREDENTIAL_MISSING",
+                    f"source {self.source_id}: environment variable {self.credential_env} is not set",
+                )
+            # an http header from the environment: never on the command line, in the URL or on disk
+            env.update(
+                {
+                    "GIT_CONFIG_COUNT": "1",
+                    "GIT_CONFIG_KEY_0": "http.extraHeader",
+                    "GIT_CONFIG_VALUE_0": f"Authorization: Bearer {token}",
+                }
+            )
+        return env
+
+    def materialize(self) -> Path:
+        import shutil
+        import subprocess
+
+        if (self.checkout / ".ananke-fetched").is_file():
+            return self.checkout  # offline: the pinned commit is already here
+        tmp = self.checkout.with_name(self.commit + ".partial")
+        shutil.rmtree(tmp, ignore_errors=True)
+        tmp.mkdir(parents=True)
+        safe = [
+            "-c",
+            "core.hooksPath=/dev/null",
+            "-c",
+            "submodule.recurse=false",
+            "-c",
+            "protocol.file.allow=user",
+        ]
+        try:
+            for args in (
+                ["init", "-q"],
+                ["remote", "add", "origin", self.url],
+                ["fetch", "-q", "--depth", "1", "origin", self.commit],
+                ["checkout", "-q", "FETCH_HEAD"],
+            ):
+                subprocess.run(  # noqa: S603 - fixed git arguments; the URL and commit come from project config
+                    ["git", *safe, *args],  # noqa: S607 - git from PATH, like every other git call in Ananke
+                    cwd=tmp,
+                    env=self._git_env(),
+                    check=True,
+                    capture_output=True,
+                    timeout=300,
+                )
+        except (OSError, subprocess.SubprocessError) as exc:
+            shutil.rmtree(tmp, ignore_errors=True)
+            raise _err(
+                "SOURCE_UNAVAILABLE",
+                f"source {self.source_id}: cannot fetch {self.commit[:12]} and no cached copy exists",
+            ) from exc
+        shutil.rmtree(tmp / ".git", ignore_errors=True)
+        (tmp / ".ananke-fetched").write_text(self.commit + "\n")
+        shutil.rmtree(self.checkout, ignore_errors=True)
+        tmp.rename(self.checkout)
+        return self.checkout
+
+    def _scan(self) -> list[Descriptor]:
+        self.materialize()
+        return super()._scan()
+
+
 class TroveProvider:
     """An installed trove (Dex Trove's layout), read as data. Read-only: troves publish through their own review."""
 
@@ -632,6 +743,7 @@ __all__ = [
     "CapabilityRef",
     "Descriptor",
     "Fetched",
+    "GitProvider",
     "LocalDirectoryProvider",
     "Page",
     "ProviderSet",

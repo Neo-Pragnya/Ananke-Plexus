@@ -21,7 +21,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   - exact identity `source:namespace/name[@version|@sha256:…]`; an ambiguous name is refused, never guessed;
   - path and symlink escapes, namespace collisions, read-only publishes and changed digests fail with stable codes;
   - source locks survive refreshes and reject moved digests;
-  - a project without troves never imports a trove package.
+  - a project without troves never imports a trove package;
+  - **private Git sources** (`type = "git"`): pinned to a full commit, credentials by environment-variable name only,
+    hooks, LFS and submodules disabled, and served offline from a cache; no fallback when unavailable.
 - Guide: [Capability sources](docs/guides/capability-sources.md).
 
 ### Fixed
