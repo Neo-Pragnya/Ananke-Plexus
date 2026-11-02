@@ -10,6 +10,40 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.12] — 2026-11-02
+
+### Added
+
+- **A richer native code graph**, for Dev Guru's explorer and for anyone reading `.ananke/graph/metadata.json`.
+  Existing node ids and edges are unchanged.
+  - Methods are nodes (`method:<path>:<Class>.<name>`).
+  - Symbols carry `line`, `end_line`, a one-line `doc` and a `signature`. Files carry their dotted `module`, `loc`
+    and docstring.
+  - Inferred `calls` and `inherits` edges are resolved through each file's own definitions and its imports to other
+    workspace files, plus `self.method()` and `Cls.method()`. They are marked `origin: inferred`, `confidence 0.8`,
+    with `source_location`.
+  - Unparseable files stay in the graph, marked `parse_error`.
+
+### Fixed
+
+- **`graph impact` reported the wrong direction.** `impacted_files` listed what a changed file *imports*. It now
+  lists the files that *depend on* it: importers and callers.
+- **Graph builds walked into virtual environments.** Builds now skip hidden directories (`.acceptance-venv`, `.git`,
+  caches), `node_modules`, `site-packages` and any folder holding a `pyvenv.cfg`. Only `.venv` was skipped before.
+
+### Security
+
+- Lockfile refreshed for advisories published since 0.3.11:
+  - `filelock` 4.2.6, `msgpack` 1.2.4, `mlflow` 3.17.2, `oauthlib` 4.0.1, `pyasn1` 0.6.5;
+  - `virtualenv` 21.15.2, `pyjwt` 2.15.1, `werkzeug` 3.1.9, `setuptools` 84.2.1;
+  - `opentelemetry` 1.45.2, `multidict` 6.9.1, `langgraph-sdk` 0.4.11.
+  - `diskcache` (PYSEC-2026-2447) and `ragas` (PYSEC-2026-3046) have no fixed release yet. Both arrive only through
+    the optional `eval-ragas` extra.
+
+### Docs
+
+- [Three-repository audit (ADR-0001)](docs/reference/three-repository-audit.md).
+
 ## [0.3.11] — 2026-10-22
 
 ### Security

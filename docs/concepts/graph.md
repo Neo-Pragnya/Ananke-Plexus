@@ -135,9 +135,17 @@ ananke graph status
 
 AST-based Python analysis. Always available, no dependencies.
 
-- Extracts: files, functions, classes, imports
-- Populates: `owns`, `imports` edges
-- Best for: quick local analysis, CI without external tools
+- **Extracts:** files, top-level functions and classes, and methods (`method:<path>:<Class>.<name>`).
+- **Symbol metadata:** `line`, `end_line`, a one-line `doc` and, for functions and methods, a `signature` and
+  `decorators`. File nodes carry their dotted `module`, `loc` and docstring.
+- **Edges:** `owns` and `imports`, plus inferred `calls` and `inherits` (`origin: inferred`, `confidence: 0.8`,
+  `source_location: <path>:<line>`).
+- **How calls resolve:** through a file's own definitions, its `from … import` and `import … as` statements to
+  other workspace files, `self.method()` and `Cls.method()`. Dynamic dispatch, `getattr` and re-exports beyond one
+  level are not followed.
+- **What it skips:** hidden directories (`.git`, `.venv`, caches), `node_modules`, `site-packages` and any virtual
+  environment (a folder holding `pyvenv.cfg`).
+- **Best for:** quick local analysis, CI without external tools, and Dev Guru's explorer reports.
 
 ### Graphifyy adapter
 
@@ -169,6 +177,9 @@ When multiple providers run, edges are reconciled:
 ---
 
 ## Impact report
+
+`impacted_files` are the files that **depend on** the changed files: files that import them, or call into them. The
+files a changed file imports are not impacted by the change (before 0.3.12 they were listed instead).
 
 The impact report includes:
 

@@ -18,7 +18,7 @@ running it.
 1. **Ananke is the only harness.** Dev Guru calls Ananke through one client port and never analyses code itself. Dex
    never imports Ananke or Dev Guru to publish or browse its catalog.
 2. **Dev Guru starts on Ananke's existing Python facade** (`ananke.plexus.api.Ananke`) over an `in-process`
-   transport. It negotiates the supported range explicitly (`ananke-plexus>=0.3.11,<0.4`), plus the specific
+   transport. It negotiates the supported range explicitly (`ananke-plexus>=0.3.12,<0.4` since Dev Guru 0.1.0), plus the specific
    capabilities it calls. An isolated-process transport and a local gateway come later. Exactly one transport is used
    per run, and failures are reported, never retried on another transport.
 3. **The capability source port maps onto Ananke's registry**: learn, importers, sources, resolver and lockfile. It
@@ -68,9 +68,10 @@ directly from the owning service. For example, `graph_summary` calls `graph_buil
 `origin` is one of `extracted | inferred | ambiguous | declared`. Providers: `native`, plus optional `graphifyy` and
 `code-review-graph` adapters behind the `GraphProvider` protocol (`build`, `impact`).
 
-The native provider parses Python with `ast` and keeps only **top-level** functions and classes, `owns` edges, and
-`imports` edges. It has no call edges, no methods and no notebooks. `snapshot_id` is a UTC timestamp, so two
-builds of the same code differ.
+At the audit, the native provider kept only **top-level** functions and classes, with `owns` and `imports` edges:
+no call edges, methods or notebooks. **0.3.12 adds** methods, line, doc and signature metadata, and inferred
+`calls` and `inherits` edges (see [Code graph](../concepts/graph.md)). `snapshot_id` is still a UTC timestamp, so
+two builds of the same code differ. Dev Guru's report manifest uses a content digest instead.
 
 ### Registry (`ananke.plexus.registry`)
 
@@ -141,7 +142,7 @@ flowchart LR
 | `AN-EXTERNAL-RENDERER` | entry-point discovery in `plugins.discovery` | A generic artifact-producer group and contract (input digest in, artifact + digest out), recorded as evidence |
 | `ASM-A03` (compiler) | `ExecutionPlan`, `scheduler.run_plan` | One workflow notion: `workflows.Workflow` and `ExecutionPlan` overlap |
 | Deterministic reports (`DG-OFFLINE-HTML`) | `GraphSnapshot` | A content-derived `snapshot_id` (or a separate digest) so identical input gives an identical report manifest |
-| Graph breadth (Phase 4) | native provider, `graphifyy` and `code-review-graph` adapters | Call edges, methods and notebooks, so the explorer isn't limited to modules and top-level symbols |
+| Graph breadth (Phase 4) | native provider, `graphifyy` and `code-review-graph` adapters | **Partly closed in 0.3.12:** methods, symbol metadata, and inferred `calls`/`inherits` edges. Still open: notebooks, runtime traces, data lineage |
 | `DEX-MEMORY-RELEASES` | per-item `version` + `content_hash`, `trove.lock.json`, git history | Release receipts, deprecation metadata, v1 and v2 of an item side by side (today the trove holds only the latest) |
 | `ASM-D01` to `ASM-D05` | done in Dex 0.2.0: taxonomy, facet sidecar, faceted search, site filters, education docs | Taxonomy landing pages and typed related edges (`ASM-D06`) |
 
