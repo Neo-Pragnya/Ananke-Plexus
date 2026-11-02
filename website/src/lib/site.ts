@@ -106,6 +106,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
       "reference/policy",
       "reference/eval-harness",
       "reference/registry",
+      "reference/three-repository-audit",
       "reference/test-harness"
     ],
     "shapes": "octagon>gear",
@@ -136,6 +137,7 @@ export const DOC_TITLES: Record<string, string> = {
   "reference/commands": "CLI Commands",
   "reference/configuration": "Configuration",
   "reference/policy": "Policy Language",
+  "reference/three-repository-audit": "Three-Repository Audit",
   "reference/eval-harness": "Eval Harness API",
   "reference/registry": "Registry Reference",
   "reference/test-harness": "Test Harness Reference"
