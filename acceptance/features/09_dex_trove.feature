@@ -7,11 +7,13 @@ Feature: Dex Trove plugs into the registry
     And I have run "ananke init"
     And I have run "ananke registry init"
 
-  Scenario: The whole trove is learned, with placeholder secrets refused by design
+  Scenario: The whole trove is learned, and the secret scanner refuses nothing
+    # Since Dex Trove 0.1.5, items whose placeholders look like credentials are excluded upstream, so the wheel
+    # carries nothing for Ananke's scanner to refuse (before that, nine teaching items were refused here).
     When I run "ananke registry learn python:dex-trove"
-    Then it does not crash
+    Then it succeeds
     And the output contains "registered"
-    And the output contains "SECRET_DETECTED"
+    And the output does not contain "SECRET_DETECTED"
     And it finishes within 240 seconds
     When I run "ananke registry list --json"
     Then the JSON output has at least 900 items
