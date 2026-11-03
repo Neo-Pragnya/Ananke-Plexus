@@ -25,9 +25,19 @@ jobs:
           persist-credentials: false
 
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
-        with:
-          version: v0.74.0
+        env:
+          TRIVY_VERSION: "0.74.0"
+          TRIVY_SHA256: 2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a
+        # curl retries, including failed DNS lookups: one bad lookup must not block a security release
+        run: |
+          curl --fail --silent --show-error --location --retry 6 --retry-all-errors --retry-delay 10 \
+            --output trivy.tar.gz \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  trivy.tar.gz" | sha256sum --check
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf trivy.tar.gz -C "$HOME/.local/bin" trivy
+          rm trivy.tar.gz
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Trivy SARIF (all severities → Security tab)
         run: |
