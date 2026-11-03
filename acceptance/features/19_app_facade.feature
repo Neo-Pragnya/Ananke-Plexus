@@ -94,3 +94,17 @@ Feature: Products drive Ananke through a versioned, idempotent app facade
       "validation"
       "drift"
       """
+
+  @cap_app_facade @adversarial
+  Scenario: A hostile run id can't leave the project
+    Given the file "../run.json" with content:
+      """
+      {"secret": "outside"}
+      """
+    When I run "ananke app status ../"
+    Then the exit code is 2
+    And the output contains "RUN_NOT_FOUND"
+    And the output does not contain "secret"
+    When I run "ananke run status ../../.."
+    Then it fails cleanly
+    And the output does not contain "secret"

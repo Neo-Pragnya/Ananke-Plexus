@@ -249,7 +249,6 @@ cases:
 pip install ananke-plexus[eval-enterprise]   # OTel + MLflow + jsonschema
 pip install ananke-plexus[eval-mlflow]        # MLflow only
 pip install ananke-plexus[eval-deepeval]      # DeepEval metrics
-pip install ananke-plexus[eval-ragas]         # Ragas RAG evaluators
 pip install ananke-plexus[eval-inspect]       # Inspect AI
 pip install ananke-plexus[eval-openevals]     # OpenEvals
 pip install ananke-plexus[eval-agentevals]    # AgentEvals trajectory

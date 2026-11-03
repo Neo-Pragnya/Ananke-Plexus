@@ -19,6 +19,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from ananke.plexus.core.paths import safe_child
+
 CompensationAction = Literal[
     "retain_branch",
     "restore_issue_state",
@@ -48,7 +50,7 @@ class CompensationPlan(BaseModel):
 
 
 def _plan_path(repository_root: Path, run_id: str) -> Path:
-    return repository_root / ".ananke" / "runs" / run_id / "compensation.json"
+    return safe_child(repository_root / ".ananke" / "runs", run_id) / "compensation.json"
 
 
 def create_compensation_plan(
@@ -123,7 +125,7 @@ def _execute_step(repository_root: Path, step: CompensationStep) -> None:
 
 
 def _mark_run_partial(repository_root: Path, run_id: str) -> None:
-    state_path = repository_root / ".ananke" / "runs" / run_id / "state.json"
+    state_path = safe_child(repository_root / ".ananke" / "runs", run_id) / "state.json"
     if not state_path.exists():
         return
     payload = json.loads(state_path.read_text(encoding="utf-8"))

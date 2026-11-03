@@ -82,6 +82,20 @@ jobs:
             --output semgrep-results.sarif \
             src/ || true
 
+      - name: Drop reviewed suppressions
+        # GitHub ignores SARIF suppressions; findings marked `# nosemgrep` were reviewed, and the reason is in the code
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          path = pathlib.Path("semgrep-results.sarif")
+          if path.is_file():
+              data = json.loads(path.read_text())
+              for run in data.get("runs", []):
+                  run["results"] = [r for r in run.get("results", []) if not r.get("suppressions")]
+              path.write_text(json.dumps(data))
+          PY
+
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
         if: always()

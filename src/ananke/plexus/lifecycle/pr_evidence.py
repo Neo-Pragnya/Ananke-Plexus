@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ananke.plexus.core.paths import safe_child
+
 
 def generate_pr_body(
     repository_root: Path,
@@ -39,7 +41,7 @@ def generate_pr_body(
 def _load_requirement(repository_root: Path, spec_id: str) -> dict[str, Any]:
     if not spec_id:
         return {}
-    req_path = repository_root / ".ananke" / "specs" / spec_id / "requirement.md"
+    req_path = safe_child(repository_root / ".ananke" / "specs", spec_id) / "requirement.md"
     if not req_path.exists():
         return {}
     text = req_path.read_text(encoding="utf-8")
@@ -62,7 +64,7 @@ def _load_evidence(repository_root: Path, run_id: str) -> dict[str, Any]:
         if not runs:
             return {}
         run_id = runs[0].name
-    manifest_path = repository_root / ".ananke" / "evidence" / run_id / "manifest.json"
+    manifest_path = safe_child(repository_root / ".ananke" / "evidence", run_id) / "manifest.json"
     if not manifest_path.exists():
         return {"run_id": run_id}
     return {"run_id": run_id, **json.loads(manifest_path.read_text(encoding="utf-8"))}
@@ -71,7 +73,7 @@ def _load_evidence(repository_root: Path, run_id: str) -> dict[str, Any]:
 def _load_spec_lock(repository_root: Path, spec_id: str) -> dict[str, Any]:
     if not spec_id:
         return {}
-    lock_path = repository_root / ".ananke" / "specs" / spec_id / "spec.lock.json"
+    lock_path = safe_child(repository_root / ".ananke" / "specs", spec_id) / "spec.lock.json"
     if not lock_path.exists():
         return {}
     try:
@@ -117,7 +119,10 @@ def _section_behavioral_contract(req: dict[str, Any], spec_id: str) -> str:
 def _section_architecture_delta(repository_root: Path, spec_id: str) -> str:
     delta_path = repository_root / ".ananke" / "architecture" / "diagrams.md"
     if not delta_path.exists() and spec_id:
-        delta_path = repository_root / ".ananke" / "specs" / spec_id / "architecture-contract.yaml"
+        delta_path = (
+            safe_child(repository_root / ".ananke" / "specs", spec_id)
+            / "architecture-contract.yaml"
+        )
     if not delta_path.exists():
         return "## Architecture Delta\n_No architecture delta recorded._"
     snippet = delta_path.read_text(encoding="utf-8")[:800]

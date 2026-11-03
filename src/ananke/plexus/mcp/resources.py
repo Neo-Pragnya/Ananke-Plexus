@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from ananke.plexus.core.paths import safe_child
+
 _STATIC_RESOURCES = [
     "ananke://project/status",
     "ananke://architecture/system",
@@ -106,7 +108,7 @@ def read_resource(repository_root: Path, resource_uri: str) -> str:
 
     if resource_uri.startswith("ananke://run/") and resource_uri.endswith("/evidence"):
         run_id = resource_uri.removeprefix("ananke://run/").removesuffix("/evidence")
-        manifest = repository_root / ".ananke" / "evidence" / run_id / "manifest.json"
+        manifest = safe_child(repository_root / ".ananke" / "evidence", run_id) / "manifest.json"
         return (
             manifest.read_text(encoding="utf-8")
             if manifest.exists()

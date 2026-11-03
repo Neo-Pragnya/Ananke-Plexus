@@ -121,3 +121,19 @@ def test_destination_rules(tmp_path: Path) -> None:
     later = time.time() + 5
     os.utime(folder / "evaluation.json", (later, later))
     assert any("changed after the review" in p for p in gate(folder))
+
+
+def test_evaluation_runs_no_shell(tmp_path: Path) -> None:
+    """A case can't chain or redirect: the text after ``true`` is only arguments."""
+    marker = tmp_path / "ran"
+    chained = {"id": "pos", "kind": "positive", "command": f"true && touch {marker}"}
+    evaluate(lesson(tmp_path, cases=[chained, CASES[1]]), tmp_path, allow_commands=True)
+    assert not marker.exists()
+
+
+def test_a_case_whose_command_cant_run_fails_instead_of_crashing(tmp_path: Path) -> None:
+    missing = {"id": "pos", "kind": "positive", "command": "no-such-command-here"}
+    folder = lesson(tmp_path, cases=[missing, CASES[1]])
+    evaluate(folder, tmp_path, allow_commands=True)
+    cases = json.loads((folder / "evaluation.json").read_text())["cases"]
+    assert cases[0]["passed"] is False and cases[0]["exit"] == "FileNotFoundError"

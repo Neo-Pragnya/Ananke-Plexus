@@ -3,9 +3,11 @@
 import json
 import time
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+_LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
 def json_request(
@@ -17,8 +19,11 @@ def json_request(
     retries: int = 2,
     backoff_seconds: float = 0.25,
 ) -> dict[str, object]:
-    if not (url.startswith("https://") or url.startswith("http://")):
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"https", "http"}:
         return {"ok": False, "status": 0, "error": "unsupported_url_scheme"}
+    if parsed.scheme == "http" and auth_header and parsed.hostname not in _LOOPBACK_HOSTS:
+        return {"ok": False, "status": 0, "error": "credentials_require_https"}
 
     body = json.dumps(payload).encode("utf-8")
     headers = {
@@ -31,8 +36,11 @@ def json_request(
     attempt = 0
     retry_delays: list[float] = []
     while True:
+        # the scheme is checked above
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         request = Request(url=url, data=body, method=method.upper(), headers=headers)  # noqa: S310
         try:
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             with urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310
                 status = int(getattr(response, "status", 200))
                 raw_body = response.read().decode("utf-8", errors="replace")

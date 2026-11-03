@@ -795,6 +795,8 @@ class RegistryStore:
     def get_record(
         self, kind: ArtifactKind | str, namespace: str, name: str, version: str
     ) -> VersionRecord | None:
+        # fixed SELECT text; values are bound
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         row = self.conn.execute(
             _VERSION_SELECT + " WHERE a.kind=? AND a.namespace=? AND a.name=? AND v.version=?",
             (ArtifactKind(kind).value, namespace, name, version),
@@ -802,6 +804,8 @@ class RegistryStore:
         return None if row is None else self._record(row)
 
     def record_by_id(self, vid: int) -> VersionRecord:
+        # fixed SELECT text; values are bound
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         row = self.conn.execute(_VERSION_SELECT + " WHERE v.id=?", (vid,)).fetchone()
         if row is None:
             raise NotFoundError(f"version id {vid} not found")
@@ -810,6 +814,8 @@ class RegistryStore:
     def versions_of(
         self, kind: ArtifactKind | str, namespace: str, name: str
     ) -> list[VersionRecord]:
+        # fixed SELECT text; values are bound
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         rows = self.conn.execute(
             _VERSION_SELECT + " WHERE a.kind=? AND a.namespace=? AND a.name=?",
             (ArtifactKind(kind).value, namespace, name),
@@ -836,6 +842,8 @@ class RegistryStore:
             where.append("v.lifecycle_status=?")
             args.append(lifecycle.value)
         sql = _VERSION_SELECT + (" WHERE " + " AND ".join(where) if where else "")
+        # fixed SELECT text; values are bound
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         recs = [self._record(r) for r in self.conn.execute(sql, args).fetchall()]
         recs.sort(key=lambda r: (r.kind.value, r.namespace, r.name, r.semver.sort_key))
         return recs
@@ -1046,6 +1054,7 @@ class RegistryStore:
             if sets:
                 # column names come from fixed literals above, values are bound parameters
                 sql = f"UPDATE artifact_versions SET {', '.join(sets)} WHERE id=?"  # noqa: S608
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 conn.execute(sql, (*args, vid))
             if "license" in changes:
                 lic: LicenseInfo = changes["license"]
