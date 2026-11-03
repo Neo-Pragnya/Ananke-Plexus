@@ -40,3 +40,57 @@ Feature: Products drive Ananke through a versioned, idempotent app facade
       "type": "run.queued"
       "type": "run.cancelled"
       """
+
+  @cap_app_facade
+  Scenario: A product reads a finished run's status, evidence and verified artifact
+    When I run:
+      """
+      ananke app run graph.build --key r | python3 -c "import json,sys;print(json.load(sys.stdin)['run_id'])" > run-id
+      """
+    Then it succeeds
+    When I run "ananke app status $(cat run-id)"
+    Then it succeeds
+    And the JSON output at "state" equals "succeeded"
+    When I run "ananke app artifacts $(cat run-id)"
+    Then it succeeds
+    And the output contains "graph-snapshot.json"
+    When I run "ananke app read $(cat run-id) graph-snapshot.json -o snapshot.json"
+    Then it succeeds
+    And the file "snapshot.json" exists
+    When I run "ananke app evidence"
+    Then it succeeds
+    And the JSON output at "total" equals 1
+    And the JSON output at "runs[0].state" equals "succeeded"
+
+  @cap_app_facade @adversarial
+  Scenario: An unknown artifact is refused, and a queued run can be cancelled directly
+    When I run:
+      """
+      ananke app run graph.build --key c --queue-only | python3 -c "import json,sys;print(json.load(sys.stdin)['run_id'])" > run-id
+      """
+    Then it succeeds
+    When I run "ananke app cancel $(cat run-id)"
+    Then it succeeds
+    And the JSON output at "state" equals "cancelled"
+    When I run "ananke app read $(cat run-id) ../../secrets.txt -o stolen.txt"
+    Then it fails
+    And the file "stolen.txt" does not exist
+
+  @cap_app_facade
+  Scenario: Asking for the architecture view creates no model; once declared, it shows the model
+    When I run "rm .ananke/architecture/system.calm.json"
+    Then it succeeds
+    When I run "ananke app architecture"
+    Then the exit code is 75
+    And the output contains "ARCHITECTURE_MISSING"
+    And the file ".ananke/architecture/system.calm.json" does not exist
+    When I run "ananke arch init"
+    Then it succeeds
+    When I run "ananke app architecture"
+    Then it succeeds
+    And the output contains each of:
+      """
+      "model"
+      "validation"
+      "drift"
+      """

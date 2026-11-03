@@ -258,6 +258,8 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 - `ananke app capabilities`: protocol, version, operations and run kinds.
 - `ananke app run KIND --key KEY [--params JSON] [--capability REF]… [--queue-only]`: prepare and submit an idempotent run.
 - `ananke app status RUN`, `events RUN [--after N]`, `cancel RUN`, `artifacts RUN`, `read RUN NAME -o FILE`.
+- `ananke app workflow-validate DRAFT`, `workflow-preview DRAFT`, `workflow-compile DRAFT`, `workflow-suggest DRAFT NODE PORT --candidate REF…`: [workflow assembly](../guides/workflow-assembly.md). None of these runs anything.
+- `ananke app code [--path P] [--kind K]… [--query Q]`, `source PATH [--start N] [--end N]`, `architecture`, `evidence`: read-only views of the code graph, source, declared architecture and runs.
 
 ## ananke learning
 

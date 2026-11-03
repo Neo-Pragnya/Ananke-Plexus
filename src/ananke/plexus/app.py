@@ -45,6 +45,7 @@ EVENT_SCHEMA = "ananke-app/event@1"
 RESULT_SCHEMA = "1.0.0"  # run-result.schema.json schema_version
 TERMINAL = {"succeeded", "failed", "cancelled"}
 EVENT_RETENTION = 1000
+MAX_SOURCE_LINES = 400
 
 
 class AppError(Exception):
@@ -132,6 +133,14 @@ class AppFacade:
                 "read_artifact",
                 "register_artifact",
                 "register_failure",
+                "validate_workflow",
+                "preview_workflow",
+                "compile_workflow",
+                "suggest_capabilities",
+                "code_view",
+                "read_source",
+                "architecture_view",
+                "evidence_view",
             ],
             "run_kinds": sorted(self.kinds),
         }
@@ -364,6 +373,168 @@ class AppFacade:
                 f"artifact {name} of {run_id} changed on disk after it was registered",
             )
         return data
+
+    # ------------------------------------------------------------------ workflows (nothing here runs anything)
+    def _registry(self) -> Any:
+        from ananke.plexus.registry.registry import Registry
+
+        return Registry.for_project(
+            self.workspace,
+            create=not (self.workspace / ".ananke" / "registry" / "registry.db").exists(),
+        )
+
+    def validate_workflow(self, draft: dict[str, Any]) -> dict[str, Any]:
+        from ananke.plexus.assembly import validate
+
+        return validate(draft, self._registry()).as_dict()
+
+    def preview_workflow(self, draft: dict[str, Any]) -> dict[str, Any]:
+        """Order, locked versions, permissions and approvals. No tool runs and nothing is written."""
+        from ananke.plexus.assembly import preview
+
+        return preview(draft, self._registry())
+
+    def compile_workflow(self, draft: dict[str, Any]) -> dict[str, Any]:
+        """The ``ExecutionPlan`` a draft compiles to, with its plan hash."""
+        from ananke.plexus.assembly import CompileError, compile_workflow
+
+        try:
+            done = compile_workflow(draft, self._registry())
+        except CompileError as exc:
+            first = exc.validation.issues[0]
+            raise AppError(first.code, str(exc)) from exc
+        return {
+            "plan_hash": done.plan_hash,
+            "registry_lock_digest": done.registry_lock_digest,
+            "locked": done.locked,
+            "plan": done.plan.model_dump(mode="json"),
+        }
+
+    def suggest_capabilities(
+        self, draft: dict[str, Any], node: str, port: str, candidates: list[str]
+    ) -> dict[str, Any]:
+        """Which candidates fit an input port, why others don't, and which are authorized. Activates nothing."""
+        from ananke.plexus.assembly import suggest
+
+        return suggest(draft, node, port, candidates, self._registry())
+
+    # ------------------------------------------------------------------ read-only projections for products
+    def code_view(
+        self,
+        *,
+        path_prefix: str = "",
+        kinds: list[str] | None = None,
+        query: str = "",
+        limit: int = 2000,
+    ) -> dict[str, Any]:
+        """A filtered slice of the latest code graph. Inferred edges stay marked inferred, with their confidence."""
+        from ananke.plexus.graph.service import load_graph
+
+        snapshot = load_graph(self.workspace)
+        if snapshot is None:
+            raise AppError(
+                "GRAPH_MISSING",
+                "no code graph in this workspace yet; submit a graph.build run first",
+                retryable=True,
+            )
+        words = query.lower().split()
+        wanted = set(kinds or [])
+        nodes = [
+            n
+            for n in snapshot.nodes
+            if n.path.startswith(path_prefix)
+            and (not wanted or n.kind in wanted)
+            and all(w in f"{n.name} {n.path}".lower() for w in words)
+        ]
+        truncated = len(nodes) > limit
+        nodes = nodes[:limit]
+        keep = {n.node_id for n in nodes}
+        return {
+            "snapshot_id": snapshot.snapshot_id,
+            "provider": snapshot.provider,
+            "source_snapshot": self.source_snapshot(),
+            "truncated": truncated,
+            "nodes": [n.model_dump(mode="json") for n in nodes],
+            "edges": [
+                e.model_dump(mode="json")
+                for e in snapshot.edges
+                if e.source in keep and e.target in keep
+            ],
+        }
+
+    def read_source(self, path: str, *, start: int = 1, end: int | None = None) -> dict[str, Any]:
+        """Lines of one source file, read-only, inside the workspace. Evidence for a claim, with its digest."""
+        target = (self.workspace / path).resolve()
+        if self.workspace not in target.parents:
+            raise AppError("PATH_ESCAPE", f"{path} is outside the workspace")
+        parts = target.relative_to(self.workspace).parts
+        if parts[0] in (".ananke", ".git") or target.name.startswith(".env"):
+            raise AppError(
+                "PATH_DENIED",
+                f"{path} isn't source: harness state, Git data and environment files aren't served",
+            )
+        if not target.is_file():
+            raise AppError("SOURCE_NOT_FOUND", f"{path} isn't a file in this workspace")
+        data = target.read_bytes()
+        lines = data.decode("utf-8", "replace").splitlines()
+        first = max(1, start)
+        last = min(
+            len(lines),
+            end if end is not None else first + MAX_SOURCE_LINES - 1,
+            first + MAX_SOURCE_LINES - 1,
+        )
+        return {
+            "path": path,
+            "start": first,
+            "end": last,
+            "total_lines": len(lines),
+            "sha256": _sha(data),
+            "source_snapshot": self.source_snapshot(),
+            "lines": lines[first - 1 : last],
+        }
+
+    def architecture_view(self) -> dict[str, Any]:
+        """The declared architecture and how it differs from the code graph, both read-only."""
+        from ananke.plexus.architecture.calm import diff_calm, load_calm, validate_calm
+
+        # those functions create a default model when none exists; a read-only view must not
+        if not (self.workspace / ".ananke" / "architecture" / "system.calm.json").is_file():
+            raise AppError(
+                "ARCHITECTURE_MISSING",
+                "no architecture model here: run `ananke arch init`",
+                retryable=True,
+            )
+        return {
+            "model": load_calm(self.workspace),
+            "validation": validate_calm(self.workspace),
+            "drift": diff_calm(self.workspace),
+        }
+
+    def evidence_view(self, *, limit: int = 100) -> dict[str, Any]:
+        """Recent runs in this workspace: state, completeness, plan digest and artifacts."""
+        root = self.state / "runs"
+        runs = (
+            [
+                json.loads((d / "run.json").read_text())
+                for d in root.iterdir()
+                if (d / "run.json").is_file()
+            ]
+            if root.is_dir()
+            else []
+        )
+        runs.sort(key=lambda r: (r.get("created_at", ""), r["run_id"]), reverse=True)
+        keys = (
+            "run_id",
+            "kind",
+            "state",
+            "complete",
+            "source_snapshot",
+            "locked_plan_digest",
+            "created_at",
+            "artifact_refs",
+            "warnings",
+        )
+        return {"total": len(runs), "runs": [{k: r.get(k) for k in keys} for r in runs[:limit]]}
 
     # ------------------------------------------------------------------ internals
     def _save(self, run: dict[str, Any]) -> None:

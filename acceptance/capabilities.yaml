@@ -31,6 +31,7 @@ capabilities:
   - { id: testing, title: "Testing harness: discover, run, quality gate", dimension: quality, blocker: false }
   - { id: sources, title: "Capability sources: approved folders and troves via one port; exact identity; locks reject moved digests", dimension: registry, blocker: true }
   - { id: app-facade, title: "App facade: negotiated protocol, idempotent runs on the real harness, ordered events, verified artifacts", dimension: integration, blocker: true }
+  - { id: assembly, title: "Workflow assembly: typed ports, policy from the registry, stable plan hash, no effects", dimension: integration, blocker: true }
   - { id: registry-ops, title: "Registry operations: export/import, backup/restore, reports, docs, diff, gc", dimension: registry, blocker: false }
   - { id: signing, title: "Supply chain: signing keys, signatures that verify", dimension: safety, blocker: false }
   - { id: lifecycle, title: "Lifecycle helpers: branches, worktrees, evidence events, adapter auth", dimension: automation, blocker: false }
@@ -150,6 +151,14 @@ surface:
   - ananke app cancel
   - ananke app artifacts
   - ananke app read
+  - ananke app workflow-validate
+  - ananke app workflow-preview
+  - ananke app workflow-compile
+  - ananke app workflow-suggest
+  - ananke app code
+  - ananke app source
+  - ananke app architecture
+  - ananke app evidence
   - ananke registry providers discover
   - ananke registry providers resolve
   - ananke registry providers check-lock
