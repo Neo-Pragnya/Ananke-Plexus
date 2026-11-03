@@ -126,3 +126,85 @@ def read(
         return {"written": str(output), "bytes": len(data)}
 
     _call(protocol, go)
+
+
+def _draft(path: Path) -> Any:
+    from ananke.plexus.app import AppError
+
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise AppError("INVALID_DRAFT", f"can't read {path}: {exc}") from exc
+
+
+@app_app.command("workflow-validate")
+def workflow_validate(draft: Path, workspace: Path = _WS, protocol: str = _PROTO) -> None:
+    """Every problem in a workflow draft, each with a code and a next step. Runs nothing."""
+    _call(protocol, lambda: _facade(workspace).validate_workflow(_draft(draft)))
+
+
+@app_app.command("workflow-preview")
+def workflow_preview(draft: Path, workspace: Path = _WS, protocol: str = _PROTO) -> None:
+    """Order, locked versions, permissions, approvals and the plan hash. Runs nothing."""
+    _call(protocol, lambda: _facade(workspace).preview_workflow(_draft(draft)))
+
+
+@app_app.command("workflow-compile")
+def workflow_compile(draft: Path, workspace: Path = _WS, protocol: str = _PROTO) -> None:
+    """The ExecutionPlan a draft compiles to. The same draft and versions give the same plan and hash."""
+    _call(protocol, lambda: _facade(workspace).compile_workflow(_draft(draft)))
+
+
+@app_app.command("workflow-suggest")
+def workflow_suggest(
+    draft: Path,
+    node: str,
+    port: str,
+    candidate: list[str] = typer.Option(..., "--candidate", help="Exact ref to assess (repeat)"),
+    workspace: Path = _WS,
+    protocol: str = _PROTO,
+) -> None:
+    """Which candidates fit an input port, why others don't, and which are authorized. Activates nothing."""
+    _call(
+        protocol,
+        lambda: _facade(workspace).suggest_capabilities(_draft(draft), node, port, list(candidate)),
+    )
+
+
+@app_app.command("code")
+def code(
+    path: str = typer.Option("", "--path", help="Only paths under this prefix"),
+    kind: list[str] = typer.Option([], "--kind", help="Only these node kinds (repeat)"),
+    query: str = typer.Option("", "--query", help="Words to match"),
+    workspace: Path = _WS,
+    protocol: str = _PROTO,
+) -> None:
+    """A filtered slice of the latest code graph."""
+    _call(
+        protocol,
+        lambda: _facade(workspace).code_view(path_prefix=path, kinds=list(kind), query=query),
+    )
+
+
+@app_app.command("source")
+def source(
+    path: str,
+    start: int = typer.Option(1, "--start"),
+    end: int | None = typer.Option(None, "--end"),
+    workspace: Path = _WS,
+    protocol: str = _PROTO,
+) -> None:
+    """Lines of one source file with its digest. Read-only; stays inside the workspace."""
+    _call(protocol, lambda: _facade(workspace).read_source(path, start=start, end=end))
+
+
+@app_app.command("architecture")
+def architecture(workspace: Path = _WS, protocol: str = _PROTO) -> None:
+    """The declared architecture and its drift from the code graph."""
+    _call(protocol, lambda: _facade(workspace).architecture_view())
+
+
+@app_app.command("evidence")
+def evidence(workspace: Path = _WS, protocol: str = _PROTO) -> None:
+    """Recent runs: state, completeness, plan digest and artifacts."""
+    _call(protocol, lambda: _facade(workspace).evidence_view())

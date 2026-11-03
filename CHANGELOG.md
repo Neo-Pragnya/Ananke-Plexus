@@ -10,6 +10,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.14] — 2026-11-03
+
+### Added
+
+- **Workflow assembly** (`ananke.plexus.assembly`, `ananke app workflow-validate|preview|compile|suggest`): typed
+  capability graphs compiled to the existing `ExecutionPlan` with a stable hash:
+  - identity, trust, lifecycle and permissions come from the registry record, and a draft can't raise them;
+  - every problem has a stable code and a next step;
+  - suggestions explain rejections and keep "compatible" separate from "authorized";
+  - validating, previewing, suggesting and compiling run nothing.
+  Plans can be compiled but there is no command to run them yet.
+  Guide: [Workflow assembly](docs/guides/workflow-assembly.md).
+- **Read-only projections on the app facade** (`ananke app code|source|architecture|evidence`): filtered code graph,
+  source lines with digests, declared architecture and drift, and run evidence.
+
+### Fixed
+
+- The scheduler no longer reports success for a capability step that nothing executed. Other step types keep their
+  existing no-handler behaviour.
+- A plan whose failed step has dependents now ends `FAILED`. It used to stay `RUNNING` forever.
+
+---
+
 ## [0.3.13] — 2026-11-02
 
 ### Added

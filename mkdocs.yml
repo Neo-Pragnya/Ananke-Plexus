@@ -94,6 +94,7 @@ nav:
       - Dex Trove Skill Library: guides/dex-trove.md
       - Capability Sources: guides/capability-sources.md
       - Learning Candidates: guides/learning-candidates.md
+      - Workflow Assembly: guides/workflow-assembly.md
       - Workflows: guides/workflows.md
       - Release Guide: guides/release.md
       - Implementation Log: guides/implementation-log.md

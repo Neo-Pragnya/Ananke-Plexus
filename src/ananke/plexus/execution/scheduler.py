@@ -17,9 +17,18 @@ from ananke.plexus.execution.plan import ExecutionPlan, ExecutionStep
 
 StepHandler = Callable[[ExecutionStep, Path], dict[str, object]]
 
+# A capability step that nothing executed must not report success.
+RUN_CAPABILITY = "run_capability"
+
 
 def _noop_handler(step: ExecutionStep, repository_root: Path) -> dict[str, object]:
     return {"status": "SUCCEEDED", "note": f"no handler for {step.step_type}"}
+
+
+def _no_executor(step: ExecutionStep, repository_root: Path) -> dict[str, object]:
+    raise RuntimeError(
+        f"no executor for {RUN_CAPABILITY}: {step.params.get('capability_ref')} did not run"
+    )
 
 
 def run_plan(
@@ -64,6 +73,9 @@ def run_plan(
     if plan.is_complete() and plan.state not in {"BLOCKED", "CANCELLED"}:
         has_failed = any(s.state == "FAILED" for s in plan.steps)
         plan.state = "FAILED" if has_failed else "SUCCEEDED"
+    elif plan.state == "RUNNING" and any(s.state == "FAILED" for s in plan.steps):
+        # steps that depend on a failed step never become ready; the run is over, not in flight
+        plan.state = "FAILED"
 
     plan.updated_at = datetime.now(UTC).isoformat()
     save_checkpoint(repository_root, plan.run_id, plan)
@@ -75,7 +87,8 @@ def _execute_step(
     repository_root: Path,
     handlers: dict[str, StepHandler],
 ) -> None:
-    handler = handlers.get(step.step_type, _noop_handler)
+    default = _no_executor if step.step_type == RUN_CAPABILITY else _noop_handler
+    handler = handlers.get(step.step_type, default)
     step.state = "RUNNING"
     step.started_at = datetime.now(UTC).isoformat()
     try:

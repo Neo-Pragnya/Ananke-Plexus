@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0.0",
+  "workflow_id": "fixture/wwi-api-verification",
+  "title": "WWI API Contract Verification (synthetic)",
+  "methodology": [
+    "adlc",
+    "tdd"
+  ],
+  "nodes": [
+    {
+      "id": "extract",
+      "capability_ref": "fixture/api-contract-extract@1.0.0",
+      "kind": "tool",
+      "inputs": [
+        {
+          "name": "source",
+          "schema_ref": "python-source/v1"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "openapi",
+          "schema_ref": "openapi/v3"
+        }
+      ],
+      "config": {},
+      "permission_profile": [
+        "filesystem-read"
+      ]
+    },
+    {
+      "id": "plan",
+      "capability_ref": "fixture/api-test-guide@1.0.0",
+      "kind": "skill",
+      "inputs": [
+        {
+          "name": "openapi",
+          "schema_ref": "openapi/v3"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "tests",
+          "schema_ref": "test-plan/v1"
+        }
+      ],
+      "config": {}
+    },
+    {
+      "id": "run",
+      "capability_ref": "fixture/api-test-runner@1.0.0",
+      "kind": "tool",
+      "inputs": [
+        {
+          "name": "tests",
+          "schema_ref": "test-plan/v1"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report",
+          "schema_ref": "test-report/v1"
+        }
+      ],
+      "config": {},
+      "approval_class": "PLAN",
+      "retries": 1
+    },
+    {
+      "id": "gate",
+      "capability_ref": "fixture/security-gate@1.0.0",
+      "kind": "tool",
+      "inputs": [
+        {
+          "name": "report",
+          "schema_ref": "test-report/v1"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "evidence",
+          "schema_ref": "verification-evidence/v1"
+        }
+      ],
+      "config": {},
+      "approval_class": "PLAN"
+    },
+    {
+      "id": "docs",
+      "capability_ref": "fixture/docs-render@1.0.0",
+      "kind": "tool",
+      "inputs": [
+        {
+          "name": "evidence",
+          "schema_ref": "verification-evidence/v1"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "markdown",
+          "schema_ref": "markdown/v1"
+        }
+      ],
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "extract",
+      "source_port": "openapi",
+      "target": "plan",
+      "target_port": "openapi"
+    },
+    {
+      "id": "e2",
+      "source": "plan",
+      "source_port": "tests",
+      "target": "run",
+      "target_port": "tests"
+    },
+    {
+      "id": "e3",
+      "source": "run",
+      "source_port": "report",
+      "target": "gate",
+      "target_port": "report"
+    },
+    {
+      "id": "e4",
+      "source": "gate",
+      "source_port": "evidence",
+      "target": "docs",
+      "target_port": "evidence"
+    }
+  ]
+}

@@ -150,3 +150,45 @@ def test_failures_are_states_not_exceptions(ws: AppFacade) -> None:
     with pytest.raises(AppError) as missing:
         ws.get_run("run-missing")
     assert missing.value.code == "RUN_NOT_FOUND"
+
+
+def test_read_only_projections_filter_cite_and_refuse_escapes(ws: AppFacade) -> None:
+    with pytest.raises(AppError) as none:
+        ws.code_view()
+    assert none.value.code == "GRAPH_MISSING"
+    ws.submit_run(ws.prepare_run("graph.build"), "p")
+    view = ws.code_view(path_prefix="pkg/cli", kinds=["file", "function"])
+    assert {n["path"] for n in view["nodes"]} == {"pkg/cli.py"} and view[
+        "source_snapshot"
+    ].startswith("git:")
+    calls = ws.code_view(query="pkg")
+    assert all(e["origin"] in ("extracted", "inferred") for e in calls["edges"])
+    src = ws.read_source("pkg/core.py", start=1, end=1)
+    assert (
+        src["lines"] == ["def add(a, b):"] and src["total_lines"] == 2 and len(src["sha256"]) == 64
+    )
+    for bad, code in (
+        ("../outside.py", "PATH_ESCAPE"),
+        (".ananke/app/idempotency.json", "PATH_DENIED"),
+        ("pkg/none.py", "SOURCE_NOT_FOUND"),
+    ):
+        with pytest.raises(AppError) as exc:
+            ws.read_source(bad)
+        assert exc.value.code == code
+    (ws.workspace / ".env").write_text("X=1\n")
+    with pytest.raises(AppError) as env:
+        ws.read_source(".env")
+    assert env.value.code == "PATH_DENIED"
+    ev = ws.evidence_view()
+    assert ev["total"] == 1 and ev["runs"][0]["artifact_refs"][0]["name"] == "graph-snapshot.json"
+
+
+def test_architecture_view_never_creates_a_model(ws: AppFacade) -> None:
+    from ananke.plexus.architecture.calm import _calm_path, init_calm
+
+    with pytest.raises(AppError) as missing:
+        ws.architecture_view()
+    assert missing.value.code == "ARCHITECTURE_MISSING" and not _calm_path(ws.workspace).exists()
+    init_calm(ws.workspace)
+    view = ws.architecture_view()
+    assert {"model", "validation", "drift"} <= set(view)
