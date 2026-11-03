@@ -10,6 +10,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.16] — 2026-11-03
+
+### Added
+
+- **Run a compiled workflow** (`ananke app workflow-run`, run kind `workflow.run`). Steps go to a named agent backend on
+  the existing scheduler, with step events and an artifact for each output, linked to the capability and artifacts it
+  came from. The whole workflow is checked first: the plan must be the one you previewed, approvals must be given, and
+  the backend must exist and be able to provide what each capability declares.
+- Only instruction capabilities run. A workflow containing a tool, hook or other kind that would run code is refused
+  whole, and the registry decides the kind, not the draft.
+
+### Known limits
+
+- Ananke can't confine a real agent to what a capability declares. Real runs carry `PERMISSIONS_NOT_ENFORCED`.
+- Steps run one at a time, and `retries` isn't applied yet.
+
+### Fixed
+
+- A run cancelled while it was executing could end `succeeded` or `failed`. It now stays `cancelled`.
+
+---
+
 ## [0.3.15] — 2026-11-03
 
 ### Added

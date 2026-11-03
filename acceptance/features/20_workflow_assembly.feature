@@ -85,3 +85,40 @@ Feature: Workflows are validated, explained and compiled without running anythin
     When I run "ananke registry list --json"
     Then it succeeds
     And the output does not contain "nope"
+
+  @cap_assembly
+  Scenario: A previewed workflow runs through a named backend with evidence, labelled as simulated
+    When I run:
+      """
+      ananke app workflow-preview draft.json | python3 -c "import json,sys;print(json.load(sys.stdin)['plan_hash'])" > plan-hash
+      """
+    Then it succeeds
+    When I run "ananke app workflow-run draft.json --backend fake --plan-hash $(cat plan-hash) --approve b --input a.source=src --key one"
+    Then it succeeds
+    And the JSON output at "state" equals "succeeded"
+    And the JSON output at "complete" equals false
+    And the output contains each of:
+      """
+      SIMULATED_BACKEND
+      workflow-plan.json
+      01-a.output.txt
+      02-b.output.txt
+      artifact:01-a.output.txt
+      """
+
+  @cap_assembly @adversarial
+  Scenario: A workflow is refused whole unless it is the previewed plan, approved and fully supplied
+    When I run:
+      """
+      ananke app workflow-preview draft.json | python3 -c "import json,sys;print(json.load(sys.stdin)['plan_hash'])" > plan-hash
+      """
+    Then it succeeds
+    When I run "ananke app workflow-run draft.json --backend fake --plan-hash sha256:other --approve b --input a.source=src --key stale"
+    Then the output contains "STALE_PLAN"
+    When I run "ananke app workflow-run draft.json --backend fake --plan-hash $(cat plan-hash) --input a.source=src --key unapproved"
+    Then the output contains "APPROVAL_REQUIRED"
+    When I run "ananke app workflow-run draft.json --backend fake --plan-hash $(cat plan-hash) --approve b --key noinput"
+    Then the output contains "workflow inputs not supplied"
+    When I run "ananke app workflow-run draft.json --backend nope --plan-hash $(cat plan-hash) --approve b --input a.source=src --key nobackend"
+    Then the output contains "BACKEND_NOT_FOUND"
+    And the output does not contain ".output.txt"
