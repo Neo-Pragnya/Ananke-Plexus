@@ -21,7 +21,7 @@ def _git_files(root: Path) -> list[str] | None:
     """Tracked and untracked but not ignored files, so ``.gitignore`` is respected. ``None`` outside Git."""
     try:
         done = subprocess.run(  # noqa: S603 - fixed argv
-            [
+            [  # noqa: S607 - git from PATH, like the rest of the harness
                 "git",
                 "-C",
                 str(root),
@@ -30,7 +30,7 @@ def _git_files(root: Path) -> list[str] | None:
                 "--cached",
                 "--others",
                 "--exclude-standard",
-            ],  # noqa: S607
+            ],
             capture_output=True,
             timeout=60,
             check=False,
