@@ -8,6 +8,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- `apm bundle install` can now install a skill that came from the registry. It used to fail with "missing manifest", and a
+  bundle can't use its manifest to write outside the install folder.
+
 ---
 
 ## [0.3.18] — 2026-11-03

@@ -8,7 +8,12 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ananke.plexus.apm.installer import MANIFEST_NAME, install_local_skill
+from ananke.plexus.apm.installer import (
+    MANIFEST_NAME,
+    REGISTRY_MANIFEST_NAME,
+    install_local_skill,
+    install_registry_copy,
+)
 from ananke.plexus.apm.lockfile import read_lock, write_lock
 from ananke.plexus.apm.registry import installed_skills_dir
 
@@ -85,9 +90,12 @@ def install_bundle(repository_root: Path, bundle_path: Path) -> list[str]:
         installed: list[str] = []
         for name in members:
             skill_dir = temp_root / "skills" / name
-            if not (skill_dir / MANIFEST_NAME).exists():
+            if (skill_dir / MANIFEST_NAME).exists():
+                installed_name, _ = install_local_skill(repository_root, skill_dir)
+            elif (skill_dir / REGISTRY_MANIFEST_NAME).exists():
+                installed_name, _ = install_registry_copy(repository_root, skill_dir)
+            else:
                 raise FileNotFoundError(f"Bundle member missing manifest: {name}")
-            installed_name, _ = install_local_skill(repository_root, skill_dir)
             installed.append(installed_name)
 
     lock = read_lock(repository_root)

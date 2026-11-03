@@ -36,7 +36,3 @@ Capability families, each with a Dex skill once its operation exists:
 - Repository documentation from the graph, context retrieval with token budgets, and session learning.
 - Multi-repository topology, PR and release evidence, browser debugging, infrastructure and Docker analysis.
 - Connectors that need real external systems: Jenkins, Kibana, Copilot analytics and SAS modernisation.
-
-## Known gaps
-
-- `apm bundle install` can't install a skill that came from the registry. It expects a different manifest file.
