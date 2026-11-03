@@ -1,7 +1,7 @@
 # Dex Trove: a skill library for your registry
 
 [Dex Trove](https://neo-pragnya.github.io/Dex-Trove/), the *trove of dexterities*, is a licence-clean library of
-agent artifacts for Ananke. It provides **970 items** (skills, agents, instructions, hooks, workflows and plugins),
+agent artifacts for Ananke. It provides **968 items** (skills, agents, instructions, hooks, workflows and plugins),
 learned from open repositories such as `github/awesome-copilot`, `anthropics/skills` and `obra/superpowers`, plus
 first-party skills. Each item is admitted only if its own licence allows redistribution, and ships with a
 strict `ananke.yaml` manifest and full provenance (upstream repo, pinned commit, licence evidence).
@@ -103,7 +103,7 @@ A project chooses which troves it uses, and which slice of each, in `.ananke/con
 ```bash
 pip install "ananke-plexus[dex]"
 ananke init
-ananke registry troves list                                   # [off] dex-trove  dex-trove 0.1.2  972 items
+ananke registry troves list                                   # [off] dex-trove  dex-trove 0.3.1  968 items
 ananke registry troves enable dex-trove --kind skill --kind agent
 ananke registry troves sync                                   # ✓ dex-trove: … registered · 0 denied
 ```
@@ -125,3 +125,24 @@ version. `ananke registry troves disable dex-trove` switches it off. Versions al
 
 See the Dex Trove docs for the [licence policy](https://neo-pragnya.github.io/Dex-Trove/docs/concepts/licence-policy/)
 and the [full integration guide](https://neo-pragnya.github.io/Dex-Trove/docs/guides/ananke-integration/).
+
+## Pin exactly what you chose in Dex
+
+Dex Trove 0.3 records every version of every item, with its digest and upstream commit. Pin items in Dex, then hand
+those pins to Ananke. Dex only resolves here; it doesn't install into Ananke or run anything:
+
+```bash
+dex lock superpowers/systematic-debugging agent:awesome-copilot/planner
+dex ananke handoff            # prints a [tool.ananke] block: paste it into pyproject.toml
+ananke sync                   # resolves the same versions under your policy and writes ananke.lock
+```
+
+## Read Dex alongside your own sources
+
+An enabled trove is also a source for the [provider port](capability-sources.md). `ananke registry providers
+discover` searches it together with your approved folders and private Git repositories, and
+`ananke registry providers resolve` refuses a name that exists in two places until you name the source. Older releases
+resolve from Dex's release ledger; if the installed trove no longer holds those bytes, fetching them fails with
+`NOT_CACHED` rather than substituting another version.
+
+To send a lesson to Dex, see [Learning candidates](learning-candidates.md#sending-a-lesson-to-dex-trove).

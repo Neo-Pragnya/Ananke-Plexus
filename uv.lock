@@ -451,7 +451,7 @@ requires-dist = [
     { name = "cryptography", marker = "extra == 'registry'", specifier = ">=42" },
     { name = "cryptography", marker = "extra == 'registry-signing'", specifier = ">=42" },
     { name = "deepeval", marker = "extra == 'eval-deepeval'", specifier = ">=1.0" },
-    { name = "dex-trove", marker = "extra == 'dex'", specifier = ">=0.1.0" },
+    { name = "dex-trove", marker = "extra == 'dex'", specifier = ">=0.3.0" },
     { name = "duckdb", marker = "extra == 'registry-analytics'", specifier = ">=1.0" },
     { name = "hatchling", marker = "extra == 'dev'", specifier = ">=1.26" },
     { name = "httpx", specifier = ">=0.28,<1" },
@@ -1706,16 +1706,16 @@ wheels = [
 
 [[package]]
 name = "dex-trove"
-version = "0.1.6"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyyaml" },
     { name = "rich" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/e3/3ab5230df499977bd10b77d4fcc3a9bbb9a1227e45d9b9fa7c0bcd4c6b16/dex_trove-0.1.6.tar.gz", hash = "sha256:6ce149959fe09fc19f28a985c8483ff38687a5f3f0bb54f0e5e6b2fa9c49e97a", size = 11404398, upload-time = "2026-10-23T02:31:08.539Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/88/1863a7cad85fe5d302e1b1f760b2e615a7dfbf583426cc27b6fa50027954/dex_trove-0.3.1.tar.gz", hash = "sha256:05c72aecb060adf5f3559474b25ed43e793a65fffec812e45c721113727e1a47", size = 11711220, upload-time = "2026-11-03T01:58:51.465Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/b8/524511de49cb8c4a3fce6fb66d68c05f2edfc8d584d86998743c61987d72/dex_trove-0.1.6-py3-none-any.whl", hash = "sha256:86915c0d3c807b497def7fa44a5d7e0775926832540324bd35b564bf17b7fa49", size = 14758841, upload-time = "2026-10-23T02:31:05.715Z" },
+    { url = "https://files.pythonhosted.org/packages/22/db/f1f87d307f7b5c9d616866c1945ee1a3a1d0df42674428ad175aeda1c6e8/dex_trove-0.3.1-py3-none-any.whl", hash = "sha256:977b9779da2acfb2bebec23348ce224864be35ca5c54446aed87ad16992003c5", size = 15072742, upload-time = "2026-11-03T01:58:47.887Z" },
 ]
 
 [[package]]

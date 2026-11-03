@@ -41,6 +41,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
     [Learning candidates](docs/guides/learning-candidates.md).
 - Guide: [Capability sources](docs/guides/capability-sources.md).
 
+### Changed
+
+- The `dex` extra requires Dex Trove 0.3 or later, and the Dex guide covers exact pins and the provider port.
+
 ### Fixed
 
 - The pytest and schemathesis test adapters run with Ananke's own interpreter (`sys.executable`). They used to run

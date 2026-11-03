@@ -72,6 +72,22 @@ sca = true
 license_scan = true
 ```
 
+## Capability sources
+
+`[capability_sources.<id>]` adds a source to the [provider port](../guides/capability-sources.md):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `type` | `local` | `local` (an approved folder) or `git` (a pinned repository) |
+| `root` | `""` | `local`: the folder, relative to the project or absolute. `git`: a subfolder in the repository |
+| `namespace` | required | the namespace every capability from this source gets |
+| `url` | `""` | `git`: the repository URL, without credentials |
+| `commit` | `""` | `git`: a full 40-character commit sha |
+| `credential_env` | `""` | `git`: the *name* of the environment variable holding a token |
+| `writable` | `false` | allow reviewed publishes into this source |
+| `visibility` | `internal` | `internal` or `public`; internal lessons never reach a public source |
+| `enabled` | `true` | switch the source off without deleting it |
+
 ## Secret references
 
 Secrets MUST be referenced, not embedded:

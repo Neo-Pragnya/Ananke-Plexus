@@ -235,6 +235,7 @@ Full reference: [Registry Reference](registry.md). Every command accepts `--proj
 
 - `ananke registry init [--policy default|enterprise]`: create the registry and policy file.
 - `ananke registry troves list [--json]` / `enable NAME [--kind K]… [--namespace NS]… [--include-flagged]` / `disable NAME` / `sync [--dry-run] [--json]`: installed troves (packages exposing an `ananke.troves` entry point, such as Dex Trove), switched on per project in `[troves.<name>]` and learned into the registry.
+- `ananke registry providers list` / `discover [QUERY]` / `resolve REF [--lock FILE]` / `check-lock FILE`: capability sources through the [provider port](../guides/capability-sources.md).
 - `ananke registry learn SOURCE [--kind --namespace --name --version X|auto --license --channel --allow-dynamic --allow-network --plugin --dry-run --force --interactive --json]`: discover a source (path, `python:`, `rust:`, `mcp:`, `mcp-stdio:`, `mcp-http:`, `git:`, archive, `framework:`, `dynamic:`) and register new immutable versions.
 - `ananke registry register PATH`, `unregister REF [--purge]`, `inspect REF | --source SRC [--report FILE.html]`, `show REF`, `list [REF] [--versions]`, `search [QUERY] [--kind --runtime --trust --channel --capability --tag --license]`.
 - `ananke registry diff A B`: capability/permission/schema/dependency diff with suggested SemVer.
@@ -248,6 +249,25 @@ Full reference: [Registry Reference](registry.md). Every command accepts `--proj
 - Signing: `key generate|trust|revoke|list`, `sign REF --key FILE`, `signatures REF`.
 - Federation (pull-only): `remote list`, `remote search QUERY`, `remote pull REF [--no-deps --dry-run --allow-network]`.
 - Search & insight: `search --semantic` (policy-gated), `analytics query [QUESTION]`, `watch --backend auto|native|poll`, `benchmark [--size --save-baseline --baseline]`.
+
+## ananke app
+
+The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru. Every command takes `--workspace` and
+`--protocol`, prints one JSON document, and reports errors as JSON on stderr (exit `75` if retrying may help, `2` if not).
+
+- `ananke app capabilities`: protocol, version, operations and run kinds.
+- `ananke app run KIND --key KEY [--params JSON] [--capability REF]… [--queue-only]`: prepare and submit an idempotent run.
+- `ananke app status RUN`, `events RUN [--after N]`, `cancel RUN`, `artifacts RUN`, `read RUN NAME -o FILE`.
+
+## ananke learning
+
+[Learning candidates](../guides/learning-candidates.md): reusable lessons that need evaluation and review.
+
+- `ananke learning capture NAME --description TEXT --body FILE --case ID:positive|regression:COMMAND… [--run ID]… [--public]`
+- `ananke learning evaluate NAME --allow-commands`
+- `ananke learning review NAME --approve|--reject --reviewer NAME --reason TEXT`
+- `ananke learning promote NAME --to SOURCE --approved-by NAME`
+- `ananke learning list`
 
 ## ananke skill / ananke agent
 
