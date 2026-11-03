@@ -10,6 +10,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.17] — 2026-11-03
+
+### Fixed
+
+- **The app facade is safe to use from several threads and processes**, as a gateway or a CLI next to one needs:
+  - a cancel can't be lost when a running step saves at the same moment, and a final state stands;
+  - writes are atomic, so a reader never sees half a file, and concurrent writers no longer collide;
+  - two callers with one idempotency key get one run, and two calls to `drive` run it once;
+  - event sequence numbers stay unique and in order.
+- A workspace's source snapshot no longer counts Ananke's own `.ananke/` files as source changes, so a run doesn't
+  change the snapshot of the next one.
+
+---
+
 ## [0.3.16] — 2026-11-03
 
 ### Added

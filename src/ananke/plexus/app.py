@@ -33,11 +33,17 @@ import hashlib
 import json
 import subprocess
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None  # type: ignore[assignment]
 
 PROTOCOL = "ananke-app/1"
 SUPPORTED = (PROTOCOL,)
@@ -71,6 +77,29 @@ def _canonical(obj: Any) -> str:
 
 def _sha(text: str | bytes) -> str:
     return hashlib.sha256(text.encode() if isinstance(text, str) else text).hexdigest()
+
+
+@contextmanager
+def _file_lock(path: Path) -> Iterator[None]:
+    """Exclusive across threads and processes: a CLI and a gateway can share a workspace. The OS releases it if
+    the holder dies, so there is nothing stale to clean up."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        if fcntl is not None:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+        else:
+            import msvcrt  # type: ignore[unreachable,unused-ignore]
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)  # type: ignore[attr-defined,unused-ignore]
+        try:
+            yield
+        finally:
+            if fcntl is not None:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+            else:
+                handle.seek(0)  # type: ignore[unreachable,unused-ignore]
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined,unused-ignore]
 
 
 @dataclass(frozen=True)
@@ -160,8 +189,10 @@ class AppFacade:
         """Git commit plus a digest of uncommitted changes, or a digest of the file listing outside Git."""
         try:
             head = self._git("rev-parse", "HEAD").strip()
-            dirty = self._git("status", "--porcelain")
-            diff = self._git("diff", "HEAD")
+            # Ananke's own state isn't source: a run must not change the snapshot of the next one
+            source_only = ("--", ".", ":(exclude).ananke")
+            dirty = self._git("status", "--porcelain", *source_only)
+            diff = self._git("diff", "HEAD", *source_only)
             return f"git:{head}" + (f"+dirty:{_sha(dirty + diff)[:16]}" if dirty.strip() else "")
         except (OSError, subprocess.CalledProcessError):
             listing = sorted(
@@ -220,6 +251,22 @@ class AppFacade:
             raise AppError("INVALID_REQUEST", "an idempotency key is required")
         request = prepared.request(self.workspace_id(), idempotency_key)
         index_path = self.state / "idempotency.json"
+        self.state.mkdir(parents=True, exist_ok=True)
+        with _file_lock(self.state / "idempotency.lock"):
+            run_id, created = self._claim_key(prepared, request, idempotency_key, index_path)
+        if not created:
+            return self.get_run(run_id)
+        self._event(run_id, "run.queued", {"kind": prepared.kind})
+        return self.drive(run_id) if start else self.get_run(run_id)
+
+    def _claim_key(
+        self,
+        prepared: PreparedRun,
+        request: dict[str, Any],
+        idempotency_key: str,
+        index_path: Path,
+    ) -> tuple[str, bool]:
+        """The run for this key: the existing one, or a new one. Two callers with one key get one run."""
         index = json.loads(index_path.read_text()) if index_path.is_file() else {}
         seen = index.get(idempotency_key)
         if seen:
@@ -228,7 +275,7 @@ class AppFacade:
                     "IDEMPOTENCY_CONFLICT",
                     f"key {idempotency_key!r} was used for a different request (run {seen['run_id']})",
                 )
-            return self.get_run(seen["run_id"])
+            return str(seen["run_id"]), False
         if self.source_snapshot() != prepared.source_snapshot:
             raise AppError(
                 "STALE_PLAN",
@@ -251,19 +298,24 @@ class AppFacade:
             "request": request,
             "created_at": _now(),
         }
+        (self.state / "runs" / run_id).mkdir(parents=True, exist_ok=True)
         self._save(run)
         index[idempotency_key] = {"run_id": run_id, "request_sha256": _sha(_canonical(request))}
-        index_path.parent.mkdir(parents=True, exist_ok=True)
-        index_path.write_text(json.dumps(index, indent=2, sort_keys=True))
-        self._event(run_id, "run.queued", {"kind": prepared.kind})
-        return self.drive(run_id) if start else self.get_run(run_id)
+        tmp = index_path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(index, indent=2, sort_keys=True))
+        tmp.replace(index_path)
+        return run_id, True
 
     def drive(self, run_id: str) -> dict[str, Any]:
         """Execute a queued run to a terminal state (in-process transport: synchronous)."""
-        run = self.get_run(run_id)
-        if run["state"] != "queued":
-            return run
-        self._transition(run, "running")
+        # claim it under the lock: of two callers, one runs it and the other gets the run as it stands
+        with _file_lock(self.state / "runs" / run_id / "run.lock"):
+            run = self.get_run(run_id)
+            if run["state"] != "queued":
+                return run
+            run["state"] = "running"
+            self._write(run)
+            self._event(run_id, "run.running", {"complete": run["complete"]})
         try:
             self.kinds[run["kind"]](self, run_id, run["request"]["parameters"])
         except AppError as exc:
@@ -296,18 +348,23 @@ class AppFacade:
         return run
 
     def cancel_run(self, run_id: str) -> dict[str, Any]:
-        run = self.get_run(run_id)
-        if run["state"] in TERMINAL:
-            run["warnings"].append(
-                {
-                    "code": "ALREADY_FINISHED",
-                    "message": f"run is {run['state']}; completed side effects are not rolled back",
-                    "retryable": False,
-                }
-            )
-            self._save(run)
+        self.get_run(run_id)
+        with _file_lock(self.state / "runs" / run_id / "run.lock"):
+            run = self.get_run(run_id)
+            if run["state"] in TERMINAL:
+                run["warnings"].append(
+                    {
+                        "code": "ALREADY_FINISHED",
+                        "message": f"run is {run['state']}; completed side effects are not rolled back",
+                        "retryable": False,
+                    }
+                )
+                self._write(run)
+                return run
+            run["state"] = "cancelled"
+            self._write(run)
+            self._event(run_id, "run.cancelled", {"complete": run["complete"]})
             return run
-        return self._transition(run, "cancelled")
 
     # ------------------------------------------------------------------ events
     def stream_events(self, run_id: str, after: int = 0) -> dict[str, Any]:
@@ -678,36 +735,59 @@ class AppFacade:
         return {"total": len(runs), "runs": [{k: r.get(k) for k in keys} for r in runs[:limit]]}
 
     # ------------------------------------------------------------------ internals
-    def _save(self, run: dict[str, Any]) -> None:
+    def _write(self, run: dict[str, Any]) -> None:
+        """Replace run.json atomically, so a reader never sees half of it. Call with the run's lock held."""
         folder = self.state / "runs" / run["run_id"]
-        folder.mkdir(parents=True, exist_ok=True)
         tmp = folder / "run.json.tmp"
         tmp.write_text(json.dumps(run, indent=2, sort_keys=True))
         tmp.replace(folder / "run.json")
 
+    def _settled_state(self, run_id: str) -> str | None:
+        """The state on disk if it is final. A final state stands, whatever another thread is still writing."""
+        path = self.state / "runs" / run_id / "run.json"
+        state = json.loads(path.read_text())["state"] if path.is_file() else None
+        return state if state in TERMINAL else None
+
+    def _save(self, run: dict[str, Any]) -> None:
+        with _file_lock(self.state / "runs" / run["run_id"] / "run.lock"):
+            settled = self._settled_state(run["run_id"])
+            if settled:
+                run["state"] = settled
+            self._write(run)
+
     def _transition(self, run: dict[str, Any], state: str) -> dict[str, Any]:
-        run["state"] = state
-        self._save(run)
-        self._event(run["run_id"], f"run.{state}", {"complete": run["complete"]})
+        with _file_lock(self.state / "runs" / run["run_id"] / "run.lock"):
+            settled = self._settled_state(run["run_id"])
+            if settled:
+                run["state"] = settled
+                self._write(run)
+                return run
+            run["state"] = state
+            self._write(run)
+            self._event(run["run_id"], f"run.{state}", {"complete": run["complete"]})
         return run
 
     def _event(self, run_id: str, kind: str, payload: dict[str, Any]) -> None:
-        path = self.state / "runs" / run_id / "events.jsonl"
-        lines = path.read_text().splitlines() if path.is_file() else []
-        seq = json.loads(lines[-1])["seq"] + 1 if lines else 1
-        lines.append(
-            _canonical(
-                {
-                    "schema": EVENT_SCHEMA,
-                    "run_id": run_id,
-                    "seq": seq,
-                    "type": kind,
-                    "at": _now(),
-                    "payload": payload,
-                }
+        folder = self.state / "runs" / run_id
+        path = folder / "events.jsonl"
+        with _file_lock(folder / "events.lock"):
+            lines = path.read_text().splitlines() if path.is_file() else []
+            seq = json.loads(lines[-1])["seq"] + 1 if lines else 1
+            lines.append(
+                _canonical(
+                    {
+                        "schema": EVENT_SCHEMA,
+                        "run_id": run_id,
+                        "seq": seq,
+                        "type": kind,
+                        "at": _now(),
+                        "payload": payload,
+                    }
+                )
             )
-        )
-        path.write_text("\n".join(lines[-EVENT_RETENTION:]) + "\n")
+            tmp = folder / "events.jsonl.tmp"
+            tmp.write_text("\n".join(lines[-EVENT_RETENTION:]) + "\n")
+            tmp.replace(path)
 
 
 # ---------------------------------------------------------------------- run kinds: thin calls into the harness
