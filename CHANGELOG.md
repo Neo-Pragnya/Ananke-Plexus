@@ -10,6 +10,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.15] — 2026-11-03
+
+### Added
+
+- **Notebooks in the code graph**: `.ipynb` files are read, never run. Symbols keep the existing id forms and cite their
+  cell (`nb/study.ipynb#cell=3:2`). Adding a notebook doesn't change any existing Python symbol's id.
+- **Data files in the code graph**: `data:<path>` nodes with inferred `reads` and `writes` edges, from calls naming a
+  data file with a literal path. `ananke graph impact` follows them.
+- **Graph projection**: `ananke app code --budget`, `--collapse file|directory` and `--depth`. Over budget, the most
+  connected nodes stay. Collapsed edges are summed with counts and locations, and `edge_accounting` says where every
+  edge went. Guide: [Code graph](docs/guides/code-graph.md).
+- `content_digest` identifies a graph's content, independent of when it was built.
+
+### Changed
+
+- `owns` and `imports` edges now record their source location, so every edge built from source has one.
+- `ananke graph impact` now names the impacted files. It used to give only their count.
+- `AppFacade.code_view`: `limit` is now `budget`, with a default of 500 rather than 2000. It was added in 0.3.14.
+
+---
+
 ## [0.3.14] — 2026-11-03
 
 ### Added

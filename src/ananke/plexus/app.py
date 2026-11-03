@@ -45,6 +45,8 @@ EVENT_SCHEMA = "ananke-app/event@1"
 RESULT_SCHEMA = "1.0.0"  # run-result.schema.json schema_version
 TERMINAL = {"succeeded", "failed", "cancelled"}
 EVENT_RETENTION = 1000
+MAX_GRAPH_BUDGET = 20_000
+MAX_EDGE_LOCATIONS = 5
 MAX_SOURCE_LINES = 400
 
 
@@ -425,11 +427,28 @@ class AppFacade:
         path_prefix: str = "",
         kinds: list[str] | None = None,
         query: str = "",
-        limit: int = 2000,
+        budget: int = 500,
+        collapse: str = "none",
+        depth: int = 1,
     ) -> dict[str, Any]:
-        """A filtered slice of the latest code graph. Inferred edges stay marked inferred, with their confidence."""
-        from ananke.plexus.graph.service import load_graph
+        """A slice of the latest code graph, read-only, within a node budget.
 
+        Over budget, the most connected nodes stay. ``collapse`` groups nodes by ``file`` or ``directory`` (to
+        ``depth`` levels) and sums the edges between groups, so nothing vanishes silently: ``edge_accounting`` says
+        where every edge touching the selection went. Inferred edges stay marked inferred, with their confidence.
+        """
+        from ananke.plexus.graph.service import graph_digest, load_graph
+
+        if not 1 <= budget <= MAX_GRAPH_BUDGET:
+            raise AppError(
+                "INVALID_REQUEST", f"budget must be 1 to {MAX_GRAPH_BUDGET}, not {budget}"
+            )
+        if collapse not in ("none", "file", "directory"):
+            raise AppError(
+                "INVALID_REQUEST", f"collapse must be none, file or directory, not {collapse}"
+            )
+        if depth < 1:
+            raise AppError("INVALID_REQUEST", f"depth must be at least 1, not {depth}")
         snapshot = load_graph(self.workspace)
         if snapshot is None:
             raise AppError(
@@ -439,27 +458,140 @@ class AppFacade:
             )
         words = query.lower().split()
         wanted = set(kinds or [])
-        nodes = [
+        selected = [
             n
             for n in snapshot.nodes
             if n.path.startswith(path_prefix)
             and (not wanted or n.kind in wanted)
             and all(w in f"{n.name} {n.path}".lower() for w in words)
         ]
-        truncated = len(nodes) > limit
-        nodes = nodes[:limit]
-        keep = {n.node_id for n in nodes}
+        # An import names a module; inside this repository, that is a file.
+        modules: dict[str, str] = {}
+        for n in snapshot.nodes:
+            module = n.metadata.get("module")
+            if n.kind == "file" and isinstance(module, str):
+                modules[f"module:{module}"] = n.node_id
+                modules[f"module:{module.removeprefix('src.')}"] = n.node_id
+
+        def group_of(node: Any) -> str:
+            if collapse == "none":
+                return str(node.node_id)
+            if collapse == "file":
+                return f"file:{node.path}" if node.kind != "data" else str(node.node_id)
+            parents = node.path.split("/")[:-1][:depth]
+            return f"dir:{'/'.join(parents) or '.'}"
+
+        all_groups = {n.node_id: group_of(n) for n in snapshot.nodes}
+        members: dict[str, list[Any]] = {}
+        for n in selected:
+            members.setdefault(all_groups[n.node_id], []).append(n)
+        picked = {n.node_id for n in selected}
+        touching = []
+        external = 0
+        for edge in snapshot.edges:
+            target = modules.get(edge.target, edge.target)
+            if edge.source not in picked and target not in picked:
+                continue
+            if target not in all_groups:
+                external += 1  # a third-party import: true, but nothing here to draw it to
+                continue
+            touching.append((edge, target))
+        degree: dict[str, int] = {}
+        for edge, target in touching:
+            for end in {all_groups[edge.source], all_groups[target]}:
+                degree[end] = degree.get(end, 0) + 1
+        ordered = sorted(members, key=lambda g: (-degree.get(g, 0), g))
+        keep = set(ordered[:budget])
+        boundary = internal = 0
+        plain: list[dict[str, Any]] = []
+        summed: dict[tuple[str, str], dict[str, Any]] = {}
+        for edge, target in touching:
+            source_group, target_group = all_groups[edge.source], all_groups[target]
+            if source_group not in keep or target_group not in keep:
+                boundary += 1
+            elif collapse == "none":
+                row = edge.model_dump(mode="json")
+                if target != edge.target:
+                    row["target"], row["via_module"] = target, edge.target.removeprefix("module:")
+                plain.append(row)
+            elif source_group == target_group:
+                internal += 1
+            else:
+                slot = summed.setdefault(
+                    (source_group, target_group),
+                    {
+                        "source": source_group,
+                        "target": target_group,
+                        "count": 0,
+                        "kinds": {},
+                        "origins": {},
+                        "locations": [],
+                    },
+                )
+                slot["count"] += 1
+                slot["kinds"][edge.kind] = slot["kinds"].get(edge.kind, 0) + 1
+                slot["origins"][edge.origin] = slot["origins"].get(edge.origin, 0) + 1
+                if edge.source_location:
+                    slot["locations"].append(edge.source_location)
+        for slot in summed.values():
+            slot["locations"] = sorted(set(slot["locations"]))[:MAX_EDGE_LOCATIONS]
+
+        def located(node: Any) -> dict[str, Any]:
+            row: dict[str, Any] = node.model_dump(mode="json")
+            line, cell = node.metadata.get("line"), node.metadata.get("cell")
+            row["source_location"] = (
+                f"{node.path}#cell={cell}:{line}"
+                if cell
+                else f"{node.path}:{line}"
+                if line
+                else node.path
+            )
+            return row
+
+        def grouped(group: str) -> dict[str, Any]:
+            rows = members[group]
+            counts: dict[str, int] = {}
+            for n in rows:
+                counts[n.kind] = counts.get(n.kind, 0) + 1
+            path = group.partition(":")[2]
+            kind = (
+                "directory"
+                if group.startswith("dir:")
+                else "data"
+                if group.startswith("data:")
+                else "file"
+            )
+            return {
+                "node_id": group,
+                "kind": kind,
+                "name": path.rsplit("/", 1)[-1],
+                "path": path,
+                "members": len(rows),
+                "member_kinds": dict(sorted(counts.items())),
+            }
+
+        shown = sorted(keep)
         return {
             "snapshot_id": snapshot.snapshot_id,
+            "content_digest": graph_digest(snapshot),
             "provider": snapshot.provider,
             "source_snapshot": self.source_snapshot(),
-            "truncated": truncated,
-            "nodes": [n.model_dump(mode="json") for n in nodes],
-            "edges": [
-                e.model_dump(mode="json")
-                for e in snapshot.edges
-                if e.source in keep and e.target in keep
-            ],
+            "collapse": collapse,
+            "budget": budget,
+            "total_nodes": len(ordered),
+            "truncated": len(ordered) > budget,
+            "nodes": (
+                [located(members[g][0]) for g in shown]
+                if collapse == "none"
+                else [grouped(g) for g in shown]
+            ),
+            "edges": plain if collapse == "none" else [summed[k] for k in sorted(summed)],
+            "edge_accounting": {
+                "shown": len(plain) + sum(v["count"] for v in summed.values()),
+                "inside_a_group": internal,
+                "to_nodes_not_shown": boundary,
+                "external_imports": external,
+            },
         }
 
     def read_source(self, path: str, *, start: int = 1, end: int | None = None) -> dict[str, Any]:

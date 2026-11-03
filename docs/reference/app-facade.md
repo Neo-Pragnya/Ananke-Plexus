@@ -42,7 +42,7 @@ sequenceDiagram
 | `register_artifact(id, name, bytes, media_type, producer, input_refs)` | an external producer (a renderer) stores what it made |
 | `register_failure(id, producer, message)` | an external producer reports that it failed |
 | `validate_workflow`, `preview_workflow`, `compile_workflow`, `suggest_capabilities` | [workflow assembly](../guides/workflow-assembly.md); none of them runs anything |
-| `code_view(path_prefix, kinds, query)` | a filtered slice of the latest code graph; inferred edges stay marked inferred |
+| `code_view(path_prefix, kinds, query, budget, collapse, depth)` | a slice of the latest [code graph](../guides/code-graph.md) within a node budget, optionally collapsed, with every edge accounted for; inferred edges stay marked inferred |
 | `read_source(path, start, end)` | lines of a source file with its digest; stays inside the workspace and refuses harness state, Git data and environment files |
 | `architecture_view()` | the declared architecture and its drift from the code graph; never creates a model |
 | `evidence_view()` | recent runs: state, completeness, plan digest and artifacts |
