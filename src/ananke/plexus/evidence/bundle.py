@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from ananke.plexus.core.paths import safe_child
 from ananke.plexus.evidence.hash import sha256_file
 from ananke.plexus.evidence.sarif import write_sarif
 
@@ -17,7 +18,7 @@ def create_evidence_bundle(
     policy_decisions: list[Mapping[str, object]] | None = None,
 ) -> Path:
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
-    bundle = repository_root / ".ananke" / "evidence" / run_id
+    bundle = safe_child(repository_root / ".ananke" / "evidence", run_id)
     (bundle / "gates").mkdir(parents=True, exist_ok=True)
 
     run = {

@@ -11,11 +11,12 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from ananke.plexus.core.paths import safe_child
 from ananke.plexus.execution.plan import ExecutionPlan
 
 
 def _checkpoint_path(repository_root: Path, run_id: str) -> Path:
-    return repository_root / ".ananke" / "runs" / run_id / "checkpoint.json"
+    return safe_child(repository_root / ".ananke" / "runs", run_id) / "checkpoint.json"
 
 
 def save_checkpoint(repository_root: Path, run_id: str, plan: ExecutionPlan) -> Path:

@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
+from ananke.plexus.core.paths import safe_child
+
 RUN_STATES = {
     "PENDING",
     "READY",
@@ -22,7 +24,7 @@ RUN_STATES = {
 
 def start_run(repository_root: Path, spec_id: str) -> Path:
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
-    run_dir = repository_root / ".ananke" / "runs" / run_id
+    run_dir = safe_child(repository_root / ".ananke" / "runs", run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
 
     payload = {
@@ -43,7 +45,7 @@ def start_run(repository_root: Path, spec_id: str) -> Path:
 
 
 def read_run_state(repository_root: Path, run_id: str) -> dict[str, object]:
-    state_path = repository_root / ".ananke" / "runs" / run_id / "state.json"
+    state_path = safe_child(repository_root / ".ananke" / "runs", run_id) / "state.json"
     if not state_path.exists():
         return {}
     parsed = json.loads(state_path.read_text(encoding="utf-8"))
@@ -62,7 +64,7 @@ def update_run_state(repository_root: Path, run_id: str, state: str) -> dict[str
 
     payload["state"] = state
     payload["updated_at"] = datetime.now(UTC).isoformat()
-    state_path = repository_root / ".ananke" / "runs" / run_id / "state.json"
+    state_path = safe_child(repository_root / ".ananke" / "runs", run_id) / "state.json"
     state_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return payload
 
@@ -73,6 +75,6 @@ def replay_run(repository_root: Path, run_id: str) -> dict[str, object]:
         return {}
     payload["state"] = "READY"
     payload["replayed_at"] = datetime.now(UTC).isoformat()
-    state_path = repository_root / ".ananke" / "runs" / run_id / "state.json"
+    state_path = safe_child(repository_root / ".ananke" / "runs", run_id) / "state.json"
     state_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return payload

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -141,9 +142,8 @@ def evaluate(
     ev = _read(folder, "evaluation.json")
     for case in ev["cases"]:
         try:
-            res = subprocess.run(  # noqa: S602 - the reviewer opted in to running these commands
-                case["command"],
-                shell=True,
+            res = subprocess.run(  # noqa: S603 - the reviewer opted in to running these commands
+                shlex.split(case["command"]),
                 cwd=workspace,
                 capture_output=True,
                 text=True,
@@ -152,6 +152,8 @@ def evaluate(
             case["passed"], case["exit"] = res.returncode == 0, res.returncode
         except subprocess.TimeoutExpired:
             case["passed"], case["exit"] = False, "timeout"
+        except (OSError, ValueError) as exc:  # not found, or not a parseable command
+            case["passed"], case["exit"] = False, type(exc).__name__
     ev["finished_at"] = _now()
     (folder / "evaluation.json").write_text(json.dumps(ev, indent=2) + "\n")
     return ev

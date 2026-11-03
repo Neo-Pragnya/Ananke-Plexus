@@ -7,10 +7,12 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   lint-workflows:
+    permissions:
+      contents: read
+      security-events: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

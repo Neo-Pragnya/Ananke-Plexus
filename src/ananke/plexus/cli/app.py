@@ -11,6 +11,7 @@ from ananke.plexus.api import Ananke
 from ananke.plexus.cli.app_facade_cli import app_app as app_facade_app
 from ananke.plexus.cli.learning_cli import learning_app
 from ananke.plexus.cli.rendering import render_result
+from ananke.plexus.core.paths import safe_child
 from ananke.plexus.mcp.http import serve_http
 from ananke.plexus.mcp.server import serve_stdio
 from ananke.plexus.registry.cli import (
@@ -22,6 +23,18 @@ from ananke.plexus.registry.cli import (
 from ananke.plexus.specs.models import Requirement
 
 app = typer.Typer(help="Ananke Plexus ADLC control plane")
+
+
+def main() -> None:
+    """The ``ananke`` command: an identifier that can't name a project path is a clean refusal."""
+    from ananke.plexus.core.paths import UnsafeIdentifierError
+
+    try:
+        app()
+    except UnsafeIdentifierError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise SystemExit(2) from exc
+
 
 spec_app = typer.Typer(help="Specification operations")
 graph_app = typer.Typer(help="Graph topology operations")
@@ -1515,7 +1528,7 @@ def eval_report(
     import json as _json
 
     evidence_root = project / ".ananke" / "evidence"
-    scores_file = evidence_root / run_id / "eval" / "scores.json"
+    scores_file = safe_child(evidence_root, run_id) / "eval" / "scores.json"
     if not scores_file.exists():
         typer.echo(f"No eval evidence for run '{run_id}'")
         raise typer.Exit(code=2)
@@ -1559,7 +1572,7 @@ def eval_compare(
         raise typer.Exit(code=2)
 
     evidence_root = project / ".ananke" / "evidence"
-    scores_file = evidence_root / run_id / "eval" / "scores.json"
+    scores_file = safe_child(evidence_root, run_id) / "eval" / "scores.json"
     if not scores_file.exists():
         typer.echo(f"No eval evidence for run '{run_id}'")
         raise typer.Exit(code=2)
@@ -1689,7 +1702,7 @@ def eval_baseline_create(
     import json as _json
     from datetime import datetime
 
-    scores_file = project / ".ananke" / "evidence" / run_id / "eval" / "scores.json"
+    scores_file = safe_child(project / ".ananke" / "evidence", run_id) / "eval" / "scores.json"
     if not scores_file.exists():
         typer.echo(f"No eval scores for run '{run_id}'")
         raise typer.Exit(code=2)
@@ -1937,7 +1950,7 @@ def test_report(
     """Generate a quality report for a completed run."""
     import json as _json
 
-    results_file = project / ".ananke" / "evidence" / run_id / "quality" / "results.json"
+    results_file = safe_child(project / ".ananke" / "evidence", run_id) / "quality" / "results.json"
     if not results_file.exists():
         typer.echo(f"No quality results for run '{run_id}'")
         raise typer.Exit(code=2)

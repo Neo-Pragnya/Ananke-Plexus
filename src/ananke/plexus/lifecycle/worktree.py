@@ -5,6 +5,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from ananke.plexus.core.paths import safe_child
+
 
 def create_isolated_worktree(
     repository_root: Path,
@@ -19,7 +21,7 @@ def create_isolated_worktree(
     so the run operates in a proper, separately-checked-out branch.
     Falls back to a plain directory otherwise.
     """
-    worktree_path = repository_root / ".ananke" / "runs" / run_id / "worktree"
+    worktree_path = safe_child(repository_root / ".ananke" / "runs", run_id) / "worktree"
     from ananke.plexus.core.paths import ensure_runtime_gitignore
 
     ensure_runtime_gitignore(
@@ -44,7 +46,7 @@ def create_isolated_worktree(
 
 def remove_isolated_worktree(repository_root: Path, run_id: str) -> bool:
     """Remove the git worktree for a completed/cancelled run."""
-    worktree_path = repository_root / ".ananke" / "runs" / run_id / "worktree"
+    worktree_path = safe_child(repository_root / ".ananke" / "runs", run_id) / "worktree"
     if not worktree_path.exists():
         return True
 

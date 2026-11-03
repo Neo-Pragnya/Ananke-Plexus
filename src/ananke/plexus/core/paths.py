@@ -1,8 +1,29 @@
 """Filesystem path helpers."""
 
+import os
+import re
 from pathlib import Path
 
 ANANKE_DIR = ".ananke"
+_SAFE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,199}")
+
+
+class UnsafeIdentifierError(ValueError):
+    """An identifier that can't name a directory inside the project, such as ``../../etc``."""
+
+
+def safe_child(parent: Path, identifier: str) -> Path:
+    """``parent/identifier``, refusing anything that isn't a plain name or that leaves ``parent``, symlinks included.
+
+    Run, spec and evidence ids reach paths from MCP clients, HTTP gateways and the command line.
+    """
+    if _SAFE_IDENTIFIER.fullmatch(identifier) is None or ".." in identifier:
+        raise UnsafeIdentifierError(f"{identifier!r} isn't a valid identifier")
+    base = os.path.realpath(parent)
+    target = os.path.realpath(os.path.join(base, identifier))
+    if not target.startswith(base + os.sep):
+        raise UnsafeIdentifierError(f"{identifier!r} leaves {parent}")
+    return Path(target)
 
 
 def project_ananke_dir(repository_root: Path) -> Path:

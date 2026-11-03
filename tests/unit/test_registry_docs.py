@@ -408,8 +408,8 @@ class TestSingleFile:
         reg = open_registry(tmp_path)
         populate(reg)
         html = build_dump(reg, tmp_path / "r.html").read_text()
-        style = re.search(r"<style>(.*?)</style>", html, re.S)
-        script = re.search(r"<script>(.*?)</script>", html, re.S)
+        style = re.search(r"<style>(.*?)</style\s*>", html, re.S | re.I)
+        script = re.search(r"<script>(.*?)</script\s*>", html, re.S | re.I)
         assert style and script
         for body, directive in ((style.group(1), "style-src"), (script.group(1), "script-src")):
             digest = base64.b64encode(hashlib.sha256(body.encode()).digest()).decode()

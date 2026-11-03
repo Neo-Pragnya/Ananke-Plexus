@@ -10,6 +10,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.18] — 2026-11-03
+
+### Security
+
+- **Path traversal through run and spec ids.** MCP tools and resources, the app facade and the CLI joined ids into paths
+  unchecked, so `../../..` could read a `manifest.json` or `state.json` outside the project, and the facade could read and
+  rewrite a `run.json`. Ids are now validated and kept inside their parent, symlinks included, and the facade answers
+  `RUN_NOT_FOUND`.
+- **Credentials over plain HTTP.** Lifecycle adapters refuse to send an `Authorization` header over `http://`, except to
+  localhost (`credentials_require_https`).
+- **No shell in learning evaluation.** Candidate case commands run without a shell, so pipes, `&&` and redirects aren't
+  interpreted. **If you have cases that use them, move them to a script.**
+- **Dependencies:** `langgraph` 1.2.14 (CVE-2026-118667) and `mako` 1.4.2 (CVE-2026-102991).
+- **Removed the `eval-ragas` extra.** `ragas` (PYSEC-2026-3046) and `diskcache` (PYSEC-2026-2447), which only it pulls in, have
+  no fixed release. The adapter still works if you install `ragas` yourself, and accept those advisories.
+
+### Added
+
+- Dependabot for Python packages and GitHub Actions.
+
+### Changed
+
+- CI workflows grant `security-events: write` only to the job that needs it.
+
+---
+
 ## [0.3.17] — 2026-11-03
 
 ### Fixed

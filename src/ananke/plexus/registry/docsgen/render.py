@@ -311,6 +311,8 @@ class Site:
         def link(ctx: Context, target: str) -> str:
             return linker.href(str(ctx.get("page", "index.html")), target)
 
+        # autoescape is on
+        # nosemgrep: python.flask.security.xss.audit.direct-use-of-jinja2.direct-use-of-jinja2
         env = Environment(
             loader=DictLoader(_TEMPLATES),
             autoescape=True,
@@ -320,6 +322,8 @@ class Site:
         env.globals["link"] = link
         env.filters.update(
             {
+                # render_markdown is the safe renderer
+                # nosemgrep: python.flask.security.xss.audit.explicit-unescape-with-markup.explicit-unescape-with-markup
                 "md": lambda s: Markup(render_markdown(s or "")),
                 "plural": _plural,
                 "short": _short,
@@ -381,9 +385,13 @@ class Site:
         svg = render_graph_svg(
             [a.uri], edges, labels, kinds, title=f"Dependencies of {a.title}", missing=missing
         )
+        # the SVG generator escapes its own text
+        # nosemgrep: python.flask.security.xss.audit.explicit-unescape-with-markup.explicit-unescape-with-markup
         return Markup(svg) if svg and any(edges.values()) else Markup("")
 
     def lineage_svg(self, a: DocArtifact) -> Markup:
+        # the SVG generator escapes its own text
+        # nosemgrep: python.flask.security.xss.audit.explicit-unescape-with-markup.explicit-unescape-with-markup
         return Markup(
             render_lineage_svg(
                 [(v.version, v.lifecycle) for v in a.versions], f"Versions of {a.title}"
@@ -483,7 +491,13 @@ class Site:
         yield PageSpec("frameworks/index.html", "Frameworks", "frameworks", {"model": m}, set())
         yield PageSpec("publishers/index.html", "Publishers", "publishers", {"model": m}, set())
         yield PageSpec(
-            "search.html", "Search", "search", {"data": Markup(self.search_json())}, set()
+            # search_json escapes < and >
+            # nosemgrep: python.flask.security.xss.audit.explicit-unescape-with-markup.explicit-unescape-with-markup
+            "search.html",
+            "Search",
+            "search",
+            {"data": Markup(self.search_json())},
+            set(),
         )
 
     def search_json(self) -> str:
@@ -502,6 +516,8 @@ class Site:
 
     def render_body(self, spec: PageSpec) -> str:
         tmpl = self.env.get_template(spec.template)
+        # autoescape is on
+        # nosemgrep: python.flask.security.xss.audit.direct-use-of-jinja2.direct-use-of-jinja2
         return tmpl.render({"page": spec.key, "model": self.model, **spec.ctx})
 
     # ---- assembly

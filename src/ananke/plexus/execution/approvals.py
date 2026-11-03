@@ -16,6 +16,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from ananke.plexus.core.paths import safe_child
+
 ApprovalClass = Literal[
     "NONE",
     "PLAN",
@@ -45,7 +47,7 @@ class ApprovalRequest(BaseModel):
 
 
 def _approvals_path(repository_root: Path, run_id: str) -> Path:
-    return repository_root / ".ananke" / "runs" / run_id / "approvals.jsonl"
+    return safe_child(repository_root / ".ananke" / "runs", run_id) / "approvals.jsonl"
 
 
 def request_approval(

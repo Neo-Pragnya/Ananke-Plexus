@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from ananke.plexus.api import Ananke
+from ananke.plexus.core.paths import UnsafeIdentifierError, safe_child
 
 
 def _feature_dir(repository_root: Path, args: dict[str, object]) -> Path | dict[str, object]:
@@ -12,20 +14,28 @@ def _feature_dir(repository_root: Path, args: dict[str, object]) -> Path | dict[
     raw = str(args.get("feature_dir", ""))
     if not raw:
         return {"ok": False, "summary": "feature_dir required", "details": {}}
-    root = repository_root.resolve()
-    path = (root / raw).resolve() if not Path(raw).is_absolute() else Path(raw).resolve()
-    if path != root and root not in path.parents:
+    root = os.path.realpath(repository_root)
+    resolved = os.path.realpath(os.path.join(root, raw))
+    if resolved != root and not resolved.startswith(root + os.sep):
         return {
             "ok": False,
             "summary": "feature_dir must be inside the project",
             "details": {"feature_dir": raw},
         }
+    path = Path(resolved)
     if not path.is_dir():
         return {"ok": False, "summary": "feature_dir not found", "details": {"feature_dir": raw}}
     return path
 
 
 def call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -> dict[str, object]:
+    try:
+        return _call_tool(repository_root, tool_name, args)
+    except UnsafeIdentifierError as exc:
+        return {"ok": False, "summary": "invalid identifier", "details": {"error": str(exc)}}
+
+
+def _call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -> dict[str, object]:
     if tool_name.startswith("registry_"):
         from ananke.plexus.registry.mcp_interface import call_registry_tool
 
@@ -116,7 +126,7 @@ def call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) ->
 
     if tool_name == "ananke.evidence.get":
         run_id = str(args.get("run_id", ""))
-        path = repository_root / ".ananke" / "evidence" / run_id / "manifest.json"
+        path = safe_child(repository_root / ".ananke" / "evidence", run_id) / "manifest.json"
         if not path.exists():
             return {"ok": False, "summary": "evidence not found", "details": {"run_id": run_id}}
         manifest = path.read_text(encoding="utf-8")

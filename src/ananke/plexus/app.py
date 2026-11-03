@@ -298,7 +298,7 @@ class AppFacade:
             "request": request,
             "created_at": _now(),
         }
-        (self.state / "runs" / run_id).mkdir(parents=True, exist_ok=True)
+        (self._run_dir(run_id)).mkdir(parents=True, exist_ok=True)
         self._save(run)
         index[idempotency_key] = {"run_id": run_id, "request_sha256": _sha(_canonical(request))}
         tmp = index_path.with_suffix(".json.tmp")
@@ -309,7 +309,7 @@ class AppFacade:
     def drive(self, run_id: str) -> dict[str, Any]:
         """Execute a queued run to a terminal state (in-process transport: synchronous)."""
         # claim it under the lock: of two callers, one runs it and the other gets the run as it stands
-        with _file_lock(self.state / "runs" / run_id / "run.lock"):
+        with _file_lock(self._run_dir(run_id) / "run.lock"):
             run = self.get_run(run_id)
             if run["state"] != "queued":
                 return run
@@ -340,8 +340,16 @@ class AppFacade:
         run["complete"] = not any(w.get("code") in incomplete for w in run["warnings"])
         return self._transition(run, "succeeded")
 
+    def _run_dir(self, run_id: str) -> Path:
+        from ananke.plexus.core.paths import UnsafeIdentifierError, safe_child
+
+        try:
+            return safe_child(self.state / "runs", run_id)
+        except UnsafeIdentifierError as exc:
+            raise AppError("RUN_NOT_FOUND", f"no run {run_id!r} in this workspace") from exc
+
     def get_run(self, run_id: str) -> dict[str, Any]:
-        path = self.state / "runs" / run_id / "run.json"
+        path = self._run_dir(run_id) / "run.json"
         if not path.is_file():
             raise AppError("RUN_NOT_FOUND", f"no run {run_id!r} in this workspace")
         run: dict[str, Any] = json.loads(path.read_text())
@@ -349,7 +357,7 @@ class AppFacade:
 
     def cancel_run(self, run_id: str) -> dict[str, Any]:
         self.get_run(run_id)
-        with _file_lock(self.state / "runs" / run_id / "run.lock"):
+        with _file_lock(self._run_dir(run_id) / "run.lock"):
             run = self.get_run(run_id)
             if run["state"] in TERMINAL:
                 run["warnings"].append(
@@ -370,7 +378,7 @@ class AppFacade:
     def stream_events(self, run_id: str, after: int = 0) -> dict[str, Any]:
         """Events with ``seq > after``. If retention dropped some of them, say which and include the run state."""
         self.get_run(run_id)
-        path = self.state / "runs" / run_id / "events.jsonl"
+        path = self._run_dir(run_id) / "events.jsonl"
         events = (
             [json.loads(line) for line in path.read_text().splitlines()] if path.is_file() else []
         )
@@ -396,7 +404,7 @@ class AppFacade:
         if not name or "/" in name or name.startswith("."):
             raise AppError("INVALID_ARTIFACT", f"artifact names are plain file names, not {name!r}")
         run = self.get_run(run_id)
-        folder = self.state / "runs" / run_id / "artifacts"
+        folder = self._run_dir(run_id) / "artifacts"
         folder.mkdir(parents=True, exist_ok=True)
         (folder / name).write_bytes(data)
         ref = {
@@ -434,7 +442,7 @@ class AppFacade:
         ref = next((a for a in self.list_artifacts(run_id) if a["name"] == name), None)
         if ref is None:
             raise AppError("ARTIFACT_NOT_FOUND", f"run {run_id} has no artifact {name!r}")
-        data = (self.state / "runs" / run_id / "artifacts" / name).read_bytes()
+        data = (self._run_dir(run_id) / "artifacts" / name).read_bytes()
         if _sha(data) != ref["sha256"]:
             raise AppError(
                 "DIGEST_MISMATCH",
@@ -744,7 +752,7 @@ class AppFacade:
 
     def _settled_state(self, run_id: str) -> str | None:
         """The state on disk if it is final. A final state stands, whatever another thread is still writing."""
-        path = self.state / "runs" / run_id / "run.json"
+        path = self._run_dir(run_id) / "run.json"
         state = json.loads(path.read_text())["state"] if path.is_file() else None
         return state if state in TERMINAL else None
 
@@ -768,7 +776,7 @@ class AppFacade:
         return run
 
     def _event(self, run_id: str, kind: str, payload: dict[str, Any]) -> None:
-        folder = self.state / "runs" / run_id
+        folder = self._run_dir(run_id)
         path = folder / "events.jsonl"
         with _file_lock(folder / "events.lock"):
             lines = path.read_text().splitlines() if path.is_file() else []

@@ -41,7 +41,8 @@ ananke learning list                                     # what still blocks eac
   redacted and the text is scanned again; anything left refuses the capture. Absolute workspace and home paths
   become `<workspace>` and `~`.
 - **Internal by default.** Only `--public` candidates can go to sources marked `visibility = "public"`.
-- **Evaluation is opt-in.** The cases' commands run only with `--allow-commands`, in the workspace, with a timeout.
+- **Evaluation is opt-in.** The cases' commands run only with `--allow-commands`, in the workspace, with a timeout, and
+  without a shell: pipes, `&&` and redirects aren't interpreted. Put anything longer in a script.
 - **Promotion is gated.** It needs at least one positive and one regression case, every case passing, an approving
   review **newer than the evaluation**, and a writable destination. Each refusal names every reason.
 - **Nothing is overwritten.** Promotion publishes a new entry through the [provider port](capability-sources.md);

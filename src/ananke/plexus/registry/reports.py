@@ -333,6 +333,7 @@ def _finish_analytics(
             if rows:
                 # table names are the fixed keys of ``tables`` above
                 sql = f"CREATE TABLE {name} AS SELECT * FROM read_json_auto(?)"  # noqa: S608
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 con.execute(sql, [str(out / f"{name}.jsonl")])
     finally:
         con.close()
@@ -513,6 +514,8 @@ def answer_question(
             cols = ", ".join(
                 f'"{c}" VARCHAR' if used == "duckdb" else f'"{c}" TEXT' for c in columns
             )
+            # table and column names are the fixed literals of _QUESTION_TABLES
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query, python.lang.security.audit.formatted-sql-query.formatted-sql-query
             con.execute(f"CREATE TABLE {table} ({cols})")
             marks = ", ".join("?" for _ in columns)
             rows = [

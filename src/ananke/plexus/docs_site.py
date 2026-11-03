@@ -15,7 +15,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import http.server
-import importlib.resources
+import importlib.resources  # nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
 import re
 import shutil
 import socket
