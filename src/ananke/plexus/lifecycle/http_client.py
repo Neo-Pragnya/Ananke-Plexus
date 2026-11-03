@@ -37,8 +37,10 @@ def json_request(
     retry_delays: list[float] = []
     while True:
         # the scheme is checked above
-        request = Request(url=url, data=body, method=method.upper(), headers=headers)  # noqa: S310  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        request = Request(url=url, data=body, method=method.upper(), headers=headers)  # noqa: S310
         try:
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             with urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310
                 status = int(getattr(response, "status", 200))
                 raw_body = response.read().decode("utf-8", errors="replace")

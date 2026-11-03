@@ -63,7 +63,7 @@ class CopilotBackend:
                 error="gh copilot extension not available",
             )
         result = subprocess.run(  # noqa: S603
-            ["gh", "copilot", "suggest", "-t", "shell", task.instruction],
+            ["gh", "copilot", "suggest", "-t", "shell", "--", task.instruction],
             capture_output=True,
             text=True,
             timeout=120,

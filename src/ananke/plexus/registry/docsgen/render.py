@@ -496,6 +496,7 @@ class Site:
             "search.html",
             "Search",
             "search",
+            # nosemgrep: python.flask.security.xss.audit.explicit-unescape-with-markup.explicit-unescape-with-markup
             {"data": Markup(self.search_json())},
             set(),
         )
