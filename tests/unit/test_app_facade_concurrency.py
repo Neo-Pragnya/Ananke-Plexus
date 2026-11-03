@@ -139,8 +139,18 @@ def committed(root: Path) -> None:
     (root / "a.py").write_text("x = 1\n")
     subprocess.run(["git", "-C", str(root), "add", "a.py"], check=True)
     subprocess.run(
-        ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@example.com"]
-        + ["commit", "-qm", "init"],
+        [
+            "git",
+            "-C",
+            str(root),
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.com",
+            "commit",
+            "-qm",
+            "init",
+        ],
         check=True,
     )
 
