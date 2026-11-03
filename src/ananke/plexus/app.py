@@ -134,6 +134,7 @@ class AppFacade:
             "graph.build": _graph_build,
             "graph.impact": _graph_impact,
             "workflow.run": _workflow_run,
+            "repo.analyze": _repo_analyze,
         }
 
     # ------------------------------------------------------------------ negotiation and discovery
@@ -833,6 +834,21 @@ def _graph_impact(app: AppFacade, run_id: str, params: dict[str, Any]) -> None:
         media_type="application/json",
         producer="ananke.graph.impact",
         input_refs=[f"file:{c}" for c in changed],
+    )
+
+
+def _repo_analyze(app: AppFacade, run_id: str, params: dict[str, Any]) -> None:
+    from ananke.plexus.intel import analyze
+
+    report = analyze(app.workspace, check_vulnerabilities=bool(params.get("check_vulnerabilities")))
+    report["source_snapshot"] = app.source_snapshot()
+    app.register_artifact(
+        run_id,
+        "repo-intel.json",
+        json.dumps(report, indent=1, ensure_ascii=False).encode(),
+        media_type="application/json",
+        producer="ananke.intel",
+        input_refs=[f"source:{report['source_snapshot']}"],
     )
 
 

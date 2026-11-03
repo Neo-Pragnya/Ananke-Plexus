@@ -107,6 +107,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
     "items": [
       "reference/commands",
       "reference/app-facade",
+      "reference/repo-intelligence",
       "reference/configuration",
       "reference/policy",
       "reference/eval-harness",
@@ -141,6 +142,7 @@ export const DOC_TITLES: Record<string, string> = {
   "guides/workflow-assembly": "Workflow Assembly",
   "guides/code-graph": "Code Graph",
   "reference/app-facade": "App Facade",
+  "reference/repo-intelligence": "Repo Intelligence",
   "guides/workflows": "Workflows",
   "guides/release": "Release Guide",
   "guides/implementation-log": "Implementation Log",

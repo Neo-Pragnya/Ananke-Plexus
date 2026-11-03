@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./backend
+    depends_on: [db]
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+  worker:
+    build: ./worker
+    depends_on: [db]
+  db:
+    image: postgres:16

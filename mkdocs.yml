@@ -102,6 +102,7 @@ nav:
   - Reference:
       - CLI Commands: reference/commands.md
       - App Facade: reference/app-facade.md
+      - Repo Intelligence: reference/repo-intelligence.md
       - Configuration: reference/configuration.md
       - Policy Language: reference/policy.md
       - Eval Harness API: reference/eval-harness.md
