@@ -176,13 +176,23 @@ def code(
     path: str = typer.Option("", "--path", help="Only paths under this prefix"),
     kind: list[str] = typer.Option([], "--kind", help="Only these node kinds (repeat)"),
     query: str = typer.Option("", "--query", help="Words to match"),
+    budget: int = typer.Option(500, "--budget", help="Most nodes to return"),
+    collapse: str = typer.Option("none", "--collapse", help="none, file or directory"),
+    depth: int = typer.Option(1, "--depth", help="Directory levels when collapsing by directory"),
     workspace: Path = _WS,
     protocol: str = _PROTO,
 ) -> None:
-    """A filtered slice of the latest code graph."""
+    """A slice of the latest code graph within a node budget, optionally collapsed with edges summed."""
     _call(
         protocol,
-        lambda: _facade(workspace).code_view(path_prefix=path, kinds=list(kind), query=query),
+        lambda: _facade(workspace).code_view(
+            path_prefix=path,
+            kinds=list(kind),
+            query=query,
+            budget=budget,
+            collapse=collapse,
+            depth=depth,
+        ),
     )
 
 

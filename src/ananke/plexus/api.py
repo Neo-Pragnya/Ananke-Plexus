@@ -545,6 +545,8 @@ on_failure = "block"
         }
         for index, symbol in enumerate(report.impacted_symbols[:20], start=1):
             details[f"symbol_{index}"] = symbol
+        for index, path in enumerate(report.impacted_files[:20], start=1):
+            details[f"file_{index}"] = path
         return CommandResult(ok=True, summary="Graph impact evaluated.", details=details)
 
     def graph_export(self, fmt: str = "json") -> CommandResult:

@@ -1,21 +1,40 @@
 """Graph build, query, and impact services."""
 
 import ast
+import hashlib
 import json
+import posixpath
 from datetime import UTC, datetime
 from pathlib import Path
 
 from ananke.plexus.graph.models import GraphEdge, GraphNode, GraphSnapshot, ImpactReport
 
 _SKIP_DIRS = {"node_modules", "site-packages", "__pycache__"}
+_MAX_NOTEBOOK_BYTES = 50_000_000  # outputs can make a notebook huge; only its source is used
+_DATA_SUFFIXES = {
+    ".csv", ".tsv", ".parquet", ".json", ".jsonl", ".xlsx", ".xls", ".feather", ".pkl", ".pickle",
+    ".npy", ".npz", ".h5", ".hdf5", ".arrow", ".orc", ".avro",
+}  # fmt: skip
+_DATA_READERS = {
+    "read_csv", "read_table", "read_parquet", "read_json", "read_excel", "read_feather", "read_pickle",
+    "read_hdf", "read_orc", "load", "loadtxt", "genfromtxt",
+}  # fmt: skip
+_DATA_WRITERS = {
+    "to_csv", "to_parquet", "to_json", "to_excel", "to_feather", "to_pickle", "to_hdf", "to_orc",
+    "save", "savez", "savetxt",
+}  # fmt: skip
+_PYTHON_CELL_MAGICS = {"%%time", "%%timeit", "%%capture", "%%prun"}  # the body is ordinary Python
+_PATH_READERS = {"read_text", "read_bytes"}
+_PATH_WRITERS = {"write_text", "write_bytes"}
+_PATH_KEYWORDS = ("path", "filepath_or_buffer", "path_or_buf", "file", "fname")
 
 
-def _iter_python_files(repository_root: Path) -> list[Path]:
-    """Python sources of the project itself: not hidden directories (.git, .venv, caches), dependencies or
-    virtual environments (any directory holding a ``pyvenv.cfg``)."""
+def _iter_project_files(repository_root: Path, pattern: str) -> list[Path]:
+    """Sources of the project itself: not hidden directories (.git, .venv, caches), dependencies or virtual
+    environments (any directory holding a ``pyvenv.cfg``)."""
     venvs = {cfg.parent for cfg in repository_root.rglob("pyvenv.cfg")}
     found = []
-    for path in repository_root.rglob("*.py"):
+    for path in repository_root.rglob(pattern):
         rel_parts = path.relative_to(repository_root).parts[:-1]
         if any(part.startswith(".") or part in _SKIP_DIRS for part in rel_parts):
             continue
@@ -23,6 +42,136 @@ def _iter_python_files(repository_root: Path) -> list[Path]:
             continue
         found.append(path)
     return sorted(found)
+
+
+def _iter_python_files(repository_root: Path) -> list[Path]:
+    return _iter_project_files(repository_root, "*.py")
+
+
+def _parse_notebook_source(source: str) -> ast.Module:
+    """Top-level ``await`` is valid in a notebook."""
+    flags = ast.PyCF_ONLY_AST | ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
+    tree: ast.Module = compile(source, "<notebook>", "exec", flags=flags)
+    return tree
+
+
+def _read_notebook(path: Path) -> tuple[str, list[tuple[int, int]], dict[str, object]]:
+    """A notebook's Python as one module, without running anything.
+
+    Returns the source, a map from each of its lines to ``(cell, line in cell)`` (both from 1) and metadata.
+    Magics become ``pass`` so line numbers hold; a cell magic or a cell that doesn't parse is left out and listed.
+    """
+    if path.stat().st_size > _MAX_NOTEBOOK_BYTES:
+        raise ValueError("notebook too large")
+    notebook = json.loads(path.read_text(encoding="utf-8"))
+    cells = notebook["cells"]  # nbformat 3 has worksheets instead, and is reported as a parse error
+    info = notebook.get("metadata", {})
+    language = info.get("kernelspec", {}).get("language") or info.get("language_info", {}).get(
+        "name", "python"
+    )
+    meta: dict[str, object] = {"notebook": True, "language": language}
+    if language != "python":
+        return "", [], meta
+    lines: list[str] = []
+    line_map: list[tuple[int, int]] = []
+    unparsed: list[int] = []
+    magics: dict[str, int] = {}
+    code_cells = 0
+    for number, cell in enumerate(cells, 1):
+        if cell.get("cell_type") != "code":
+            continue
+        code_cells += 1
+        raw = cell.get("source", "")
+        text = "".join(raw) if isinstance(raw, list) else str(raw)
+        magic_name = text.lstrip().split(maxsplit=1)[0] if text.lstrip().startswith("%%") else ""
+        if magic_name and magic_name not in _PYTHON_CELL_MAGICS:
+            # %%writefile, %%bash and the like: the body isn't this notebook's own Python
+            unparsed.append(number)
+            magics[magic_name] = magics.get(magic_name, 0) + 1
+            continue
+        cleaned = []
+        for line in text.splitlines():
+            body = line.lstrip()
+            magic = body.startswith(("%", "!")) or body.endswith("?")
+            cleaned.append(f"{line[: len(line) - len(body)]}pass" if magic else line)
+        try:
+            _parse_notebook_source("\n".join(cleaned))
+        except SyntaxError:
+            unparsed.append(number)
+            continue
+        lines += cleaned
+        line_map += [(number, i) for i in range(1, len(cleaned) + 1)]
+    meta["code_cells"] = code_cells
+    if unparsed:
+        meta["unparsed_cells"] = unparsed
+    if magics:
+        meta["cell_magics"] = dict(sorted(magics.items()))
+    return "\n".join(lines) + "\n", line_map, meta
+
+
+def _literal(node: ast.expr | None) -> str | None:
+    return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
+
+
+def _data_access(call: ast.Call) -> list[tuple[str, str]]:
+    """``(reads|writes, path)`` for a call naming a data file with a literal path.
+
+    Computed paths aren't followed: a graph can only state what the source states.
+    """
+    func = call.func
+    name = (
+        func.attr
+        if isinstance(func, ast.Attribute)
+        else func.id
+        if isinstance(func, ast.Name)
+        else ""
+    )
+    first = call.args[0] if call.args else None
+    keyword = next((k.value for k in call.keywords if k.arg in _PATH_KEYWORDS), None)
+    target = _literal(first) or _literal(keyword)
+    if name in _PATH_READERS | _PATH_WRITERS and isinstance(func, ast.Attribute):
+        owner = func.value
+        target = (
+            _literal(owner.args[0])
+            if isinstance(owner, ast.Call)
+            and owner.args
+            and getattr(owner.func, "id", "") == "Path"
+            else None
+        )
+        access = ["reads"] if name in _PATH_READERS else ["writes"]
+    elif name == "open":
+        mode_node = call.args[1] if len(call.args) > 1 else None
+        mode = _literal(mode_node) or _literal(
+            next((k.value for k in call.keywords if k.arg == "mode"), None)
+        )
+        mode = mode or "r"
+        access = [
+            *(["reads"] if "r" in mode or "+" in mode else []),
+            *(["writes"] if set(mode) & set("wax+") else []),
+        ]
+    elif name in _DATA_READERS:
+        access = ["reads"]
+    elif name in _DATA_WRITERS:
+        access = ["writes"]
+    else:
+        return []
+    if not target or posixpath.splitext(target)[1].lower() not in _DATA_SUFFIXES:
+        return []
+    return [(kind, target) for kind in access]
+
+
+def _data_path(raw: str, rel_path: str, repository_root: Path) -> str | None:
+    """A data path inside the repository, relative to its root. URLs and absolute paths are left out."""
+    if "://" in raw or raw.startswith(("/", "~")) or "\\" in raw:
+        return None
+    here = posixpath.normpath(posixpath.join(posixpath.dirname(rel_path), raw))
+    from_root = posixpath.normpath(raw)
+    # a notebook runs from its own folder; a module usually runs from the repository root
+    order = (here, from_root) if rel_path.endswith(".ipynb") else (from_root, here)
+    inside = [p for p in order if p != ".." and not p.startswith("../")]
+    if not inside:
+        return None
+    return next((p for p in inside if (repository_root / p).is_file()), inside[0])
 
 
 def _module_name(rel_path: str) -> str:
@@ -69,13 +218,18 @@ def _symbol_meta(node: ast.AST) -> dict[str, object]:
 
 
 def build_graph(repository_root: Path) -> GraphSnapshot:
-    """Python files, their top-level functions and classes, methods, imports, and inferred calls and bases.
+    """Python files and notebooks, their functions and classes, methods, imports, calls, bases and data files.
 
     Node ids are stable: ``file:<path>``, ``function:<path>:<name>``, ``class:<path>:<name>`` and
     ``method:<path>:<Class>.<name>``. Symbol metadata carries ``line``, ``end_line``, a one-line ``doc`` and, for
     functions, a ``signature``. ``calls`` and ``inherits`` edges are resolved through each file's own definitions
     and its ``import``/``from … import`` statements to other files in the repository; they are ``inferred``, and
     dynamic dispatch or re-exports beyond one level are not followed.
+
+    A notebook is a ``file`` node with ``notebook: true``, and its symbols take the same id forms, so adding one
+    never changes another file's ids. Its locations read ``<path>#cell=<n>:<line>``, its top-level calls belong to
+    the file, and nothing in it is run. ``data:<path>`` nodes and inferred ``reads``/``writes`` edges come from calls
+    naming a data file with a literal path; computed paths, URLs and paths outside the repository aren't included.
     """
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
@@ -83,6 +237,14 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
     modules: dict[
         str, str
     ] = {}  # dotted module name (with and without a leading "src.") → rel path
+    cell_maps: dict[str, list[tuple[int, int]]] = {}
+
+    def where(rel: str, line: int) -> str:
+        cells = cell_maps.get(rel)
+        if cells is None:
+            return f"{rel}:{line}"
+        cell, in_cell = cells[line - 1] if 0 < line <= len(cells) else (0, line)
+        return f"{rel}#cell={cell}:{in_cell}"
 
     for path in _iter_python_files(repository_root):
         rel_path = str(path.relative_to(repository_root))
@@ -114,6 +276,33 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
         if module.startswith("src."):
             modules[module.removeprefix("src.")] = rel_path
 
+    for path in _iter_project_files(repository_root, "*.ipynb"):
+        rel_path = str(path.relative_to(repository_root))
+        file_id = f"file:{rel_path}"
+        try:
+            source, line_map, file_meta = _read_notebook(path)
+            tree = _parse_notebook_source(source)
+        except (ValueError, KeyError, TypeError, AttributeError, SyntaxError, OSError):
+            nodes.append(
+                GraphNode(
+                    node_id=file_id,
+                    kind="file",
+                    name=path.name,
+                    path=rel_path,
+                    metadata={"notebook": True, "parse_error": True},
+                )
+            )
+            continue
+        file_meta["loc"] = len(line_map)
+        nodes.append(
+            GraphNode(
+                node_id=file_id, kind="file", name=path.name, path=rel_path, metadata=file_meta
+            )
+        )
+        if line_map:
+            parsed[rel_path] = tree
+            cell_maps[rel_path] = line_map
+
     # Top-level definitions per file, for resolving calls and bases.
     defs: dict[str, dict[str, str]] = {}
     methods: dict[str, dict[str, dict[str, str]]] = {}
@@ -133,7 +322,14 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         metadata=_symbol_meta(item),
                     )
                 )
-                edges.append(GraphEdge(source=file_id, target=fn_id, kind="owns"))
+                edges.append(
+                    GraphEdge(
+                        source=file_id,
+                        target=fn_id,
+                        kind="owns",
+                        source_location=where(rel_path, item.lineno),
+                    )
+                )
                 defs[rel_path][item.name] = fn_id
             elif isinstance(item, ast.ClassDef):
                 cls_id = f"class:{rel_path}:{item.name}"
@@ -146,7 +342,14 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         metadata=_symbol_meta(item),
                     )
                 )
-                edges.append(GraphEdge(source=file_id, target=cls_id, kind="owns"))
+                edges.append(
+                    GraphEdge(
+                        source=file_id,
+                        target=cls_id,
+                        kind="owns",
+                        source_location=where(rel_path, item.lineno),
+                    )
+                )
                 defs[rel_path][item.name] = cls_id
                 methods[rel_path][item.name] = {}
                 for member in item.body:
@@ -161,20 +364,38 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                                 metadata=_symbol_meta(member),
                             )
                         )
-                        edges.append(GraphEdge(source=cls_id, target=m_id, kind="owns"))
+                        edges.append(
+                            GraphEdge(
+                                source=cls_id,
+                                target=m_id,
+                                kind="owns",
+                                source_location=where(rel_path, member.lineno),
+                            )
+                        )
                         methods[rel_path][item.name][member.name] = m_id
 
             if isinstance(item, ast.Import):
                 for alias in item.names:
                     edges.append(
-                        GraphEdge(source=file_id, target=f"module:{alias.name}", kind="imports")
+                        GraphEdge(
+                            source=file_id,
+                            target=f"module:{alias.name}",
+                            kind="imports",
+                            source_location=where(rel_path, item.lineno),
+                        )
                     )
             elif isinstance(item, ast.ImportFrom) and item.module:
                 edges.append(
-                    GraphEdge(source=file_id, target=f"module:{item.module}", kind="imports")
+                    GraphEdge(
+                        source=file_id,
+                        target=f"module:{item.module}",
+                        kind="imports",
+                        source_location=where(rel_path, item.lineno),
+                    )
                 )
 
     seen: set[tuple[str, str, str]] = set()
+    data_nodes: dict[str, GraphNode] = {}
     for rel_path, tree in parsed.items():
         # Names this file can see: its own definitions and what it imports from repository files.
         names: dict[str, str] = dict(defs[rel_path])
@@ -227,7 +448,7 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         kind=kind,
                         origin="inferred",
                         confidence=0.8,
-                        source_location=f"{rel}:{line}",
+                        source_location=where(rel, line),
                     )
                 )
 
@@ -245,15 +466,69 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         scopes.append(
                             (f"method:{rel_path}:{item.name}.{member.name}", member, item.name)
                         )
-        for caller, body, cls in scopes:
+        file_id = f"file:{rel_path}"
+        top_level: list[tuple[str, ast.AST, str | None]] = [
+            (file_id, item, None)
+            for item in tree.body
+            if not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        ]
+        # Most of a notebook is top-level code; in a module that is import-time code, left out as before.
+        call_scopes = scopes + top_level if rel_path in cell_maps else scopes
+        for caller, body, cls in call_scopes:
             for call_node in ast.walk(body):
                 if isinstance(call_node, ast.Call):
                     target = resolve(call_node.func, cls)
                     if target:
                         add(caller, target, "calls", getattr(call_node, "lineno", 0))
+        for caller, body, _ in scopes + top_level:
+            for call_node in ast.walk(body):
+                if not isinstance(call_node, ast.Call):
+                    continue
+                for access, raw in _data_access(call_node):
+                    data_path = _data_path(raw, rel_path, repository_root)
+                    if data_path is None:
+                        continue
+                    data_id = f"data:{data_path}"
+                    if data_id not in data_nodes:
+                        data_nodes[data_id] = GraphNode(
+                            node_id=data_id,
+                            kind="data",
+                            name=posixpath.basename(data_path),
+                            path=data_path,
+                            metadata={"exists": (repository_root / data_path).is_file()},
+                        )
+                    add(caller, data_id, access, getattr(call_node, "lineno", 0))
+
+    nodes += [data_nodes[k] for k in sorted(data_nodes)]
+    for node in nodes:
+        cells = cell_maps.get(node.path)
+        line = node.metadata.get("line")
+        if cells and isinstance(line, int) and 0 < line <= len(cells):
+            end = node.metadata.get("end_line")
+            node.metadata["cell"], node.metadata["line"] = cells[line - 1]
+            if isinstance(end, int) and 0 < end <= len(cells):
+                node.metadata["end_line"] = cells[end - 1][1]
 
     snapshot_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return GraphSnapshot(snapshot_id=snapshot_id, nodes=nodes, edges=edges)
+
+
+def graph_digest(snapshot: GraphSnapshot) -> str:
+    """Identifies a graph's content: the same sources give the same digest, whenever it was built."""
+    nodes = sorted(
+        (n.model_dump(mode="json") for n in snapshot.nodes), key=lambda n: str(n["node_id"])
+    )
+    edges = sorted(
+        ({**e.model_dump(mode="json"), "snapshot_id": ""} for e in snapshot.edges),
+        key=lambda e: (
+            str(e["source"]),
+            str(e["target"]),
+            str(e["kind"]),
+            str(e["source_location"]),
+        ),
+    )
+    payload = json.dumps({"nodes": nodes, "edges": edges}, sort_keys=True, ensure_ascii=False)
+    return f"sha256:{hashlib.sha256(payload.encode()).hexdigest()}"
 
 
 def persist_graph(repository_root: Path, snapshot: GraphSnapshot) -> Path:
@@ -317,6 +592,10 @@ def impact_from_paths(repository_root: Path, changed_files: list[str]) -> Impact
             caller_file = edge.source.split(":")[1]
             if caller_file not in path_set:
                 impacted_files.add(caller_file)
+        elif edge.kind == "reads" and edge.target.removeprefix("data:") in path_set:
+            reader_file = edge.source.split(":")[1]
+            if reader_file not in path_set:
+                impacted_files.add(reader_file)
 
     blast_radius = len(impacted_symbols) + len(impacted_files)
     summary = (
