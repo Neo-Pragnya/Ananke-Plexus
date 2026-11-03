@@ -104,6 +104,7 @@ class AppFacade:
         self.kinds: dict[str, RunKind] = {
             "graph.build": _graph_build,
             "graph.impact": _graph_impact,
+            "workflow.run": _workflow_run,
         }
 
     # ------------------------------------------------------------------ negotiation and discovery
@@ -267,16 +268,24 @@ class AppFacade:
             self.kinds[run["kind"]](self, run_id, run["request"]["parameters"])
         except AppError as exc:
             run = self.get_run(run_id)
+            if run["state"] == "cancelled":
+                return run
             run["warnings"].append(exc.as_dict())
             return self._transition(run, "failed")
         except Exception as exc:
             run = self.get_run(run_id)
+            if run["state"] == "cancelled":
+                return run
             run["warnings"].append(
                 {"code": "HARNESS_FAILED", "message": str(exc), "retryable": False}
             )
             return self._transition(run, "failed")
         run = self.get_run(run_id)
-        run["complete"] = not any(w.get("code") == "ARTIFACT_FAILED" for w in run["warnings"])
+        # cancelled while it ran: that stands, whatever finished first
+        if run["state"] == "cancelled":
+            return run
+        incomplete = {"ARTIFACT_FAILED", "SIMULATED_BACKEND"}
+        run["complete"] = not any(w.get("code") in incomplete for w in run["warnings"])
         return self._transition(run, "succeeded")
 
     def get_run(self, run_id: str) -> dict[str, Any]:
@@ -737,6 +746,12 @@ def _graph_impact(app: AppFacade, run_id: str, params: dict[str, Any]) -> None:
         producer="ananke.graph.impact",
         input_refs=[f"file:{c}" for c in changed],
     )
+
+
+def _workflow_run(app: AppFacade, run_id: str, params: dict[str, Any]) -> None:
+    from ananke.plexus.workflow_run import execute
+
+    execute(app, run_id, params)
 
 
 __all__ = ["PROTOCOL", "SUPPORTED", "AppError", "AppFacade", "PreparedRun"]

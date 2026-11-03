@@ -9,10 +9,6 @@ A workflow draft is a JSON graph: nodes name exact capability versions, and edge
 port. Ananke validates it against the registry and compiles it to its existing `ExecutionPlan`. There is no second
 scheduler, registry or policy engine.
 
-> [!IMPORTANT]
-> Assembly stops at the compiled plan. Ananke has no command that runs a compiled workflow yet. The scheduler refuses
-> to run a capability step without an executor: the step fails rather than reporting success.
-
 ```mermaid
 flowchart LR
   D[Draft] --> S[Structure]
@@ -23,6 +19,7 @@ flowchart LR
   P --> L[Lock and hash]
   L --> V[Preview]
   V --> C[ExecutionPlan]
+  C --> X[Run through a backend]
 ```
 
 ## A draft
@@ -92,7 +89,56 @@ always give the same plan and hash.
 authorized under policy. A capability can be compatible and still not authorized. It never adds a node, activates
 anything or changes the draft.
 
-## Nothing runs
+## What doesn't run anything
 
 Validating, previewing, suggesting and compiling start no process, make no network call, install nothing and write
 nothing to the workspace.
+
+Only `workflow-run` does work.
+
+## Running a workflow
+
+```bash
+ananke app workflow-preview draft.json          # review it, and note plan_hash
+ananke app workflow-run draft.json \
+  --backend copilot \
+  --plan-hash <plan_hash> \
+  --approve plan \
+  --input extract.source=src/ \
+  --key run-1
+```
+
+Each step goes to the backend in dependency order. It gets the capability's instructions from the registry, plus its
+inputs and the outputs of the steps feeding it. Each output is stored as an artifact, with digests and the capability
+and artifacts it came from. `ananke app events`, `status`, `artifacts`, `read` and `cancel` work as for any other run.
+
+**Before any step starts**, the whole workflow is checked, so it's refused rather than partly run:
+
+| Check | Code when it fails |
+| --- | --- |
+| The draft still compiles against the registry | `WORKFLOW_INVALID` |
+| It compiles to the plan you previewed | `STALE_PLAN` |
+| Every step needing approval is approved in this request | `APPROVAL_REQUIRED` |
+| The backend exists and is available; there's no default, so you must name one | `BACKEND_NOT_FOUND`, `BACKEND_UNAVAILABLE` |
+| Every capability is one that can run | `NO_EXECUTOR` |
+| The backend can provide what each capability declares | `PERMISSION_NOT_GRANTED` |
+| Every workflow input is supplied | `INVALID_REQUEST` |
+
+A step that fails stops the steps depending on it and fails the run (`WORKFLOW_FAILED`). Cancelling takes effect before
+the next step starts; a step already with the backend isn't interrupted, and finished work isn't rolled back.
+
+### What it can't do yet
+
+> [!WARNING]
+> **Permissions aren't enforced on the agent.** Ananke checks that a backend *can* do what a capability declares. It
+> can't stop a real agent doing more than that, so these runs carry a `PERMISSIONS_NOT_ENFORCED` warning. Run workflows
+> only with capabilities and agents you trust, and rely on your agent's own sandbox.
+
+- **Only instructions run:** skills, agents, instructions and templates. Tools, hooks, plugins, workflows, policies and
+  evaluators would run code and have no executor yet, so a workflow containing one is refused. The registry decides
+  a capability's kind, so calling a tool a skill in a draft doesn't get it through.
+- **One step at a time,** even where the graph would allow parallel steps.
+- **Retries aren't applied.** `retries` is recorded in the plan and its hash, but a failed step isn't retried.
+
+The `fake` backend is for testing. It does no real work, so its runs carry `SIMULATED_BACKEND` and are never marked
+complete.

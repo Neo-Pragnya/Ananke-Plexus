@@ -171,6 +171,48 @@ def workflow_suggest(
     )
 
 
+@app_app.command("workflow-run")
+def workflow_run(
+    draft: Path,
+    backend: str = typer.Option(..., "--backend", help="Agent backend: see `ananke backend list`"),
+    plan_hash: str = typer.Option(
+        ..., "--plan-hash", help="The plan_hash you reviewed in workflow-preview"
+    ),
+    key: str = typer.Option(..., "--key", help="Idempotency key"),
+    approve: list[str] = typer.Option([], "--approve", help="Step you approve (repeat)"),
+    input_value: list[str] = typer.Option(
+        [], "--input", help="Workflow input as node.port=value (repeat)"
+    ),
+    workspace: Path = _WS,
+    protocol: str = _PROTO,
+) -> None:
+    """Run a compiled workflow through an agent backend. Only the plan you previewed runs."""
+
+    def go() -> Any:
+        from ananke.plexus.app import AppError
+
+        inputs = {}
+        for pair in input_value:
+            name, separator, value = pair.partition("=")
+            if not separator:
+                raise AppError("INVALID_REQUEST", f"--input needs node.port=value, not {pair!r}")
+            inputs[name] = value
+        facade = _facade(workspace)
+        prepared = facade.prepare_run(
+            "workflow.run",
+            {
+                "draft": _draft(draft),
+                "backend": backend,
+                "plan_hash": plan_hash,
+                "approved": sorted(approve),
+                "inputs": inputs,
+            },
+        )
+        return facade.submit_run(prepared, key)
+
+    _call(protocol, go)
+
+
 @app_app.command("code")
 def code(
     path: str = typer.Option("", "--path", help="Only paths under this prefix"),

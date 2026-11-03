@@ -155,6 +155,7 @@ surface:
   - ananke app workflow-preview
   - ananke app workflow-compile
   - ananke app workflow-suggest
+  - ananke app workflow-run
   - ananke app code
   - ananke app source
   - ananke app architecture
