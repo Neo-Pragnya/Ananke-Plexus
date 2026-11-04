@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import posixpath
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -68,7 +69,10 @@ def _iter_python_files(repository_root: Path) -> list[Path]:
 def _parse_notebook_source(source: str) -> ast.Module:
     """Top-level ``await`` is valid in a notebook."""
     flags = ast.PyCF_ONLY_AST | ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
-    tree: ast.Module = compile(source, "<notebook>", "exec", flags=flags)
+    with warnings.catch_warnings():
+        # invalid escapes in someone's notebook aren't this tool's output
+        warnings.simplefilter("ignore", SyntaxWarning)
+        tree: ast.Module = compile(source, "<notebook>", "exec", flags=flags)
     return tree
 
 

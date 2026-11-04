@@ -5,7 +5,7 @@ What's planned for [Ananke Plexus](https://pypi.org/project/ananke-plexus/). Rel
 
 ## Now: what Dev Guru needs
 
-Dev Guru is the current priority, and Ananke does the computing for it. **API pathways and end-to-end flows** are next; the rest of this table shipped in 0.3.20.
+Dev Guru is the current priority, and Ananke does the computing for it. This table shipped in 0.3.20; Dev Guru's views of it are next.
 
 | Feature | What it does |
 | --- | --- |
