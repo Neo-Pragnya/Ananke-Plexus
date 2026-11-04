@@ -245,7 +245,9 @@ def read_imports(index: ModuleIndex, rel: str, tree: ast.Module) -> FileImports:
 class Symbols:
     """Follows names through imports and re-exports to the definition they mean."""
 
-    MAX_HOPS = 32  # re-export chains are short; this stops a pathological one
+    MAX_HOPS = (
+        200  # visits per lookup: enough for many star imports, and it stops a pathological one
+    )
 
     def __init__(
         self,

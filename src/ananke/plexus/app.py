@@ -566,7 +566,9 @@ class AppFacade:
         touching = []
         external = 0
         for edge in snapshot.edges:
-            target = edge.resolved_target or modules.get(edge.target, edge.target)
+            target = edge.resolved_target or edge.target
+            if target.startswith("module:") and edge.source.endswith((".py", ".ipynb")):
+                target = modules.get(target, target)
             if edge.source not in picked and target not in picked:
                 continue
             if target not in all_groups:

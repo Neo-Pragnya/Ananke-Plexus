@@ -19,8 +19,8 @@ SHOP = Path(__file__).resolve().parent.parent / "fixtures" / "repo-mapping" / "s
 KEY = json.loads((SHOP / "expected.json").read_text())
 # (minimum recall, minimum precision)
 FLOORS: dict[str, tuple[float, float]] = {
-    "import_links": (0.84, 1.0),
-    "call_links": (0.75, 1.0),
+    "import_links": (1.0, 1.0),
+    "call_links": (1.0, 1.0),
     "tables": (0.0, 0.0),
     "columns": (0.0, 0.0),
     "relationships": (0.0, 0.0),

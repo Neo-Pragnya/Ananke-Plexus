@@ -8,6 +8,7 @@ import posixpath
 from datetime import UTC, datetime
 from pathlib import Path
 
+from ananke.plexus.graph.javascript import JS_SKIP_DIRS, JS_SUFFIXES, build_javascript
 from ananke.plexus.graph.models import GraphEdge, GraphNode, GraphSnapshot, ImpactReport
 from ananke.plexus.graph.python_imports import (
     ROOT_MARKERS,
@@ -269,6 +270,8 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
     never changes another file's ids. Its locations read ``<path>#cell=<n>:<line>``, its top-level calls belong to
     the file, and nothing in it is run. ``data:<path>`` nodes and inferred ``reads``/``writes`` edges come from calls
     naming a data file with a literal path; computed paths, URLs and paths outside the repository aren't included.
+
+    JavaScript and TypeScript files take the same id forms; see ``graph.javascript``.
     """
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
@@ -505,6 +508,11 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         )
                     add(caller, data_id, access, getattr(call_node, "lineno", 0))
 
+    script_paths = _iter_project_files(repository_root, JS_SUFFIXES, JS_SKIP_DIRS)
+    script_nodes, script_edges = build_javascript(repository_root, script_paths)
+    nodes += script_nodes
+    edges += script_edges
+
     nodes += [data_nodes[k] for k in sorted(data_nodes)]
     for node in nodes:
         cells = cell_maps.get(node.path)
@@ -591,9 +599,9 @@ def impact_from_paths(repository_root: Path, changed_files: list[str]) -> Impact
         elif edge.kind == "imports" and edge.source.startswith("file:"):
             # A file that imports a changed module is impacted (dependents, not dependencies).
             importer = edge.source.removeprefix("file:")
-            hit = (
-                edge.resolved_target in changed_ids
-                or edge.target.removeprefix("module:") in changed_modules
+            hit = edge.resolved_target in changed_ids or (
+                edge.target.removeprefix("module:") in changed_modules
+                and not edge.source.endswith(JS_SUFFIXES)
             )
             if hit and importer not in path_set:
                 impacted_files.add(importer)

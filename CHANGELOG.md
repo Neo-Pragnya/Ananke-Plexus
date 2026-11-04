@@ -8,7 +8,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- The code graph now links imports to files. It works out source roots, resolves relative imports and aliases, and reads
+  JavaScript and TypeScript, including `tsconfig` path aliases. Import edges gain an optional `resolved_target`, and
+  `ananke app code` and `ananke graph impact` use it. Existing node ids don't change.
+
 ### Fixed
+
+- `ananke graph build` no longer stops on a file nested too deeply to parse: the file, or just the notebook cell, is
+  reported as unparsed and the build continues. Python files over 2 MB are now listed without being read.
 
 - `apm bundle install` can now install a skill that came from the registry. It used to fail with "missing manifest", and a
   bundle can't use its manifest to write outside the install folder.
