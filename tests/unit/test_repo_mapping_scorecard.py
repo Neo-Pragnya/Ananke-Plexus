@@ -28,8 +28,8 @@ FLOORS: dict[str, tuple[float, float]] = {
     "routes": (0.0, 0.0),
     "client_links": (0.0, 0.0),
     "flows": (0.0, 0.0),
-    "calm_relationships": (0.0, 0.0),
-    "packages": (0.0, 0.0),
+    "calm_relationships": (1.0, 1.0),
+    "packages": (1.0, 1.0),
 }
 
 
