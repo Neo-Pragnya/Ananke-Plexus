@@ -1192,6 +1192,7 @@ class _Analysis:
         self.django_user: str | None = None
         self.seen_ddl: set[tuple[str, int, str]] = set()
         self.listed_sql = 0
+        self.temporary: set[str] = set()
         self.referenced: set[tuple[str, str]] = set()
         self.parsed: dict[tuple[str, bool], _Sql] = {}
 
@@ -1768,7 +1769,7 @@ class _Analysis:
         call = value if isinstance(value, ast.Call) else None
         tail = _tail(call.func) if call else ""
         if call and tail in ("relationship", "Relationship"):
-            self._sa_relationship(path, call, table)
+            self._sa_relationship(path, call, table, stmt.annotation)
         elif call and tail in ("Column", "mapped_column"):
             self._sa_column(
                 path, call, attribute, stmt.annotation if outer == "Mapped" else None, table
@@ -1794,12 +1795,19 @@ class _Analysis:
         type_text, _ = _annotation(inner)
         return bool(type_text) and type_text in self.model_names
 
-    def _sa_relationship(self, path: str, call: ast.Call, table: _Table) -> None:
+    def _sa_relationship(
+        self, path: str, call: ast.Call, table: _Table, annotation: ast.expr | None = None
+    ) -> None:
         secondary = _kwarg(call, "secondary") or _kwarg(call, "link_model")
-        if secondary is None or not call.args:
+        if secondary is None:
             return
-        target = _literal(call.args[0])
-        name = target if isinstance(target, str) else _tail(call.args[0])
+        target = call.args[0] if call.args else annotation
+        while isinstance(target, ast.Subscript):  # Mapped[list["Tag"]]
+            target = target.slice
+        if target is None:
+            return
+        value = _literal(target)
+        name = value if isinstance(value, str) else _tail(target)
         if name:
             self.many.append((table.name, f"class:{name}", path, call.lineno))
 
@@ -2009,6 +2017,7 @@ class _Analysis:
         if key in self.seen_ddl:
             return
         self.seen_ddl.add(key)
+        self.temporary |= sql.temporary
         self.computed += sql.computed
         self.not_replayed += sql.not_replayed
         self.views += sql.views
@@ -2043,7 +2052,11 @@ class _Analysis:
         for ref in sql.refs:
             low = ref.name.lower()
             self._use(symbol, low, ref.access, confidence, path, line_for(ref.line))
-            self.sql_refs.setdefault(low, (ref.name, ref.schema, path, line_for(ref.line)))
+            known = self.sql_refs.get(low)
+            if known is None:
+                self.sql_refs[low] = (ref.name, ref.schema, path, line_for(ref.line))
+            elif known[1] is None and ref.schema:
+                self.sql_refs[low] = (known[0], ref.schema, known[2], known[3])
         for table, column, line in sql.columns:
             self.sql_columns.setdefault(table, {}).setdefault(
                 column.lower(), (column, path, line_for(line))
@@ -2415,7 +2428,7 @@ class _Analysis:
             return table
 
         for low, (name, schema, path, line) in sorted(self.sql_refs.items()):
-            if low not in by_name:
+            if low not in by_name and low not in self.temporary:
                 table = infer(low, name, schema, path, line, "inferred-from-sql")
                 for lowered, (column, column_path, column_line) in self.sql_columns.get(
                     low, {}
