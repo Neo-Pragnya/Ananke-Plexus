@@ -68,8 +68,7 @@ class ModuleIndex:
                 if not parts[start].isidentifier():
                     break
                 root = "/".join(parts[:start])
-                if not _is_artifact(root):
-                    self._by_name.setdefault(".".join(parts[start:]), {}).setdefault(root, path)
+                self._by_name.setdefault(".".join(parts[start:]), {}).setdefault(root, path)
 
     def root_of(self, rel_path: str) -> str:
         """The folder a file's top-level package sits in; for a file outside any package, its own folder."""
@@ -117,7 +116,12 @@ class ModuleIndex:
             if not directory:
                 break
             directory = _parent(directory)
-        others = {root: file for root, file in by_root.items() if file != importer}
+        # Code in ``build/`` can import its neighbours, but nothing else should reach into a copy.
+        others = {
+            root: file
+            for root, file in by_root.items()
+            if file != importer and not _is_artifact(root)
+        }
         reachable = [file for root, file in others.items() if self._reachable_root(root, top)]
         if len(reachable) == 1:
             return Resolved(reachable[0])

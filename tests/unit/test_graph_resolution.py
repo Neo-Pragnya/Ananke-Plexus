@@ -246,6 +246,11 @@ def test_a_build_copy_does_not_compete_with_the_source(tmp_path: Path) -> None:
     assert links(build_graph(tmp_path)) == {("tests/test_cart.py", "src/shop/cart.py")}
 
 
+def test_scripts_in_a_build_folder_can_import_their_neighbours(tmp_path: Path) -> None:
+    write(tmp_path, {"week/build/make.py": "import harness\n", "week/build/harness.py": ""})
+    assert links(build_graph(tmp_path)) == {("week/build/make.py", "week/build/harness.py")}
+
+
 def test_a_folder_without_init_is_still_importable(tmp_path: Path) -> None:
     write(
         tmp_path,
