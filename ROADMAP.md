@@ -27,6 +27,10 @@ All of it is one analysis (`ananke app run repo.analyze`), described in
 - Running tool capabilities in a sandbox. Today, only instruction capabilities run.
 - Retries and parallel steps in workflow runs.
 
+## Performance
+
+- Faster registry learning. Learning all of Dex Trove (1707 items) takes about four minutes on a CI runner.
+
 ## Later
 
 Capability families, each with a Dex skill once its operation exists:
