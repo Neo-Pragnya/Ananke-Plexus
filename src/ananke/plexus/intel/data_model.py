@@ -8,6 +8,7 @@ becomes a limit. See docs/reference/repo-intelligence.md for the shape this answ
 from __future__ import annotations
 
 import ast
+import bisect
 import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
@@ -41,6 +42,7 @@ UNSUPPORTED_PY = {
 }
 UNSUPPORTED_SOURCE = {".java": "Java", ".kt": "Kotlin", ".go": "Go", ".rb": "Ruby", ".php": "PHP", ".cs": "C#", ".rs": "Rust"}  # fmt: skip
 SQLALCHEMY_MODULES = {"sqlalchemy", "flask_sqlalchemy", "sqlmodel"}
+NOT_A_COLUMN_TYPE = {"Sequence", "Identity", "Computed"}
 DJANGO_BASES = {"Model", "AbstractUser", "AbstractBaseUser", "PermissionsMixin"}
 TYPEORM_COLUMNS = {
     "Column", "PrimaryColumn", "PrimaryGeneratedColumn", "CreateDateColumn", "UpdateDateColumn", "DeleteDateColumn", "VersionColumn",
@@ -58,8 +60,55 @@ SQL_HEADS = {
     "TRUNCATE",
 }
 SQL_PREAMBLE = {"BEGIN", "PRAGMA", "DROP"}
+NOT_AN_ALIAS = {
+    "WHERE", "ON", "USING", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "NATURAL", "GROUP", "ORDER", "HAVING",
+    "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT", "SET", "VALUES", "RETURNING", "FOR", "WINDOW", "FETCH", "TABLESAMPLE",
+    "SELECT", "FROM", "AS", "STRAIGHT_JOIN", "LATERAL", "DEFAULT", "INTO", "WHEN", "THEN", "AND", "OR", "NOT",
+}  # fmt: skip
+NOT_A_TABLE = NOT_AN_ALIAS | {
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "NULL",
+    "CASE",
+    "UNNEST",
+    "ALL",
+    "ANY",
+    "EACH",
+    "IF",
+}
+PROSE_WORDS = {
+    "the", "a", "an", "this", "that", "these", "those", "your", "my", "our", "their", "it", "them", "here", "there", "one", "some",
+    "every", "which", "what", "where", "his", "her", "its", "of", "to", "in", "and", "or", "is", "are", "be",
+}  # fmt: skip
+EXAMPLE_NAMES = {
+    "table",
+    "tables",
+    "table_name",
+    "tablename",
+    "my_table",
+    "mytable",
+    "your_table",
+    "some_table",
+    "example_table",
+}
+SYSTEM_SCHEMAS = {"information_schema", "pg_catalog", "sys", "mysql", "performance_schema"}
+SYSTEM_TABLES = {"sqlite_master", "sqlite_schema", "sqlite_sequence", "sqlite_temp_master", "dual"}
+FROM_ARGUMENT_FUNCTIONS = {"EXTRACT", "SUBSTRING", "SUBSTR", "TRIM", "OVERLAY", "POSITION"}
+COLUMN_ENDS = {
+    "NOT", "NULL", "DEFAULT", "PRIMARY", "UNIQUE", "REFERENCES", "CHECK", "CONSTRAINT", "COLLATE", "GENERATED", "AUTO_INCREMENT",
+    "AUTOINCREMENT", "ON", "COMMENT", "IDENTITY", "AS", "KEY",
+}  # fmt: skip
+SQL_TYPES = {
+    "INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT", "SERIAL", "BIGSERIAL", "TEXT", "VARCHAR", "CHAR", "CHARACTER",
+    "NVARCHAR", "NCHAR", "CLOB", "BLOB", "BYTEA", "BOOLEAN", "BOOL", "REAL", "FLOAT", "DOUBLE", "NUMERIC", "DECIMAL", "DATE", "TIME",
+    "TIMESTAMP", "TIMESTAMPTZ", "DATETIME", "JSON", "JSONB", "UUID", "BINARY", "VARBINARY", "ENUM",
+}  # fmt: skip
 
 _WORD = re.compile(r"[^\W\d][\w$]*")
+_NUMBER = re.compile(r"\d[\w.]*")
+_DOLLAR_TAG = re.compile(r"\$\w{0,64}\$")
+_NEWLINE = re.compile(r"\n")
 _TS_DECORATOR = re.compile(r"\s{0,200}@(\w{1,64})")
 _TS_PROPERTY = re.compile(
     r"\s{0,200}(?:(?:public|private|protected|readonly)\s{1,8}){0,4}(\w{1,128})[!?]?\s{0,8}:"
@@ -68,6 +117,12 @@ _TS_CLASS = re.compile(r"\bclass\s{1,8}(\w{1,128})")
 _TS_NAME = re.compile(r"\bname\s{0,8}:\s{0,8}[\"']([^\"'\n]{1,128})[\"']")
 _TS_QUOTED = re.compile(r"[\"']([^\"'\n]{1,128})[\"']")
 _TS_TARGET = re.compile(r"=>\s{0,8}(\w{1,128})")
+
+_LineOf = Callable[[int], int]
+
+
+def _offset(base: int) -> _LineOf:
+    return lambda relative: relative + base
 
 
 # ---------------------------------------------------------------- what is collected
@@ -132,6 +187,759 @@ def _head_of(text: str) -> str:
             break
     word = _WORD.match(text, i)
     return word.group().upper() if word else ""
+
+
+# ---------------------------------------------------------------- SQL
+
+
+@dataclass
+class _Ref:
+    name: str
+    schema: str | None
+    access: str
+    line: int
+
+
+@dataclass
+class _Sql:
+    """What one piece of SQL says. Lines count from zero within the text."""
+
+    tables: list[_Table] = field(default_factory=list)
+    refs: list[_Ref] = field(default_factory=list)
+    columns: list[tuple[str, str, int]] = field(default_factory=list)
+    joins: list[tuple[str, str, str, str, int]] = field(default_factory=list)
+    computed: int = 0
+    not_replayed: int = 0
+    views: int = 0
+    malformed: list[int] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class _Tok:
+    kind: str  # word, quoted, string, number, punct
+    text: str
+    upper: str
+    pos: int
+
+
+def _tokenize(text: str) -> list[_Tok]:
+    """One pass over the text. Each branch moves past what it read, so the work is linear in the input."""
+    toks: list[_Tok] = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c.isspace():
+            i += 1
+        elif text.startswith("--", i):
+            end = text.find("\n", i)
+            i = n if end < 0 else end + 1
+        elif text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            i = n if end < 0 else end + 2
+        elif c in "'\"`":
+            end = i + 1
+            while True:
+                end = text.find(c, end)
+                if end < 0:
+                    end = n
+                    break
+                if text.startswith(c, end + 1):
+                    end += 2
+                    continue
+                break
+            toks.append(_Tok("string" if c == "'" else "quoted", text[i + 1 : end], "", i))
+            i = end + 1
+        elif (
+            c == "["
+            and (end := text.find("]", i, i + MAX_NAME + 2)) > i + 1
+            and _WORD.fullmatch(text, i + 1, end)
+        ):
+            toks.append(_Tok("quoted", text[i + 1 : end], "", i))
+            i = end + 1
+        elif c == "{" and (end := text.find("}", i, i + 256)) > 0:
+            toks.append(_Tok("word", "__dyn__", "__DYN__", i))
+            i = end + 1
+        elif c == "$" and (tag := _DOLLAR_TAG.match(text, i)):
+            end = text.find(tag.group(), tag.end())
+            toks.append(_Tok("string", "", "", i))
+            i = n if end < 0 else end + len(tag.group())
+        elif word := _WORD.match(text, i):
+            toks.append(_Tok("word", word.group(), word.group().upper(), i))
+            i = word.end()
+        elif number := _NUMBER.match(text, i):
+            toks.append(_Tok("number", number.group(), "", i))
+            i = number.end()
+        else:
+            toks.append(_Tok("punct", c, c, i))
+            i += 1
+    return toks
+
+
+def _is(tok: _Tok | None, *uppers: str) -> bool:
+    return tok is not None and tok.kind in ("word", "punct") and tok.upper in uppers
+
+
+def _at(toks: list[_Tok], i: int) -> _Tok | None:
+    return toks[i] if 0 <= i < len(toks) else None
+
+
+def _is_name(tok: _Tok | None) -> bool:
+    return tok is not None and tok.kind in ("word", "quoted") and 0 < len(tok.text) <= MAX_NAME
+
+
+def _close(toks: list[_Tok], i: int) -> int:
+    """The index of the bracket matching the one at ``i``, or -1."""
+    depth = 0
+    for j in range(i, len(toks)):
+        if toks[j].kind == "punct":
+            if toks[j].text == "(":
+                depth += 1
+            elif toks[j].text == ")":
+                depth -= 1
+                if depth == 0:
+                    return j
+    return -1
+
+
+def _name_at(toks: list[_Tok], i: int) -> tuple[str, str | None, int] | None:
+    """``[catalog.][schema.]table`` at ``i``: the table, its schema, and the index after it."""
+    if not _is_name(_at(toks, i)):
+        return None
+    parts = [toks[i].text]
+    i += 1
+    while _is(_at(toks, i), ".") and _is_name(_at(toks, i + 1)):
+        parts.append(toks[i + 1].text)
+        i += 2
+    schema = parts[-2] if len(parts) > 1 and parts[-2] != "__dyn__" else None
+    return parts[-1], schema, i
+
+
+def _split(toks: list[_Tok]) -> Iterator[list[_Tok]]:
+    """Split on commas that aren't inside brackets."""
+    depth, start = 0, 0
+    for i, tok in enumerate(toks):
+        if tok.kind != "punct":
+            continue
+        if tok.text == "(":
+            depth += 1
+        elif tok.text == ")":
+            depth -= 1
+        elif tok.text == "," and depth == 0:
+            yield toks[start:i]
+            start = i + 1
+    if start < len(toks):
+        yield toks[start:]
+
+
+def _bracketed_names(toks: list[_Tok], i: int) -> tuple[list[str], int]:
+    """The simple names in the brackets at ``i``, and the index after them."""
+    end = _close(toks, i)
+    if end < 0:
+        return [], i
+    return [t.text for t in toks[i + 1 : end] if t.kind in ("word", "quoted")], end + 1
+
+
+def _is_system_table(name: str, schema: str | None) -> bool:
+    low = name.lower()
+    return (
+        low in SYSTEM_TABLES
+        or low.startswith("pg_")
+        or (schema is not None and schema.lower() in SYSTEM_SCHEMAS)
+    )
+
+
+class _Dml:
+    """One statement scanned once, left to right, without recursion, so deep nesting can't overflow the stack."""
+
+    def __init__(self, toks: list[_Tok], line_of: _LineOf, ctes: set[str], head_at: int) -> None:
+        self.toks, self.line_of, self.ctes, self.head_at = toks, line_of, ctes, head_at
+        self.refs: list[_Ref] = []
+        self.aliases: dict[str, set[str]] = {}
+        self.columns: list[tuple[str, str, int]] = []
+        self.joins: list[tuple[str, str, str, str, int]] = []
+        self.computed = 0
+        self.rejected = False
+        self.from_brackets: set[int] = set()
+
+    def _ref(self, i: int, access: str) -> tuple[int, str | None]:
+        """A table reference at ``i``. Answers the index after it and the table, if it's a real one."""
+        toks = self.toks
+        while _is(_at(toks, i), "LATERAL", "ONLY"):
+            i += 1
+        tok = _at(toks, i)
+        if _is(tok, "("):
+            self.from_brackets.add(i)
+            return i, None
+        parsed = _name_at(toks, i)
+        if parsed is None or tok is None:
+            self.computed += 1
+            return i, None
+        name, schema, after = parsed
+        if _is(_at(toks, after), "("):
+            return after, None  # a table function
+        if name == "__dyn__":
+            self.computed += 1
+            return after, None
+        low = name.lower()
+        if tok.kind == "word" and after == i + 1 and tok.upper in NOT_A_TABLE:
+            return after, None
+        if low in PROSE_WORDS or low in EXAMPLE_NAMES:
+            self.rejected = True
+            return after, None
+        real = low not in self.ctes and not _is_system_table(name, schema)
+        if real:
+            self.refs.append(_Ref(name, schema, access, self.line_of(tok.pos)))
+            self.aliases.setdefault(low, set()).add(low)
+        alias_at = after + 1 if _is(_at(toks, after), "AS") else after
+        alias = _at(toks, alias_at)
+        if alias is not None and _is_name(alias) and alias.upper not in NOT_AN_ALIAS:
+            self.aliases.setdefault(alias.text.lower(), set()).add(low if real else "")
+            after = alias_at + 1
+        return after, low if real else None
+
+    def _refs(self, i: int, access: str) -> int:
+        """Comma-separated table references."""
+        while True:
+            i, _ = self._ref(i, access)
+            if _is(_at(self.toks, i), ",") and i not in self.from_brackets:
+                i += 1
+                continue
+            return i
+
+    def _insert(self, i: int) -> int:
+        toks = self.toks
+        j = i + 1
+        for _ in range(3):
+            if _is(_at(toks, j), "INTO"):
+                break
+            j += 1
+        else:
+            return i + 1
+        after, table = self._ref(j + 1, "write")
+        if _is(_at(toks, after), "(") and not _is(_at(toks, after + 1), "SELECT", "WITH"):
+            names, end = _bracketed_names(toks, after)
+            if end == after:
+                self.rejected = True
+                return after
+            if table:
+                line = self.line_of(toks[after].pos)
+                self.columns += [(table, name, line) for name in names if name != "__dyn__"]
+            after = end
+        if table and not _is(
+            _at(toks, after), "VALUES", "VALUE", "SELECT", "DEFAULT", "WITH", "SET", "__DYN__", "("
+        ):
+            self.rejected = True
+        return after
+
+    def _update(self, i: int) -> int:
+        toks = self.toks
+        j = i + 1
+        if _is(_at(toks, j), "OR"):
+            j += 2
+        after, table = self._ref(j, "write")
+        if not _is(_at(toks, after), "SET"):
+            self.rejected = True
+            return after
+        after += 1
+        first, second = _at(toks, after), _at(toks, after + 1)
+        if not (_is(first, "(", "__DYN__") or (_is_name(first) and _is(second, "=", "."))):
+            self.rejected = True
+            return after
+        depth, expect, k = 0, True, after
+        while k < len(toks):
+            tok = toks[k]
+            if tok.kind == "punct" and tok.text == "(":
+                depth += 1
+            elif tok.kind == "punct" and tok.text == ")":
+                depth -= 1
+                if depth < 0:
+                    break
+            elif depth == 0 and tok.kind == "punct" and tok.text == ",":
+                expect = True
+                k += 1
+                continue
+            elif depth == 0 and _is(tok, "WHERE", "FROM", "RETURNING", "ORDER", "LIMIT"):
+                break
+            elif (
+                expect
+                and depth == 0
+                and _is_name(tok)
+                and _is(_at(toks, k + 1), "=")
+                and table
+                and tok.text != "__dyn__"
+            ):
+                self.columns.append((table, tok.text, self.line_of(tok.pos)))
+            expect = False
+            k += 1
+        return after
+
+    def _select_columns(self) -> None:
+        """``SELECT a, b FROM t`` states its columns when one table can be the only owner."""
+        toks, head = self.toks, self.head_at
+        if len(self.refs) != 1 or not _is(_at(toks, head), "SELECT"):
+            return
+        low = self.refs[0].name.lower()
+        end = head + 1
+        while end < len(toks) and not _is(toks[end], "FROM"):
+            if toks[end].kind == "punct" and toks[end].text == "(":
+                return
+            end += 1
+        for item in _split(toks[head + 1 : end]):
+            named = (
+                len(item) in (1, 3)
+                and _is_name(item[0])
+                and item[0].upper not in {"DISTINCT", "ALL", "__DYN__"}
+            )
+            if named and (len(item) == 1 or _is(item[1], "AS")):
+                self.columns.append((low, item[0].text, self.line_of(item[0].pos)))
+
+    def run(self, sql: _Sql) -> None:
+        toks = self.toks
+        frames: list[str] = []
+        qualified: list[tuple[str, str, int]] = []
+        in_on = False
+        subquery = False
+        i = 0
+        while i < len(toks) and not self.rejected:
+            tok = toks[i]
+            prev = _at(toks, i - 1)
+            if tok.kind == "punct":
+                if tok.text == "(":
+                    if i in self.from_brackets:
+                        frames.append("<from>")
+                        subquery = True
+                    else:
+                        frames.append(
+                            prev.upper if prev is not None and prev.kind == "word" else ""
+                        )
+                elif tok.text == ")" and frames:
+                    in_on = False
+                    if frames.pop() == "<from>":
+                        j = i + 1
+                        if _is(_at(toks, j), "AS"):
+                            j += 1
+                        alias = _at(toks, j)
+                        if (
+                            alias is not None
+                            and _is_name(alias)
+                            and alias.upper not in NOT_AN_ALIAS
+                        ):
+                            self.aliases.setdefault(alias.text.lower(), set()).add("")
+                            j += 1
+                        if _is(_at(toks, j), ","):
+                            i = self._refs(j + 1, "read")
+                            continue
+                i += 1
+                continue
+            if tok.kind not in ("word", "quoted"):
+                i += 1
+                continue
+            # alias.column, and alias.a = other.b inside an ON clause
+            if (
+                _is(_at(toks, i + 1), ".")
+                and _is_name(_at(toks, i + 2))
+                and not _is(_at(toks, i + 3), "(")
+            ):
+                column = toks[i + 2]
+                qualified.append((tok.text.lower(), column.text, self.line_of(tok.pos)))
+                if (
+                    in_on
+                    and _is(_at(toks, i + 3), "=")
+                    and _is_name(_at(toks, i + 4))
+                    and _is(_at(toks, i + 5), ".")
+                    and _is_name(_at(toks, i + 6))
+                ):
+                    self.joins.append(
+                        (
+                            tok.text.lower(),
+                            column.text,
+                            toks[i + 4].text.lower(),
+                            toks[i + 6].text,
+                            self.line_of(tok.pos),
+                        )
+                    )
+                i += 3
+                continue
+            word = tok.upper if tok.kind == "word" else ""
+            if word == "FROM":
+                ignored = (_is(prev, "DISTINCT") and _is(_at(toks, i - 2), "IS", "NOT")) or (
+                    bool(frames) and frames[-1] in FROM_ARGUMENT_FUNCTIONS
+                )
+                if not ignored:
+                    i = self._refs(i + 1, "write" if _is(prev, "DELETE") else "read")
+                    continue
+            elif word in ("JOIN", "STRAIGHT_JOIN"):
+                i, _ = self._ref(i + 1, "read")
+                in_on = False
+                continue
+            elif word == "ON":
+                in_on = not _is(_at(toks, i + 1), "CONFLICT", "DUPLICATE")
+            elif word in ("WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "UNION"):
+                in_on = False
+            elif word in ("INSERT", "REPLACE") and not _is(_at(toks, i + 1), "("):
+                i = self._insert(i)
+                continue
+            elif word == "UPDATE" and (i == self.head_at or _is(prev, "(", "AS")):
+                i = self._update(i)
+                continue
+            elif word == "MERGE" and _is(_at(toks, i + 1), "INTO"):
+                i, _ = self._ref(i + 2, "write")
+                continue
+            elif word == "USING" and _is(_at(toks, self.head_at), "MERGE", "DELETE") and not frames:
+                i = self._refs(i + 1, "read")
+                continue
+            elif word == "TRUNCATE" and i == self.head_at:
+                i, _ = self._ref(i + 2 if _is(_at(toks, i + 1), "TABLE") else i + 1, "write")
+                continue
+            i += 1
+        if self.rejected:
+            return
+        if not subquery:
+            self._select_columns()
+        self._merge(sql, qualified)
+
+    def _merge(self, sql: _Sql, qualified: list[tuple[str, str, int]]) -> None:
+        def owner(alias: str) -> str | None:
+            found = self.aliases.get(alias, set())
+            return (next(iter(found)) or None) if len(found) == 1 else None
+
+        sql.refs += self.refs
+        sql.computed += self.computed
+        sql.columns += self.columns
+        sql.columns += [
+            (table, column, line)
+            for alias, column, line in qualified
+            if (table := owner(alias)) and column != "__dyn__"
+        ]
+        for left, left_col, right, right_col, line in self.joins:
+            a, b = owner(left), owner(right)
+            if a and b and a != b:
+                sql.joins.append((a, left_col, b, right_col, line))
+
+
+def _cte_names(toks: list[_Tok], i: int) -> tuple[set[str], int] | None:
+    i += 1
+    if _is(_at(toks, i), "RECURSIVE"):
+        i += 1
+    names: set[str] = set()
+    while True:
+        tok = _at(toks, i)
+        if tok is None or not _is_name(tok):
+            return None
+        names.add(tok.text.lower())
+        i += 1
+        if _is(_at(toks, i), "("):
+            end = _close(toks, i)
+            if end < 0:
+                return None
+            i = end + 1
+        if not _is(_at(toks, i), "AS"):
+            return None
+        i += 1
+        if _is(_at(toks, i), "NOT"):
+            i += 1
+        if _is(_at(toks, i), "MATERIALIZED"):
+            i += 1
+        if not _is(_at(toks, i), "("):
+            return None
+        end = _close(toks, i)
+        if end < 0:
+            return None
+        i = end + 1
+        if _is(_at(toks, i), ","):
+            i += 1
+            continue
+        return names, i
+
+
+def _strong_select(toks: list[_Tok], head: int) -> bool:
+    """Whether a SELECT outside any database call reads as SQL rather than as an English sentence."""
+    depth, from_at, commas = 0, -1, 0
+    for j in range(head + 1, len(toks)):
+        tok = toks[j]
+        if tok.kind == "punct" and tok.text == "(":
+            depth += 1
+        elif tok.kind == "punct" and tok.text == ")":
+            depth -= 1
+        elif depth == 0 and tok.kind == "punct" and tok.text == ",":
+            commas += 1
+        elif depth == 0 and _is(tok, "FROM"):
+            from_at = j
+            break
+    if from_at < 0:
+        return False
+    listed = toks[head + 1 : from_at]
+    if any(t.kind == "word" and t.text.lower() in PROSE_WORDS for t in listed):
+        return False
+    if toks[head].text.isupper() and toks[from_at].text.isupper():
+        return True
+    if _is(_at(toks, head + 1), "*") or commas or any(_is(t, ".") for t in listed):
+        return True
+    for j in range(from_at + 1, len(toks)):
+        if _is(toks[j], "JOIN"):
+            return True
+        if _is(toks[j], "WHERE") and _is(
+            _at(toks, j + 2), "=", "<", ">", "!", "IN", "LIKE", "IS", "."
+        ):
+            return True
+        if (
+            _is(toks[j], "GROUP", "ORDER")
+            and _is(_at(toks, j + 1), "BY")
+            and _is_name(_at(toks, j + 2))
+        ):
+            return True
+    return False
+
+
+def _sql_type(toks: list[_Tok]) -> str | None:
+    out = ""
+    for tok in toks:
+        if tok.kind == "punct" and tok.text in "(),":
+            out += tok.text
+        else:
+            out += (" " if out and not out.endswith(("(", ",")) else "") + tok.text
+        if len(out) > 64:
+            break
+    return out[:64] or None
+
+
+def _column_def(item: list[_Tok], line_of: _LineOf, table: _Table) -> None:
+    name_tok = item[0]
+    k = 1
+    while k < len(item) and not (item[k].kind == "word" and item[k].upper in COLUMN_ENDS):
+        k += 1
+    column = _Column(
+        name_tok.text, _sql_type(item[1:k]), True, False, table.path, line_of(name_tok.pos)
+    )
+    while k < len(item):
+        tok = item[k]
+        if _is(tok, "NOT") and _is(_at(item, k + 1), "NULL"):
+            column.nullable = False
+            k += 2
+        elif _is(tok, "PRIMARY") and _is(_at(item, k + 1), "KEY"):
+            column.primary_key = True
+            column.nullable = False
+            k += 2
+        elif _is(tok, "UNIQUE"):
+            column.unique = True
+            k += 1
+        elif _is(tok, "REFERENCES"):
+            parsed = _name_at(item, k + 1)
+            if parsed is None:
+                k += 1
+                continue
+            target, _, after = parsed
+            to_column = None
+            if _is(_at(item, after), "("):
+                names, end = _bracketed_names(item, after)
+                to_column = names[0] if names else None
+                after = end if end > after else after + 1
+            table.fks.append(_Fk(column.name, target, to_column, table.path, line_of(tok.pos)))
+            k = after
+        else:
+            k += 1
+    table.add(column)
+
+
+def _bracket_after(item: list[_Tok], j: int) -> tuple[list[str], int]:
+    while j < len(item) and not _is(item[j], "("):
+        j += 1
+    return _bracketed_names(item, j) if j < len(item) else ([], j)
+
+
+def _constraint(item: list[_Tok], line_of: _LineOf, table: _Table) -> bool:
+    """A table-level constraint. False when the item is really a column, such as one called ``key``."""
+    first = item[0]
+    if first.kind != "word":
+        return False
+    head = first.upper
+    second = _at(item, 1)
+    k = 0
+    if head == "CONSTRAINT":
+        k = 2
+        head = item[2].upper if len(item) > 2 else ""
+    elif head in ("KEY", "INDEX", "FULLTEXT", "SPATIAL"):
+        return second is None or second.upper not in SQL_TYPES
+    elif head == "CHECK":
+        return _is(second, "(")
+    elif head in ("EXCLUDE", "LIKE", "PERIOD"):
+        return True
+    if head == "PRIMARY" and _is(_at(item, k + 1), "KEY"):
+        table.primary += _bracket_after(item, k + 2)[0]
+        return True
+    if head == "UNIQUE" and (k or _is(second, "(", "KEY", "INDEX")):
+        names, _ = _bracket_after(item, k + 1)
+        if len(names) == 1:
+            table.unique += names
+        return True
+    if head == "FOREIGN" and _is(_at(item, k + 1), "KEY"):
+        local, after = _bracket_after(item, k + 2)
+        parsed = _name_at(item, after + 1) if _is(_at(item, after), "REFERENCES") else None
+        if parsed is None:
+            return True
+        target, _, end = parsed
+        remote = _bracketed_names(item, end)[0] if _is(_at(item, end), "(") else []
+        for index, column in enumerate(local):
+            to_column = remote[index] if index < len(remote) else None
+            table.fks.append(_Fk(column, target, to_column, table.path, line_of(first.pos)))
+        return True
+    return k > 0
+
+
+def _create(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
+    i = head + 1
+    while _is(
+        _at(toks, i),
+        "TEMP",
+        "TEMPORARY",
+        "UNLOGGED",
+        "GLOBAL",
+        "LOCAL",
+        "VIRTUAL",
+        "OR",
+        "REPLACE",
+        "EXTERNAL",
+    ):
+        i += 1
+    if _is(_at(toks, i), "VIEW", "MATERIALIZED"):
+        sql.views += 1
+        return
+    if not _is(_at(toks, i), "TABLE"):
+        return
+    i += 1
+    if _is(_at(toks, i), "IF") and _is(_at(toks, i + 1), "NOT") and _is(_at(toks, i + 2), "EXISTS"):
+        i += 3
+    parsed = _name_at(toks, i)
+    if parsed is None:
+        return
+    name, schema, after = parsed
+    if name == "__dyn__":
+        sql.computed += 1
+        return
+    if name.lower() in PROSE_WORDS or name.lower() in EXAMPLE_NAMES:
+        return
+    table = _Table(name, schema, "sql", "", line_of(toks[i].pos))
+    next_tok = _at(toks, after)
+    if _is(next_tok, "AS"):  # CREATE TABLE ... AS SELECT
+        sql.tables.append(table)
+        sql.refs.append(_Ref(name, schema, "write", line_of(toks[i].pos)))
+        _Dml(toks[after + 1 :], line_of, set(), 0).run(sql)
+        return
+    if _is(next_tok, "USING", "LIKE"):
+        sql.tables.append(table)
+        return
+    if not _is(next_tok, "("):
+        return
+    end = _close(toks, after)
+    if end < 0:
+        sql.malformed.append(line_of(toks[i].pos))
+        return
+    for item in _split(toks[after + 1 : end]):
+        if item and _is_name(item[0]) and not _constraint(item, line_of, table):
+            _column_def(item, line_of, table)
+    sql.tables.append(table)
+
+
+def _alter(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
+    i = head + 1
+    if not _is(_at(toks, i), "TABLE"):
+        return
+    i += 1
+    if _is(_at(toks, i), "IF") and _is(_at(toks, i + 1), "EXISTS"):
+        i += 2
+    if _is(_at(toks, i), "ONLY"):
+        i += 1
+    parsed = _name_at(toks, i)
+    if parsed is None:
+        return
+    name, schema, after = parsed
+    table = _Table(name, schema, "sql", "", line_of(toks[i].pos), partial=True)
+    for action in _split(toks[after:]):
+        if not _is(_at(action, 0), "ADD"):
+            sql.not_replayed += 1
+            continue
+        item = action[1:]
+        if not item:
+            continue
+        if _is(item[0], "COLUMN"):
+            item = item[1:]
+            if _is(_at(item, 0), "IF") and _is(_at(item, 2), "EXISTS"):
+                item = item[3:]
+            if item and _is_name(item[0]):
+                _column_def(item, line_of, table)
+        elif not _constraint(item, line_of, table) and _is_name(item[0]):
+            _column_def(item, line_of, table)
+    sql.tables.append(table)
+
+
+def _read_sql(text: str, *, trusted: bool) -> _Sql:
+    """Everything a piece of SQL says. ``trusted`` is a .sql file or a string given to a database call, where a sentence-like
+    statement is still accepted. Either way a statement has to parse as keyword plus table clause."""
+    sql = _Sql()
+    head_word = _head_of(text)
+    if not trusted and head_word not in SQL_HEADS and head_word not in SQL_PREAMBLE:
+        return sql
+    newlines = [m.start() for m in _NEWLINE.finditer(text)]
+
+    def line_of(pos: int) -> int:
+        return bisect.bisect_left(newlines, pos)
+
+    toks = _tokenize(text)
+    start = 0
+    for i in range(len(toks) + 1):
+        if i == len(toks) or (toks[i].kind == "punct" and toks[i].text == ";"):
+            if i > start:
+                _statement(toks[start:i], line_of, sql, trusted)
+            start = i + 1
+    return sql
+
+
+def _statement(toks: list[_Tok], line_of: _LineOf, sql: _Sql, trusted: bool) -> None:
+    head = 0
+    while _is(_at(toks, head), "("):
+        head += 1
+    ctes: set[str] = set()
+    if _is(_at(toks, head), "WITH"):
+        parsed = _cte_names(toks, head)
+        if parsed is None:
+            return
+        ctes, head = parsed
+    tok = _at(toks, head)
+    if tok is None or tok.kind != "word":
+        return
+    word = tok.upper
+    if word == "CREATE":
+        _create(toks, head, line_of, sql)
+    elif word == "ALTER":
+        _alter(toks, head, line_of, sql)
+    elif word == "DROP":
+        sql.not_replayed += 1
+    elif word in ("SELECT", "INSERT", "UPDATE", "DELETE", "REPLACE", "MERGE", "TRUNCATE"):
+        if word == "SELECT" and not trusted and not _strong_select(toks, head):
+            return
+        if word == "DELETE" and not _delete_shape(toks, head, trusted):
+            return
+        if word == "TRUNCATE" and not trusted and not tok.text.isupper():
+            return
+        _Dml(toks, line_of, ctes, head).run(sql)
+
+
+def _delete_shape(toks: list[_Tok], head: int, trusted: bool) -> bool:
+    if not _is(_at(toks, head + 1), "FROM"):
+        return False
+    parsed = _name_at(toks, head + 2)
+    if parsed is None:
+        return True  # a computed table: counted, not read
+    i = parsed[2]
+    if _is(_at(toks, i), "AS"):
+        i += 1
+    alias = _at(toks, i)
+    if alias is not None and _is_name(alias) and alias.upper not in NOT_AN_ALIAS:
+        i += 1
+    follow = _at(toks, i)
+    if follow is not None and not _is(follow, "WHERE", "USING", "RETURNING", "ORDER", "LIMIT"):
+        return False
+    return trusted or toks[head].text.isupper() or _is(follow, "WHERE")
 
 
 # ---------------------------------------------------------------- Python helpers
@@ -310,6 +1118,9 @@ class _Analysis:
         self.model_names: set[str] = set()
         self.string_names: set[str] = set()
         self.django_user: str | None = None
+        self.seen_ddl: set[tuple[str, int, str]] = set()
+        self.referenced: set[tuple[str, str]] = set()
+        self.parsed: dict[tuple[str, bool], _Sql] = {}
 
     # ------------------------------------------------------------ driving
 
@@ -318,6 +1129,8 @@ class _Analysis:
         for path in paths:
             if path.endswith(".py"):
                 self._load_python(path)
+            elif path.endswith(".sql"):
+                self._read_sql_file(path)
         self._index_python()
         self._read_classes()
         for path in sorted(self.files):
@@ -777,13 +1590,10 @@ class _Analysis:
                 target = self._fk_target(path, arg.args[0]) if arg.args else None
                 if target:
                     fks.append(target)
-            elif isinstance(arg, (ast.Call, ast.Name, ast.Attribute)):
-                if _tail(arg.func if isinstance(arg, ast.Call) else arg) not in (
-                    "Sequence",
-                    "Identity",
-                    "Computed",
-                ):
-                    type_text = _short_type(arg)
+            elif isinstance(arg, (ast.Name, ast.Attribute)) or (
+                isinstance(arg, ast.Call) and _tail(arg.func) not in NOT_A_COLUMN_TYPE
+            ):
+                type_text = _short_type(arg)
         type_kw = _kwarg(call, "type_")
         if type_kw is not None:
             type_text = _short_type(type_kw)
@@ -887,9 +1697,14 @@ class _Analysis:
             if value is None and not self._mapped_is_relation(stmt.annotation):
                 bare = ast.Call(ast.Name("mapped_column"), [], [])
                 self._sa_column(path, bare, attribute, stmt.annotation, table, stmt.lineno)
-        elif source == "sqlmodel" and not attribute.startswith("_") and outer != "ClassVar":
-            if attribute != "model_config" and not _is_list_annotation(stmt.annotation):
-                self._sa_field(path, stmt, attribute, table)
+        elif (
+            source == "sqlmodel"
+            and not attribute.startswith("_")
+            and outer != "ClassVar"
+            and attribute != "model_config"
+            and not _is_list_annotation(stmt.annotation)
+        ):
+            self._sa_field(path, stmt, attribute, table)
 
     def _mapped_is_relation(self, annotation: ast.expr) -> bool:
         """``Mapped["Customer"]`` or ``Mapped[list["Order"]]`` with no column call names a mapped class."""
@@ -997,10 +1812,10 @@ class _Analysis:
                 self.raw.append(table)
         elif op == "add_column":
             name = batches[receiver] if batch else _literal(args[0]) if args else None
-            column = args[0] if batch and args else args[1] if len(args) > 1 else None
-            if isinstance(name, str) and isinstance(column, ast.Call):
+            added = args[0] if batch and args else args[1] if len(args) > 1 else None
+            if isinstance(name, str) and isinstance(added, ast.Call):
                 table = _Table(name, None, "alembic", path, call.lineno, partial=True)
-                self._sa_column(path, column, None, None, table)
+                self._sa_column(path, added, None, None, table)
                 self.raw.append(table)
         elif op == "create_foreign_key":
             source = batches[receiver] if batch else _literal(args[1]) if len(args) > 1 else None
@@ -1092,6 +1907,85 @@ class _Analysis:
         if not any(c.primary_key for c in table.columns.values()):
             key = _Column("id", "AutoField", False, True, path, cls.lineno)
             table.columns = {"id": key, **table.columns}
+
+    # ------------------------------------------------------------ SQL files and strings
+
+    def _read_sql_file(self, path: str) -> None:
+        text = self._text(path)
+        if text is not None:
+            sql = _read_sql(text, trusted=True)
+            self._define(sql, path, 1, text)
+            self._apply_use(sql, path, f"file:{path}", 0.6, _offset(1))
+
+    def _parsed(self, text: str, trusted: bool) -> _Sql:
+        key = (text, trusted)
+        if key not in self.parsed:
+            self.parsed[key] = _read_sql(text, trusted=trusted)
+        return self.parsed[key]
+
+    def _define(self, sql: _Sql, path: str, base: int, text: str) -> None:
+        """Record the tables a piece of SQL defines. A string is read in several places but counts once."""
+        key = (path, base, text)
+        if key in self.seen_ddl:
+            return
+        self.seen_ddl.add(key)
+        self.computed += sql.computed
+        self.not_replayed += sql.not_replayed
+        self.views += sql.views
+        for table in sql.tables:
+            copy = _Table(
+                table.name,
+                table.schema,
+                table.source,
+                path,
+                table.line + base,
+                partial=table.partial,
+            )
+            copy.primary, copy.unique = list(table.primary), list(table.unique)
+            copy.columns = {
+                low: _Column(
+                    c.name, c.type, c.nullable, c.primary_key, path, c.line + base, c.unique
+                )
+                for low, c in table.columns.items()
+            }
+            copy.fks = [
+                _Fk(f.column, f.to_table, f.to_column, path, f.line + base, f.one_to_one)
+                for f in table.fks
+            ]
+            self.raw.append(copy)
+        for line in sql.malformed:
+            self._limit(f"{path}:{line + base}: a CREATE TABLE isn't closed, so it wasn't read")
+
+    def _apply_use(
+        self, sql: _Sql, path: str, symbol: str, confidence: float, line_for: _LineOf
+    ) -> None:
+        """Record what a piece of SQL uses, cited at ``line_for``: a constant's use cites the line referring to it."""
+        for ref in sql.refs:
+            low = ref.name.lower()
+            self._use(symbol, low, ref.access, confidence, path, line_for(ref.line))
+            self.sql_refs.setdefault(low, (ref.name, ref.schema, path, line_for(ref.line)))
+        for table, column, line in sql.columns:
+            self.sql_columns.setdefault(table, {}).setdefault(
+                column.lower(), (column, path, line_for(line))
+            )
+        for left, left_col, right, right_col, line in sql.joins:
+            self.joins.append((left, left_col, right, right_col, path, line_for(line)))
+
+    def _use(
+        self, symbol: str, table: str, access: str, confidence: float, path: str, line: int
+    ) -> None:
+        key = (symbol, table.lower(), access)
+        now = self.usage.get(key)
+        if now is None or (confidence, -line) > (now.confidence, -now.line):
+            self.usage[key] = _Usage(confidence, line, path)
+
+    def _read_unreferenced_strings(self, file: _PyFile) -> None:
+        """SQL constants nothing refers to: their DDL still defines tables, and their other SQL counts for the file."""
+        for name, (text, line) in sorted(file.strings.items()):
+            if (file.path, name) not in self.referenced:
+                sql = self._parsed(text, False)
+                self._define(sql, file.path, line, text)
+                self._apply_use(sql, file.path, f"file:{file.path}", 0.5, _offset(line))
 
     # ------------------------------------------------------------ Prisma
 
