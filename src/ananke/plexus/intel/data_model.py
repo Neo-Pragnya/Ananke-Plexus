@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 import bisect
 import re
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -42,6 +42,29 @@ UNSUPPORTED_PY = {
 }
 UNSUPPORTED_SOURCE = {".java": "Java", ".kt": "Kotlin", ".go": "Go", ".rb": "Ruby", ".php": "PHP", ".cs": "C#", ".rs": "Rust"}  # fmt: skip
 SQLALCHEMY_MODULES = {"sqlalchemy", "flask_sqlalchemy", "sqlmodel"}
+# Python calls whose first argument is SQL.
+SQL_SINKS = {
+    "execute", "executemany", "executescript", "exec_driver_sql", "text", "read_sql", "read_sql_query",
+    "sql", "raw", "fetch", "fetchrow", "fetchval", "mogrify", "query",
+}  # fmt: skip
+SQL_ARGUMENTS = ("sql", "query", "statement")
+MANAGERS = {"objects", "_default_manager", "query"}
+ORM_READS = {
+    "filter", "filter_by", "get", "all", "exclude", "first", "last", "count", "exists", "values", "values_list", "aggregate",
+    "annotate", "order_by", "select_related", "prefetch_related", "in_bulk", "iterator", "none", "using", "one", "one_or_none",
+    "distinct", "join", "limit", "offset", "latest", "earliest", "only", "defer", "paginate", "get_or_404", "first_or_404",
+}  # fmt: skip
+ORM_WRITES = {
+    "create",
+    "bulk_create",
+    "update",
+    "delete",
+    "get_or_create",
+    "update_or_create",
+    "bulk_update",
+}
+READ_CALLS = {"select", "select_from", "join", "outerjoin", "exists", "with_entities"}
+PERSIST_CALLS = {"add", "add_all", "merge", "bulk_save_objects", "delete"}
 NOT_A_COLUMN_TYPE = {"Sequence", "Identity", "Computed"}
 DJANGO_BASES = {"Model", "AbstractUser", "AbstractBaseUser", "PermissionsMixin"}
 TYPEORM_COLUMNS = {
@@ -1140,6 +1163,10 @@ class _Analysis:
         self._read_typeorm(
             [p for p in paths if p.endswith((".ts", ".tsx")) and not p.endswith(".d.ts")]
         )
+        for path in sorted(self.files):
+            self._read_usage(self.files[path])
+        for path in sorted(self.files):
+            self._read_unreferenced_strings(self.files[path])
         self._note_gaps(paths, len(self.ctx.files) - len(paths))
         return self._answer()
 
@@ -1979,6 +2006,12 @@ class _Analysis:
         if now is None or (confidence, -line) > (now.confidence, -now.line):
             self.usage[key] = _Usage(confidence, line, path)
 
+    def _read_usage(self, file: _PyFile) -> None:
+        try:
+            _Walker(self, file).run()
+        except RecursionError:
+            self._limit(f"{file.path} is nested too deeply to read for table use")
+
     def _read_unreferenced_strings(self, file: _PyFile) -> None:
         """SQL constants nothing refers to: their DDL still defines tables, and their other SQL counts for the file."""
         for name, (text, line) in sorted(file.strings.items()):
@@ -2506,6 +2539,371 @@ class _Analysis:
     def _is_key(self, table: _Table, column: str) -> bool:
         keys = [lowered for lowered, c in table.columns.items() if c.primary_key]
         return column.lower() in keys if keys else column.lower() == "id"
+
+
+class _Walker:
+    """Attributes table use in one file to the enclosing function or method, using ids the code graph also uses."""
+
+    def __init__(self, analysis: _Analysis, file: _PyFile) -> None:
+        self.a = analysis
+        self.file = file
+        self.path = file.path
+        self.symbol = f"file:{file.path}"
+        self.klass: str | None = None
+        self.vars: dict[str, str] = {}
+        self.sink_names: set[str] = set()
+        self.handled: set[int] = set()
+        self.nested = False
+
+    def run(self) -> None:
+        for stmt in self.file.tree.body:
+            self._statement(stmt, top=True)
+
+    def _use(self, table: str, access: str, confidence: float, line: int) -> None:
+        self.a._use(self.symbol, table, access, confidence, self.path, line)
+
+    # ---------------------------------------------------------- walking
+
+    def _statement(self, stmt: ast.stmt, *, top: bool = False) -> None:
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            self._function(stmt)
+        elif isinstance(stmt, ast.ClassDef):
+            self._class(stmt)
+        elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant):
+            pass  # a docstring, or a string used as a comment
+        elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            self._assign(stmt, top)
+        elif isinstance(stmt, (ast.If, ast.Try)) and top:
+            for child in ast.iter_child_nodes(stmt):
+                if isinstance(child, ast.stmt):
+                    self._statement(child, top=True)
+                elif isinstance(child, ast.ExceptHandler):
+                    for inner in child.body:
+                        self._statement(inner, top=True)
+                else:
+                    self._visit(child)
+        else:
+            self._children(stmt)
+
+    def _children(self, node: ast.AST) -> None:
+        for child in ast.iter_child_nodes(node):
+            self._visit(child)
+
+    def _visit(self, node: ast.AST) -> None:
+        if isinstance(node, ast.stmt):
+            self._statement(node)
+        elif isinstance(node, ast.Call):
+            self._call(node)
+            self._children(node)
+        elif isinstance(node, (ast.Constant, ast.JoinedStr, ast.BinOp)):
+            if id(node) in self.handled:
+                return
+            text = _string_value(node)
+            if text is not None:
+                self._sql_here(node, text, trusted=False)
+            if isinstance(node, ast.JoinedStr):
+                for value in node.values:
+                    if isinstance(value, ast.FormattedValue):
+                        self._visit(value.value)
+            elif isinstance(node, ast.BinOp):
+                self._binop_operands(node)
+        elif isinstance(node, ast.Name):
+            if isinstance(node.ctx, ast.Load) and id(node) not in self.handled:
+                self._constant(node, trusted=False)
+        elif isinstance(node, ast.Attribute):
+            if id(node) not in self.handled:
+                self._constant(node, trusted=False)
+            self._children(node)
+        else:
+            self._children(node)
+
+    def _binop_operands(self, node: ast.BinOp) -> None:
+        """What a string expression's non-string parts use. Its literal pieces were read as one whole."""
+        for side in (node.left, node.right):
+            if isinstance(side, ast.BinOp):
+                self._binop_operands(side)
+            elif not isinstance(side, ast.Constant):
+                self._visit(side)
+
+    def _function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        if self.file.alembic and node.name.startswith("downgrade"):
+            return
+        for decorator in node.decorator_list:
+            self._visit(decorator)
+        for default in [*node.args.defaults, *[d for d in node.args.kw_defaults if d]]:
+            self._visit(default)
+        if self.nested:  # a nested function belongs to its top-level owner, as it does in the graph
+            self._body(node)
+            return
+        saved = self.symbol, self.vars, self.sink_names, self.nested
+        if self.klass:
+            self.symbol = f"method:{self.path}:{self.klass}.{node.name}"
+        elif self.klass is None:
+            self.symbol = f"function:{self.path}:{node.name}"
+        self.vars = {}
+        self.sink_names = self._names_given_to_sinks(node)
+        self.nested = True
+        self._parameters(node)
+        self._body(node)
+        self.symbol, self.vars, self.sink_names, self.nested = saved
+
+    def _body(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        for stmt in node.body:
+            self._statement(stmt)
+
+    def _class(self, node: ast.ClassDef) -> None:
+        saved = self.klass
+        # Only a top-level class's methods are graph nodes; deeper ones count for their file or function.
+        self.klass = node.name if saved is None and not self.nested else ""
+        for stmt in node.body:
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                self._function(stmt)
+            elif isinstance(stmt, ast.ClassDef):
+                self._class(stmt)
+            elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                self._assign(stmt, True)
+            elif not (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant)):
+                self._children(stmt)
+        self.klass = saved
+
+    def _parameters(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        for arg in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]:
+            if isinstance(arg.annotation, (ast.Name, ast.Attribute)):
+                table = self.a._table_at(self.path, arg.annotation)
+                if table:
+                    self.vars[arg.arg] = table
+
+    def _names_given_to_sinks(self, node: ast.AST) -> set[str]:
+        names: set[str] = set()
+        for inner in ast.walk(node):
+            if isinstance(inner, ast.Call) and _tail(inner.func) in SQL_SINKS:
+                names |= {a.id for a in _sql_arguments(inner) if isinstance(a, ast.Name)}
+        return names
+
+    def _assign(self, stmt: ast.Assign | ast.AnnAssign, top: bool) -> None:
+        value = stmt.value
+        if value is None:
+            return
+        targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+        name = targets[0].id if len(targets) == 1 and isinstance(targets[0], ast.Name) else None
+        if name == "__tablename__":
+            return
+        if top and name is not None:
+            key = f"{self.klass}.{name}" if self.klass else name
+            if key in self.file.strings:
+                return  # read where it's used, or for the file if it never is
+        if name is not None and name in self.sink_names:
+            text = _string_value(value)
+            if text is not None:
+                self._sql_here(value, text, trusted=True)
+                self.handled.add(id(value))
+        if name is not None and isinstance(value, ast.Call):
+            table = self._produces_row(value)
+            if table:
+                self.vars[name] = table
+        self._visit(value)
+
+    def _produces_row(self, call: ast.Call) -> str | None:
+        table = self._constructed(call)
+        if table:
+            return table
+        for node in self._chain(call):
+            if isinstance(node, ast.Attribute) and node.attr in MANAGERS:
+                return self.a._table_at(self.path, node.value)
+        if _tail(call.func) == "get" and call.args:
+            return self.a._table_at(self.path, call.args[0])
+        return None
+
+    # ---------------------------------------------------------- SQL in strings
+
+    def _sql_here(self, node: ast.expr, text: str, trusted: bool) -> None:
+        head = _head_of(text)
+        if head not in SQL_HEADS and head not in SQL_PREAMBLE:
+            return
+        base = node.lineno
+        sql = self.a._parsed(text, trusted)
+        self.a._define(sql, self.path, base, text)
+        self.a._apply_use(sql, self.path, self.symbol, 0.9 if trusted else 0.7, _offset(base))
+
+    def _constant(self, node: ast.expr, trusted: bool) -> None:
+        """A SQL constant referred to here: the use is this function's, and the line this one."""
+        tail = _tail(node)
+        if tail not in self.a.string_names:
+            return
+        owner: tuple[str, str] | None = None
+        parts = _dotted(node)
+        if isinstance(node, ast.Name):
+            owner = self.a._resolve(self.path, tail)
+        elif parts and len(parts) == 2 and parts[0] in ("self", "cls"):
+            owner = (self.path, f"{self.klass}.{tail}") if self.klass else None
+        elif parts and len(parts) == 2 and f"{parts[0]}.{tail}" in self.file.strings:
+            owner = (self.path, f"{parts[0]}.{tail}")
+        elif parts:
+            owner = self.a._resolve_expr(self.path, node)
+        file = self.a.files.get(owner[0]) if owner else None
+        held = file.strings.get(owner[1]) if file and owner else None
+        if owner is None or held is None:
+            return
+        text, line = held
+        self.a.referenced.add(owner)
+        sql = self.a._parsed(text, trusted)
+        # A table the constant defines is cited at the constant; the use of it at the line referring to it.
+        self.a._define(sql, owner[0], line, text)
+        at = node.lineno
+        self.a._apply_use(sql, self.path, self.symbol, 0.9 if trusted else 0.7, lambda _: at)
+
+    def _sql_call(self, call: ast.Call) -> None:
+        if _tail(call.func) not in SQL_SINKS:
+            return
+        for arg in _sql_arguments(call):
+            if isinstance(arg, (ast.Name, ast.Attribute)):
+                self.handled.add(id(arg))
+                self._constant(arg, trusted=True)
+            else:
+                text = _string_value(arg)
+                if text is not None:
+                    self.handled.add(id(arg))
+                    self._sql_here(arg, text, trusted=True)
+
+    # ---------------------------------------------------------- ORM calls
+
+    def _constructed(self, call: ast.Call) -> str | None:
+        func = call.func
+        if not isinstance(func, (ast.Name, ast.Attribute)) or _tail(func) not in self.a.model_names:
+            return None
+        resolved = self.a._resolve_expr(self.path, func)
+        return self.a.models.get(resolved) if resolved and resolved in self.a.classes_of else None
+
+    def _tables_in(self, nodes: Iterable[ast.expr]) -> list[str]:
+        """The mapped classes and tables named anywhere in these expressions, such as ``Order`` or ``Order.id``."""
+        found: list[str] = []
+        for arg in nodes:
+            for inner in ast.walk(arg):
+                if isinstance(inner, (ast.Name, ast.Attribute)):
+                    table = self.a._table_at(self.path, inner)
+                    if table and table not in found:
+                        found.append(table)
+        return found
+
+    def _call(self, call: ast.Call) -> None:
+        self._sql_call(call)
+        if id(call) in self.handled:
+            return
+        tail = _tail(call.func)
+        if self._manager_chain(call) or self._query_chain(call):
+            return
+        built = self._constructed(call)
+        if built:
+            self._use(built, "write", 0.7, call.lineno)
+        if tail in READ_CALLS:
+            for named in self._tables_in(call.args):
+                self._use(named, "read", 0.9, call.lineno)
+        elif tail == "get" and call.args:
+            table = self.a._table_at(self.path, call.args[0])
+            if table:
+                self._use(table, "read", 0.9, call.lineno)
+        elif tail in ("insert", "update", "delete") and call.args:
+            table = self.a._table_at(self.path, call.args[0])
+            if table:
+                self._use(table, "write", 0.9, call.lineno)
+        if tail in ("insert", "update", "delete", "select") and isinstance(
+            call.func, ast.Attribute
+        ):
+            receiver = call.func.value
+            if isinstance(receiver, ast.Attribute) and receiver.attr == "__table__":
+                receiver = receiver.value
+            table = self.a._table_at(self.path, receiver)
+            if table:
+                self._use(table, "read" if tail == "select" else "write", 0.9, call.lineno)
+        if (
+            tail in PERSIST_CALLS
+            and isinstance(call.func, ast.Attribute)
+            and _is_session(call.func.value)
+        ):
+            self._persist(call)
+        if (
+            tail in ("save", "delete")
+            and isinstance(call.func, ast.Attribute)
+            and isinstance(call.func.value, ast.Name)
+        ):
+            table = self.vars.get(call.func.value.id)
+            if table:
+                self._use(table, "write", 0.8, call.lineno)
+
+    def _persist(self, call: ast.Call) -> None:
+        """``session.add(order)``, ``session.add(Order())`` and ``session.add_all([...])``."""
+        for arg in call.args:
+            for item in arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]:
+                table = self.vars.get(item.id) if isinstance(item, ast.Name) else None
+                if isinstance(item, ast.Call):
+                    table = self._constructed(item)
+                if table:
+                    self._use(table, "write", 0.9, call.lineno)
+
+    def _chain(self, call: ast.Call) -> Iterator[ast.Call | ast.Attribute]:
+        node: ast.expr = call
+        while isinstance(node, (ast.Call, ast.Attribute)):
+            yield node
+            node = node.func if isinstance(node, ast.Call) else node.value
+
+    def _manager_chain(self, call: ast.Call) -> bool:
+        """``Order.objects.filter(...).update(...)`` and Flask-SQLAlchemy's ``Order.query.get(...)``."""
+        methods: list[str] = []
+        table: str | None = None
+        inner: list[int] = []
+        for node in self._chain(call):
+            if isinstance(node, ast.Call):
+                inner.append(id(node))
+            elif node.attr in MANAGERS:
+                table = self.a._table_at(self.path, node.value)
+                if table:
+                    break
+            else:
+                methods.append(node.attr)
+        if not table:
+            return False
+        self.handled.update(i for i in inner if i != id(call))
+        known = all(m in ORM_READS or m in ORM_WRITES for m in methods)
+        access = "write" if any(m in ORM_WRITES for m in methods) else "read"
+        self._use(table, access, 0.9 if known else 0.6, call.lineno)
+        return True
+
+    def _query_chain(self, call: ast.Call) -> bool:
+        """``session.query(Order).filter(...)``, a write only when the chain goes on to ``delete`` or ``update``."""
+        methods: list[str] = []
+        found: ast.Call | None = None
+        inner: list[int] = []
+        for node in self._chain(call):
+            if isinstance(node, ast.Attribute):
+                methods.append(node.attr)
+            else:
+                inner.append(id(node))
+                if (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "query"
+                    and self._tables_in(node.args)
+                ):
+                    found = node
+                    break
+        if found is None:
+            return False
+        self.handled.update(i for i in inner if i != id(call))
+        access = "write" if {"delete", "update"} & set(methods) else "read"
+        for table in self._tables_in(found.args):
+            self._use(table, access, 0.9, call.lineno)
+        return True
+
+
+def _sql_arguments(call: ast.Call) -> list[ast.expr]:
+    return [*call.args[:1], *[k.value for k in call.keywords if k.arg in SQL_ARGUMENTS]]
+
+
+def _is_session(node: ast.expr) -> bool:
+    """A receiver that looks like a database session, so ``seen.add(order)`` isn't a write."""
+    parts = _dotted(node.func if isinstance(node, ast.Call) else node) or []
+    return any("session" in p.lower() for p in parts) or (
+        parts[-1:] in (["db"], ["s"], ["tx"], ["uow"])
+    )
 
 
 def analyze(ctx: RepoContext) -> dict[str, Any]:
