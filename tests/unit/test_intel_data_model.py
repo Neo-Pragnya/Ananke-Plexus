@@ -271,6 +271,11 @@ GO
 ALTER TABLE [Person].[Home] WITH CHECK ADD CONSTRAINT [FK] FOREIGN KEY([AddressID])
 REFERENCES [Person].[Address] ([AddressID])
 GO
+ALTER TABLE [Person].[Home] ADD
+    CONSTRAINT [FK2] FOREIGN KEY ([Spare]) REFERENCES [Person].[Address] ([AddressID]),
+    CONSTRAINT [FK3] FOREIGN KEY ([Other]) REFERENCES [Person].[Address] ([AddressID]),
+    [Late] [int] NULL
+GO
 """
         },
     )
@@ -279,7 +284,12 @@ GO
         ("Home", "Person"),
     }
     assert column(report, "Home", "HomeID")["primary_key"] is True
-    assert links(report) == {("Home", "AddressID", "Address", "AddressID")}
+    assert links(report) == {
+        ("Home", "AddressID", "Address", "AddressID"),
+        ("Home", "Spare", "Address", "AddressID"),
+        ("Home", "Other", "Address", "AddressID"),
+    }
+    assert column(report, "Home", "Late")["type"] == "int"
 
 
 def test_alembic_reads_the_upgrade_only(tmp_path: Path) -> None:

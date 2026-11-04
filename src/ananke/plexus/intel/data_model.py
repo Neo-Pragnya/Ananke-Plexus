@@ -908,15 +908,20 @@ def _alter(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
         return
     name, schema, after = parsed
     table = _Table(name, schema, "sql", "", line_of(toks[i].pos), partial=True)
+    adding = False  # T-SQL's one ADD can cover a comma-separated list
     for action in _split(toks[after:]):
         if _is(_at(action, 0), "WITH") and _is(_at(action, 1), "CHECK", "NOCHECK"):
             action = action[2:]
-        if not _is(_at(action, 0), "ADD"):
-            sql.not_replayed += _is(_at(action, 0), "DROP", "RENAME", "ALTER", "MODIFY", "CHANGE")
+        if _is(_at(action, 0), "DROP", "RENAME", "ALTER", "MODIFY", "CHANGE"):
+            sql.not_replayed += 1
+            adding = False
             continue
-        item = action[1:]
-        if not item:
+        if _is(_at(action, 0), "ADD"):
+            adding = True
+            action = action[1:]
+        if not adding or not action:
             continue
+        item = action
         if _is(item[0], "COLUMN"):
             item = item[1:]
             if _is(_at(item, 0), "IF") and _is(_at(item, 2), "EXISTS"):
