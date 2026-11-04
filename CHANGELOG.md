@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+---
+
+## [0.3.20] — 2026-11-04
+
 ### Added
 
 - **Repo intelligence: overview, CALM, quality, coverage and dependencies.** Languages and components with the evidence for each
@@ -38,8 +42,6 @@ couldn't install a scanner.
 ### Fixed
 
 - The release and security workflows install Trivy with retries and a pinned checksum, so one failed DNS lookup can't block a release.
-
----
 
 ---
 
