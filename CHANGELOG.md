@@ -23,6 +23,12 @@ couldn't install a scanner.
 ### Fixed
 
 - The release and security workflows install Trivy with retries and a pinned checksum, so one failed DNS lookup can't block a release.
+### Added
+
+- **Repo intelligence: overview, CALM, quality, coverage and dependencies.** Languages and components with the evidence for each
+  kind; an inferred CALM model that's never written, with `drift` against a declared one; complexity and hotspots, with tests
+  counted apart; coverage from existing reports, never 0% when there are none; a package inventory from manifests and lockfiles,
+  and an OSV lookup only when asked. See `docs/reference/repo-intelligence.md`.
 
 ---
 
