@@ -58,6 +58,47 @@ Each section also has `status: "none"` when the repo simply has nothing of that 
 wasn't analysed.
 
 
+## The data model
+
+`sections.data` says which tables and fields exist, how they relate, and which code uses them. Nothing is imported or run: Python
+is read with `ast`, SQL with a small linear tokenizer, and Prisma and TypeORM line by line.
+
+**Tables come from:** SQLAlchemy declarative classes and `Table(...)`, SQLModel `table=True`, Django models, `.sql` files and SQL in
+Python strings (`CREATE TABLE`, `ALTER TABLE ... ADD`, T-SQL's `GO` and `[brackets]` included), Alembic `upgrade()`, `.prisma` models and
+simple TypeORM `@Entity` classes. One table found in several places is one table, whatever the case of its name. ORM definitions
+win over migrations, and migrations over SQL. `source` names the strongest.
+
+**A table with no definition still appears.** `source` is `inferred-from-sql` when only SQL uses it, or `inferred-from-reference` when
+only a foreign key points at it. It lists only the columns that were stated, and a limit says the definition wasn't found.
+
+**Relationships** have `origin: extracted` when they come from a foreign key or a many-to-many declaration. `inferred` means a
+`JOIN ... ON a.x = b.y` where one side is the other table's key. A join says nothing otherwise, and no join is invented. The ERD
+draws inferred links dashed.
+
+**Usage** uses the code graph's symbol ids, or `file:<path>` for top-level code. A nested function counts for the function around it.
+Python's ORM calls are followed through imports, so a different class that shares a model's name isn't the model. SQL held in a
+constant counts for the function that refers to it, cited at that line. `confidence` is highest for a call that plainly reads or
+writes, and lower for building a row or for SQL outside any database call.
+
+**A string is SQL** only if it parses as a statement keyword followed by a table clause. Outside a database call it must also read
+like SQL rather than a sentence, so `"Select a file from the list"` isn't a query. Tables named like English words (`the`, `a`) or
+placeholders (`table_name`) aren't read from SQL.
+
+**Not read, and said so in `limits` when it applies:**
+
+- notebooks;
+- test and fixture files, which aren't the application's data model;
+- SQL and ORM use in JavaScript or TypeScript, so Prisma and TypeORM give tables but no usage;
+- other ORMs (Peewee, Tortoise, Pony, MongoEngine, Beanie and similar) and data code in Java, Kotlin, Go, Ruby, PHP, C# or Rust;
+- tables chosen at run time, such as `f"SELECT * FROM {name}"`;
+- SQL only listed at module level, which defines tables if it's DDL but isn't counted as use, because nothing says it runs;
+- views, which aren't listed as tables.
+
+Migrations aren't replayed: a `DROP` or `RENAME` is counted in `limits` and the table keeps what it once had. Temporary tables are
+left out. A repository method that takes its model as a variable (`session.query(self.model)`) isn't traced. Mermaid names are reduced to letters, digits and
+underscores, so a name in another script appears as `unnamed` in the ERD and keeps its real name in `tables`.
+
+
 ## Rules every section follows
 
 - **Evidence.** Each table, field, route, usage and step cites `path:line`.

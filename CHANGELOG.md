@@ -13,6 +13,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 - The code graph now links imports to files. It works out source roots, resolves relative imports and aliases, and reads
   JavaScript and TypeScript, including `tsconfig` path aliases. Import edges gain an optional `resolved_target`, and
   `ananke app code` and `ananke graph impact` use it. Existing node ids don't change.
+- **Repo intelligence: the data model.** Tables, fields, relationships and which functions read or write them, with a Mermaid ERD and
+  `path:line` evidence, from SQLAlchemy, SQLModel, Django, SQL, Alembic, Prisma and simple TypeORM. Runs nothing.
 
 ### Fixed
 
