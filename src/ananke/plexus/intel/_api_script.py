@@ -8,7 +8,7 @@ distance, so the work stays proportional to a file's size.
 from __future__ import annotations
 
 import bisect
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,6 +43,7 @@ from ananke.plexus.intel._api_common import (
     expand_prefixes,
     is_catch_all,
     join_paths,
+    looks_like_url,
     merged,
     only_text,
 )
@@ -55,11 +56,12 @@ _STATEMENTS = {
     "export", "import", "const", "let", "var", "function", "class", "interface", "type", "return", "if", "for",
     "while", "switch", "try", "throw",
 }  # fmt: skip
+MAX_SCANNED_BYTES = 64_000_000
 _MAX_EXPRESSION = 96  # tokens one value can take: enough for a URL, and it stops a pathological one
 _MAX_ARGS = 32
 _MAX_LOOKAHEAD = 48
 _MAX_EVAL_DEPTH = 8
-_MAX_EVAL_STEPS = 256
+_MAX_EVAL_STEPS = 1024
 _MAX_CHAIN = 8
 _MAX_TEXT = 2048
 _MAX_KEYS = 512
@@ -211,7 +213,10 @@ class _Script:
     match: list[int]
     depth: list[int]
     parsed: _Parsed
-    decls: dict[str, list[tuple[int, int, int]]] = field(default_factory=dict)  # name → (at, start, end)
+    decls: dict[str, list[tuple[int, int, int]]] = field(
+        default_factory=dict
+    )  # name → (at, start, end)
+    top_decls: dict[str, tuple[int, int]] = field(default_factory=dict)
     fields: dict[str, tuple[int, int]] = field(default_factory=dict)
     instances: dict[str, _Instance] = field(default_factory=dict)
     servers: set[str] = field(default_factory=set)
@@ -330,10 +335,17 @@ class ScriptReader:
     # ------------------------------------------------------------ loading
 
     def load(self) -> None:
+        budget = MAX_SCANNED_BYTES
         for rel in self.paths:
             text = read_text(self.ctx, rel)
             if text is None or is_minified(Path(rel).name, text) or rel.endswith(".d.ts"):
                 continue
+            budget -= len(text)
+            if budget < 0:
+                self.limits.add(
+                    f"only the first {MAX_SCANNED_BYTES // 1_000_000} MB of scripts were read"
+                )
+                break
             try:
                 tokens = scan(text)
                 match, depth = _matching(tokens)
@@ -346,7 +358,7 @@ class ScriptReader:
                 self.uses_express = True
         self.linker = _Linker({rel: s.parsed for rel, s in self.scripts.items()}, self.resolver)
         for script in self.scripts.values():
-            self._collect(script)
+            self._guarded(script, self._collect)
 
     def _collect(self, script: _Script) -> None:
         """A first walk: what names hold, before any call is read."""
@@ -407,6 +419,8 @@ class ScriptReader:
         start = j + 1
         end = script.expression_end(start)
         script.decls.setdefault(name, []).append((i, start, end))
+        if script.depth[i] == 0:
+            script.top_decls.setdefault(name, (start, end))
         self._made(script, name, start)
 
     def _made(self, script: _Script, name: str, start: int) -> None:
@@ -427,9 +441,7 @@ class ScriptReader:
             return
         if script.punct(start + 1, "(") and bound[1] in {None, "default"}:
             self._add_server(script, name, False, script.tokens[start].line)
-        elif script.punct(start + 1, "(") and bound[1] == "Router":
-            self._add_server(script, name, True, script.tokens[start].line)
-        elif (
+        elif (script.punct(start + 1, "(") and bound[1] == "Router") or (
             script.punct(start + 1, ".")
             and script.word(start + 2, "Router")
             and script.punct(start + 3, "(")
@@ -443,17 +455,19 @@ class ScriptReader:
 
     # ------------------------------------------------------------ names across files
 
-    def _follow(self, script: _Script, name: str, seen: set[tuple[str, str]]) -> tuple[_Script, str] | None:
+    def _follow(
+        self, script: _Script, name: str, seen: set[tuple[str, str]]
+    ) -> tuple[_Script, str] | None:
         """Which file and local name an imported name means. A name of ``""`` is the module itself."""
         key = (script.rel, name)
         if key in seen or len(seen) > 64:
             return None
         seen.add(key)
-        if name in script.instances or name in script.servers or name in script.decls:
+        if name in script.instances or name in script.servers:
             return script, name
         bound = script.parsed.bindings.get(name)
         if bound is None:
-            return None
+            return (script, name) if name in script.decls else None
         target = self._script_of(script.rel, bound[0])
         if target is None:
             return None
@@ -465,7 +479,9 @@ class ScriptReader:
         file = self.resolver.resolve(importer, spec)
         return self.scripts.get(file) if file else None
 
-    def _member(self, script: _Script, name: str, seen: set[tuple[str, str]]) -> tuple[_Script, str] | None:
+    def _member(
+        self, script: _Script, name: str, seen: set[tuple[str, str]]
+    ) -> tuple[_Script, str] | None:
         key = (script.rel, f"member:{name}")
         if key in seen or len(seen) > 64:
             return None
@@ -518,11 +534,13 @@ class ScriptReader:
         joined = merged(parts)
         return None if sum(len(p) for p in joined if isinstance(p, str)) > _MAX_TEXT else joined
 
-    def _expression(self, script: _Script, start: int, end: int, at: int, depth: int) -> Parts | None:
-        self.steps += 1
+    def _expression(
+        self, script: _Script, start: int, end: int, at: int, depth: int
+    ) -> Parts | None:
+        end = min(end, start + _MAX_EXPRESSION)
+        self.steps += 1 + max(end - start, 0)  # the budget is in tokens, however they're nested
         if depth > _MAX_EVAL_DEPTH or self.steps > _MAX_EVAL_STEPS or start >= end:
             return None
-        end = min(end, start + _MAX_EXPRESSION)
         alternatives: list[tuple[int, int]] = []
         terms: list[tuple[int, int]] = []
         begin = i = start
@@ -558,7 +576,12 @@ class ScriptReader:
                 found = self._expression(script, low, high, at, depth + 1)
                 if found is not None and not any(isinstance(p, Param) for p in found):
                     return found
-            return self._expression(script, start, end, at, depth + 1)
+            fallback = self._expression(script, start, end, at, depth + 1)
+            return (
+                fallback
+                if looks_like_url(fallback)
+                else [Param(_last_word(script, *alternatives[0]))]
+            )
         terms.append((begin, end))
         out: Parts = []
         for low, high in terms:
@@ -636,7 +659,9 @@ class ScriptReader:
             if where is None:
                 return [Param(name)]
             found = self._expression(script, where[0], where[1], where[0], depth + 1)
-            return found if found is not None else [Param(name)]
+            return (
+                found if merged(found or []) else [Param(name)]
+            )  # an empty field is one that's filled in later
         if chain[0] in {"process", "import"}:
             return [Param(name)]
         located = self._locate(script, chain[0], at)
@@ -651,27 +676,25 @@ class ScriptReader:
                 return [Param(name)]
             start, end = value
         found = self._expression(owner, start, end, start, depth + 1)
-        return found if found is not None else [Param(name)]
+        return found if merged(found or []) else [Param(name)]
 
     def _locate(self, script: _Script, name: str, at: int) -> tuple[_Script, int, int] | None:
         """Where a name's value is written: the nearest declaration before use in this function, or at the top of a file."""
         rows = script.decls.get(name)
         if rows:
-            places = [r[0] for r in rows]
-            index = bisect.bisect_right(places, at) - 1
-            top = next((r for r in rows if script.depth[r[0]] == 0), None)
+            index = bisect.bisect_right(rows, at, key=lambda r: r[0]) - 1
             if index >= 0:
                 row = rows[index]
                 if script.depth[row[0]] == 0 or self._same_function(script, row[0], at):
                     return script, row[1], row[2]
-            return (script, top[1], top[2]) if top else None
+            top = script.top_decls.get(name)
+            return (script, top[0], top[1]) if top else None
         found = self._follow(script, name, set())
         if found is None or found[0] is script or not found[1]:
             return None
         owner, local = found
-        rows = owner.decls.get(local)
-        top = next((r for r in rows or [] if owner.depth[r[0]] == 0), None)
-        return (owner, top[1], top[2]) if top else None
+        top = owner.top_decls.get(local)
+        return (owner, top[0], top[1]) if top else None
 
     def _same_function(self, script: _Script, a: int, b: int) -> bool:
         """Whether no function boundary at the top of the declaration's block closes between them."""
@@ -696,9 +719,15 @@ class ScriptReader:
     def read(self) -> None:
         self.load()
         for script in self.scripts.values():
-            self._read_calls(script)
-            self._read_nest(script)
+            self._guarded(script, self._read_calls)
+            self._guarded(script, self._read_nest)
         self._finish()
+
+    def _guarded(self, script: _Script, step: Callable[[_Script], None]) -> None:
+        try:
+            step(script)
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError, RecursionError) as exc:
+            self.limits.add(f"{script.rel} couldn't be read: {type(exc).__name__}")
 
     def _call_open(self, script: _Script, i: int) -> int:
         """The ``(`` of a call of the word at ``i``, past ``?.`` and type arguments, or -1."""
@@ -764,10 +793,14 @@ class ScriptReader:
                 self._fetch(script, i, opener, chain)
             elif callable_instance and not chain:
                 self._axios_call(script, i, opener, word)
-            elif word in {*HTTP_VERBS, "request", "all", "use", "route", "setGlobalPrefix"} and chain:
+            elif (
+                word in {*HTTP_VERBS, "request", "all", "use", "route", "setGlobalPrefix"} and chain
+            ):
                 self._member_call(script, i, opener, chain, word)
             if len(self.raw_clients) >= MAX_CLIENTS or len(self.pending) >= MAX_ROUTES:
-                self.limits.add("this repository has more calls than can be listed; the rest were left out")
+                self.limits.add(
+                    "this repository has more calls than can be listed; the rest were left out"
+                )
                 return
 
     def _add_client(
@@ -868,12 +901,18 @@ class ScriptReader:
                 return
             if word == "request":
                 if instance.framework == "angular" and len(args) > 1:
-                    verb = script.text(args[0][0]).upper() if script.kind(args[0][0]) == "string" else "UNKNOWN"
+                    verb = (
+                        script.text(args[0][0]).upper()
+                        if script.kind(args[0][0]) == "string"
+                        else "UNKNOWN"
+                    )
                     self._add_client(script, i, verb, "angular", args[1], None)
                 else:
                     self._config_call(script, i, args, instance)
                 return
-            self._add_client(script, i, word.upper(), instance.framework, args[0], self._base(instance))
+            self._add_client(
+                script, i, word.upper(), instance.framework, args[0], self._base(instance)
+            )
             return
         if word == "setGlobalPrefix":
             if args:
@@ -918,15 +957,15 @@ class ScriptReader:
             return self.servers[key]
         return None
 
-    def _use(
-        self, script: _Script, server: Server, args: list[tuple[int, int]], line: int
-    ) -> None:
+    def _use(self, script: _Script, server: Server, args: list[tuple[int, int]], line: int) -> None:
         if not args:
             return
         prefix = ""
         rest = args
         if script.kind(args[0][0]) in {"string", "template"} or (
-            script.word(args[0][0]) and args[0][1] - args[0][0] == 1 and self._is_text(script, args[0])
+            script.word(args[0][0])
+            and args[0][1] - args[0][0] == 1
+            and self._is_text(script, args[0])
         ):
             text = only_text(self.evaluate(script, args[0][0], args[0][1]))
             if text is None:
@@ -943,7 +982,11 @@ class ScriptReader:
         return bool(parts) and all(isinstance(p, str) for p in parts or [])
 
     def _mount_target(self, script: _Script, low: int, high: int) -> Server | None:
-        if script.word(low, "require") and script.punct(low + 1, "(") and script.kind(low + 2) == "string":
+        if (
+            script.word(low, "require")
+            and script.punct(low + 1, "(")
+            and script.kind(low + 2) == "string"
+        ):
             target = self._script_of(script.rel, script.text(low + 2))
             if target is None:
                 return None
@@ -962,7 +1005,9 @@ class ScriptReader:
             return
         j = script.closing(opener) + 1
         taken = 0
-        while script.punct(j, ".") and script.word(j + 1) and script.punct(j + 2, "(") and taken < 16:
+        while (
+            script.punct(j, ".") and script.word(j + 1) and script.punct(j + 2, "(") and taken < 16
+        ):
             taken += 1
             verb = script.text(j + 1)
             close = script.closing(j + 2)
@@ -1028,6 +1073,8 @@ class ScriptReader:
         """The symbol a route's last argument names, unwrapping ``wrap(fn)``, or its lines if written in place."""
         low, high = arg
         for _ in range(3):
+            if script.text(low) in {"function", "async"}:
+                break
             chain = _plain_chain(script, low, high)
             if chain:
                 if chain[-1] == "bind" and len(chain) > 1:
@@ -1047,7 +1094,7 @@ class ScriptReader:
                 if chain:
                     resolved = self._symbol(script, chain)
                     return resolved, None if resolved else chain[-1], None
-            if not inner or close + 1 < high and not script.punct(close + 1, "{"):
+            if not inner or close + 1 != high:
                 break
             low, high = inner[0]
         start = script.tokens[low].line if low < script.size else 0
@@ -1140,6 +1187,8 @@ class ScriptReader:
                 for method, paths, line in pending:
                     for prefix in prefixes:
                         for path in paths:
+                            if len(self.nest) >= MAX_ROUTES:
+                                return
                             self.nest.append(
                                 RawRoute(
                                     method,
@@ -1167,7 +1216,8 @@ class ScriptReader:
             for prefix in prefixes.get(key, ()):
                 if len(self.routes) >= MAX_ROUTES:
                     break
-                full = join_paths(prefix.text, route.path)
+                # Express treats /orders and /orders/ alike, so a router's own root has no slash of its own
+                full = join_paths(prefix.text, "" if route.path == "/" else route.path)
                 extra: dict[str, object] = {}
                 if not prefix.mounted:
                     unmounted += 1
@@ -1215,7 +1265,8 @@ class ScriptReader:
             )
         if self.unparsed:
             self.limits.add(
-                f"{len(self.unparsed)} scripts couldn't be read: " + ", ".join(sorted(self.unparsed)[:5])
+                f"{len(self.unparsed)} scripts couldn't be read: "
+                + ", ".join(sorted(self.unparsed)[:5])
             )
 
 

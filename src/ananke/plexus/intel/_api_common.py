@@ -15,7 +15,9 @@ MAX_PATH = 2048
 MAX_SEGMENTS = 32
 MAX_ROUTES = 5000
 MAX_CLIENTS = 5000
-MAX_PREFIXES = 32  # paths one router can be reached by: stops a router mounted twice at each of many levels
+MAX_PREFIXES = (
+    32  # paths one router can be reached by: stops a router mounted twice at each of many levels
+)
 MAX_MOUNT_DEPTH = 32
 _ANGLE = re.compile(r"<([^<>]*)>")
 _BRACE = re.compile(r"\{([^{}]*)\}")
@@ -75,11 +77,20 @@ def only_text(parts: Parts | None) -> str | None:
     return joined[0] if len(joined) == 1 and isinstance(joined[0], str) else None
 
 
+def looks_like_url(parts: Parts | None) -> bool:
+    """Whether a fallback like ``x || "/api"`` is a URL. ``id || "new"`` says nothing about the path."""
+    joined = merged(parts or [])
+    if not joined or not isinstance(joined[0], str):
+        return False
+    return joined[0].startswith(("/", "http://", "https://"))
+
+
 def join_paths(*pieces: str) -> str:
     """Pieces of a route's path as one, always with a leading slash and no doubled ones. A trailing slash stays."""
-    text = "/".join(p for p in pieces if p)
+    kept = [p for p in pieces if p]
+    text = "/".join(kept)
     segments = [s for s in text.split("/") if s]
-    tail = "/" if pieces and pieces[-1].endswith("/") and segments else ""
+    tail = "/" if kept and kept[-1].endswith("/") and segments else ""
     return "/" + "/".join(segments) + tail
 
 
@@ -179,7 +190,9 @@ def _clean_segments(text: str) -> list[str] | None:
         last = segments[-1]
         opener = last.rfind("{")
         if opener > 0 and last[opener + 1 : -1].lower() in _QUERY_NAMES:
-            segments[-1] = last[:opener]  # ``/orders${query}``: the query string, not a part of the path
+            segments[-1] = last[
+                :opener
+            ]  # ``/orders${query}``: the query string, not a part of the path
     return segments
 
 

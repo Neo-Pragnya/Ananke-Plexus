@@ -34,7 +34,9 @@ MAX_LISTED = 20
 MAX_SPECS = 20
 MAX_MISSING = 50
 MAX_SOURCE_FILES = 20_000
-MAX_VISITS = 4096  # nodes one client may visit while matching
+MAX_VISITS = 1024  # trie nodes one client may visit while matching
+MAX_ALL_VISITS = 1_000_000
+MAX_SAME_SHAPE = 64  # routes kept with one path shape, of which one client picks the nearest
 _STATIC = {
     ".json", ".html", ".htm", ".csv", ".txt", ".md", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".css",
     ".js", ".map", ".woff", ".woff2", ".xml", ".yaml", ".yml", ".pdf", ".wasm",
@@ -60,6 +62,7 @@ class _RouteIndex:
 
     def __init__(self, routes: list[dict[str, Any]]) -> None:
         self.root = _Node()
+        self.visits = 0
         for route in routes:
             if route.get("catch_all") or route["method"] == "WS":
                 continue
@@ -70,7 +73,8 @@ class _RouteIndex:
                     node = node.param
                 else:
                     node = node.literal.setdefault(segment, _Node())
-            node.routes.append(route)
+            if len(node.routes) < MAX_SAME_SHAPE:
+                node.routes.append(route)
 
     def find(self, method: str, path: str, client_file: str) -> tuple[dict[str, Any] | None, bool]:
         """The best route for a client, and whether others matched as well.
@@ -82,8 +86,9 @@ class _RouteIndex:
             return None, False
         visits = 0
         stack: list[tuple[_Node, int]] = [(self.root, 0)]
-        while stack and visits < MAX_VISITS:
+        while stack and visits < MAX_VISITS and self.visits < MAX_ALL_VISITS:
             visits += 1
+            self.visits += 1
             node, depth = stack.pop()
             if depth == len(segments):
                 chosen = _choose(node.routes, method, client_file)
@@ -115,7 +120,9 @@ def _choose(
         return None
     if method == "UNKNOWN":  # any route would do, but only one may fit
         return (routes[0], False) if len(routes) == 1 else None
-    fitting = [r for r in routes if r["method"] == method] or [r for r in routes if r["method"] == "ANY"]
+    fitting = [r for r in routes if r["method"] == method] or [
+        r for r in routes if r["method"] == "ANY"
+    ]
     if not fitting:
         return None
     # the same path in two services: the one nearest the caller
@@ -151,7 +158,9 @@ def _read_nginx(rel: str, text: str) -> list[_Proxy]:
             _, marker, rest = target.partition("://")
             uri = rest.partition("/")[1:] if marker else ("", "")
             if uri[0] == "/" and uri[1] == "":
-                found.append(_Proxy(posixpath.dirname(rel), location.rstrip("/"), f"{rel}:{line_at}"))
+                found.append(
+                    _Proxy(posixpath.dirname(rel), location.rstrip("/"), f"{rel}:{line_at}")
+                )
             location = ""
     return found
 
@@ -181,7 +190,7 @@ def _read_proxy_config(rel: str, text: str) -> list[_Proxy]:
                     break
             elif now.kind == "string" and now.text.lstrip("^").rstrip("/") == prefix:
                 following = tokens[j + 2] if j + 2 < size else None
-                if tokens[j + 1].text == ":" and following is not None and following.text == "":
+                if following is not None and tokens[j + 1].text == ":" and following.text == "":
                     strips = following.kind == "string"
             elif now.kind == "regex":
                 written = now.text.strip("/").replace("\\", "").lstrip("^").rstrip("/")
@@ -283,7 +292,9 @@ def _json_operations(text: str) -> dict[str, Any] | None:
     }
 
 
-def _read_specs(ctx: RepoContext, routes: list[dict[str, Any]], limits: set[str]) -> list[dict[str, Any]]:
+def _read_specs(
+    ctx: RepoContext, routes: list[dict[str, Any]], limits: set[str]
+) -> list[dict[str, Any]]:
     served = {(r["method"], shape(r["path"])) for r in routes}
     any_method = {shape(r["path"]) for r in routes if r["method"] == "ANY"}
     specs: list[dict[str, Any]] = []
@@ -309,9 +320,7 @@ def _read_specs(ctx: RepoContext, routes: list[dict[str, Any]], limits: set[str]
         for method, path in read["operations"]:
             plain = shape(brace_params(path))
             joined = shape(join_paths(base, brace_params(path)))
-            if not any(
-                (method, s) in served or s in any_method for s in (plain, joined)
-            ):
+            if not any((method, s) in served or s in any_method for s in (plain, joined)):
                 missing.append(f"{method} {path}")
         missing.sort()
         entry: dict[str, Any] = {
@@ -427,6 +436,7 @@ def _match(
     clients: list[dict[str, Any]],
     routes: list[dict[str, Any]],
     proxies: list[_Proxy],
+    limits: set[str],
 ) -> list[dict[str, Any]]:
     index = _RouteIndex(routes)
     unmatched = []
@@ -453,6 +463,10 @@ def _match(
             client["static"] = True
         else:
             unmatched.append(client)
+    if index.visits >= MAX_ALL_VISITS:
+        limits.add(
+            "matching stopped early on a very large set of routes, so some clients may be unmatched wrongly"
+        )
     return unmatched
 
 
@@ -480,9 +494,7 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
         kept = kept[:MAX_SOURCE_FILES]
     file_nodes = {n.path for n in ctx.graph.nodes if n.kind == "file"}
     py_paths = [p for p in kept if p.endswith(".py") and p in file_nodes]
-    js_paths = [
-        p for p in kept if p.endswith(JS_SUFFIXES) and p in file_nodes and not _skipped(p)
-    ]
+    js_paths = [p for p in kept if p.endswith(JS_SUFFIXES) and p in file_nodes and not _skipped(p)]
 
     python = PythonReader(ctx, py_paths, ctx.graph)
     python.read()
@@ -497,7 +509,7 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
     }
     routes = _route_dicts([*python.routes, *scripts.routes], limits)
     clients, _ = _client_dicts([*python.raw_clients, *scripts.raw_clients], owners, limits)
-    unmatched = _match(clients, routes, _read_proxies(ctx))
+    unmatched = _match(clients, routes, _read_proxies(ctx), limits)
     specs = _read_specs(ctx, routes, limits)
 
     for route in routes:

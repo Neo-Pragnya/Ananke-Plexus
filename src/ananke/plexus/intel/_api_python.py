@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import re
+import warnings
 from dataclasses import dataclass, field
 
 from ananke.plexus.graph.models import GraphSnapshot
@@ -15,8 +16,10 @@ from ananke.plexus.graph.python_imports import (
     FileImports,
     ModuleIndex,
     Symbols,
-    attribute_chain,
     read_imports,
+)
+from ananke.plexus.graph.python_imports import (
+    attribute_chain as _attribute_chain,
 )
 from ananke.plexus.graph.service import _module_index
 from ananke.plexus.intel._api_common import (
@@ -34,6 +37,7 @@ from ananke.plexus.intel._api_common import (
     expand_prefixes,
     is_catch_all,
     join_paths,
+    looks_like_url,
     merged,
     only_text,
     param_name,
@@ -75,7 +79,7 @@ _CLIENT_CLASSES = {
 }
 _CLIENT_CALLS = {*HTTP_VERBS, "request", "stream"}
 _UNSUPPORTED = {
-    "http.server": "http.server handlers route by hand",
+    "http.server": "http.server handlers",
     "aiohttp.web": "aiohttp.web",
     "tornado": "Tornado",
     "starlette": "Starlette routes",
@@ -91,6 +95,14 @@ _DJANGO_FUNCS = {
     "django.conf.urls.include": "include",
 }
 _METHOD_WORD = re.compile(r"['\"]([A-Za-z]{3,7})['\"]")
+_MAX_CHAIN = 16
+MAX_PARSED_BYTES = 64_000_000
+
+
+def attribute_chain(node: ast.expr) -> list[str]:
+    """A dotted name short enough to be real. Following a very long one would cost its length squared."""
+    chain = _attribute_chain(node)
+    return chain if len(chain) <= _MAX_CHAIN else []
 
 
 @dataclass
@@ -110,10 +122,16 @@ class _File:
     path: str
     tree: ast.Module
     imports: FileImports
-    external: dict[str, str] = field(default_factory=dict)  # local name → dotted name outside the repo
+    external: dict[str, str] = field(
+        default_factory=dict
+    )  # local name → dotted name outside the repo
     values: dict[str, ast.expr] = field(default_factory=dict)  # module-level assignments
     attrs: dict[str, ast.expr] = field(default_factory=dict)  # self.x = ..., anywhere in the file
     classes: dict[str, ast.ClassDef] = field(default_factory=dict)
+    class_values: dict[str, dict[str, ast.expr]] = field(
+        default_factory=dict
+    )  # class → attribute → value
+    any_class_value: dict[str, ast.expr] = field(default_factory=dict)
     returned: dict[str, str] = field(default_factory=dict)  # function → the name it returns
     clients: dict[str, tuple[str, ast.expr | None]] = field(default_factory=dict)
 
@@ -179,7 +197,9 @@ class PythonReader:
         if text is None:
             return None
         try:
-            tree = ast.parse(text)
+            with warnings.catch_warnings():  # an odd escape in someone's string is not news
+                warnings.simplefilter("ignore")
+                tree = ast.parse(text)
             imports = read_imports(self.index, rel, tree)
         except _PARSE_FAILURES:
             if rel in self.path_set:
@@ -200,8 +220,12 @@ class PythonReader:
             elif isinstance(item, ast.ImportFrom) and not item.level and item.module:
                 for alias in item.names:
                     file.external[alias.asname or alias.name] = f"{item.module}.{alias.name}"
-            elif isinstance(item, ast.ClassDef):
-                file.classes.setdefault(item.name, item)
+            elif isinstance(item, ast.ClassDef) and item.name not in file.classes:
+                file.classes[item.name] = item
+                values = _class_values(item)
+                file.class_values[item.name] = values
+                for name, value in values.items():
+                    file.any_class_value.setdefault(name, value)
         for dotted in file.external.values():
             for name, what in _UNSUPPORTED.items():
                 if dotted == name or dotted.startswith(f"{name}."):
@@ -230,9 +254,9 @@ class PythonReader:
             for inner in item.body:
                 self._module_statement(file, inner)
         elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            for inner in ast.iter_child_nodes(item):
-                if isinstance(inner, ast.Return) and isinstance(inner.value, ast.Name):
-                    file.returned[item.name] = inner.value.id
+            for child in ast.iter_child_nodes(item):
+                if isinstance(child, ast.Return) and isinstance(child.value, ast.Name):
+                    file.returned[item.name] = child.value.id
 
     def _callee(self, file: _File, func: ast.expr) -> str:
         """A call's target as a dotted name outside the repository, when it is one."""
@@ -300,7 +324,9 @@ class PythonReader:
 
     # ------------------------------------------------------------ names
 
-    def _lookup(self, rel: str, chain: list[str], seen: set[tuple[str, str]]) -> tuple[str, str] | None:
+    def _lookup(
+        self, rel: str, chain: list[str], seen: set[tuple[str, str]]
+    ) -> tuple[str, str] | None:
         """Which server or client a dotted name means: ``(file, name)``, following imports and simple assignments."""
         if not chain:
             return None
@@ -391,9 +417,7 @@ class PythonReader:
             return None
         return joined
 
-    def _value(
-        self, file: _File, node: ast.expr, scope: _Scope | None, depth: int
-    ) -> Parts | None:
+    def _value(self, file: _File, node: ast.expr, scope: _Scope | None, depth: int) -> Parts | None:
         self.steps += 1
         if depth > _MAX_EVAL_DEPTH or self.steps > _MAX_EVAL_STEPS:
             return None
@@ -418,10 +442,10 @@ class PythonReader:
             if isinstance(node.op, ast.Mod) and isinstance(node.left, ast.Constant):
                 text = node.left.value
                 if isinstance(text, str) and text.count("%s") <= 8:
-                    pieces = text.split("%s")
-                    filled: Parts = [pieces[0]]
-                    for piece in pieces[1:]:
-                        filled += [Param("param"), piece]
+                    chunks = text.split("%s")
+                    filled: Parts = [chunks[0]]
+                    for chunk in chunks[1:]:
+                        filled += [Param("param"), chunk]
                     return filled
             return None
         if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
@@ -429,7 +453,7 @@ class PythonReader:
             first = self._value(file, node.values[0], scope, depth + 1)
             if first is not None and not any(isinstance(p, Param) for p in first):
                 return first
-            return last
+            return last if looks_like_url(last) else [Param(_name_of(node.values[0]))]
         if isinstance(node, ast.Call):
             return self._call_value(file, node, scope, depth)
         chain = attribute_chain(node)
@@ -437,7 +461,9 @@ class PythonReader:
             return self._named(file, chain, scope, depth)
         return None
 
-    def _call_value(self, file: _File, node: ast.Call, scope: _Scope | None, depth: int) -> Parts | None:
+    def _call_value(
+        self, file: _File, node: ast.Call, scope: _Scope | None, depth: int
+    ) -> Parts | None:
         dotted = self._callee(file, node.func)
         if dotted in {"os.getenv", "os.environ.get"} and node.args:
             name = node.args[0].value if isinstance(node.args[0], ast.Constant) else "env"
@@ -464,17 +490,17 @@ class PythonReader:
             return self._value(file, node.func.value, scope, depth + 1)
         return None
 
-    def _named(self, file: _File, chain: list[str], scope: _Scope | None, depth: int) -> Parts | None:
+    def _named(
+        self, file: _File, chain: list[str], scope: _Scope | None, depth: int
+    ) -> Parts | None:
         head = chain[0]
         if head in {"self", "cls"} and len(chain) == 2:
             value = file.attrs.get(chain[1])
-            if value is None:
-                for item in file.classes.values():
-                    value = _class_value(item, chain[1])
-                    if value is not None:
-                        break
+            value = value if value is not None else file.any_class_value.get(chain[1])
             if value is not None:
-                return self._value(file, value, None, depth + 1)
+                found = self._value(file, value, None, depth + 1)
+                if merged(found or []):  # an empty attribute is one that's filled in later
+                    return found
             return [Param(chain[1])]
         current = scope
         if len(chain) == 1:
@@ -501,14 +527,12 @@ class PythonReader:
         if len(chain) == 1 and head in file.values:
             return self._value(file, file.values[head], None, depth + 1)
         if len(chain) == 2:
-            cls = file.classes.get(head)
-            value = _class_value(cls, chain[1]) if cls is not None else None
+            value = file.class_values.get(head, {}).get(chain[1])
             if value is None and head in file.values:
                 made = file.values[head]  # settings = Settings()
                 if isinstance(made, ast.Call) and isinstance(made.func, ast.Name):
-                    cls = file.classes.get(made.func.id)
-                    if cls is not None:
-                        value = _class_value(cls, chain[1])
+                    if made.func.id in file.classes:
+                        value = file.class_values[made.func.id].get(chain[1])
                     else:
                         return self._module_value(file, [made.func.id, chain[1]], depth, seen)
             if value is not None:
@@ -538,17 +562,33 @@ class PythonReader:
     # ------------------------------------------------------------ walking a file
 
     def read(self) -> None:
+        try:
+            self._read_all()
+        except RecursionError:  # past every guard below: what's been read still stands
+            self.limits.add("a Python file nested too deeply stopped this read early")
+
+    def _read_all(self) -> None:
         relevant = []
+        budget = MAX_PARSED_BYTES
         for path in self.paths:
             text = read_text(self.ctx, path)
-            if text is not None and any(word in text for word in _WORDS):
-                relevant.append(path)
+            if text is None or not any(word in text for word in _WORDS):
+                continue
+            budget -= len(text)
+            if budget < 0:
+                self.limits.add(
+                    f"only the first {MAX_PARSED_BYTES // 1_000_000} MB of Python that mentions a web framework was read"
+                )
+                break
+            relevant.append(path)
         loaded = [f for f in (self.file(p) for p in relevant) if f is not None]
         for file in loaded:
-            self._walk(file)
-        for file in loaded:
-            if "django" in {d.split(".")[0] for d in file.external.values()}:
-                self._read_urlconf(file)
+            try:
+                self._walk(file)
+                if "django" in {d.split(".")[0] for d in file.external.values()}:
+                    self._read_urlconf(file)
+            except (AttributeError, IndexError, KeyError, TypeError, ValueError) as exc:
+                self.limits.add(f"{file.path} couldn't be read: {type(exc).__name__}")
         self._resolve_routes()
         self._resolve_django()
 
@@ -616,9 +656,12 @@ class PythonReader:
                 for target in item.targets:
                     if isinstance(target, ast.Name):
                         scope.values.setdefault(target.id, item.value)
-            elif isinstance(item, ast.For) and isinstance(item.target, ast.Name):
-                if isinstance(item.iter, (ast.List, ast.Tuple)):
-                    scope.loops[item.target.id] = list(item.iter.elts)
+            elif (
+                isinstance(item, ast.For)
+                and isinstance(item.target, ast.Name)
+                and isinstance(item.iter, (ast.List, ast.Tuple))
+            ):
+                scope.loops[item.target.id] = list(item.iter.elts)
             stack.extend(ast.iter_child_nodes(item))
 
     def _decorators(
@@ -726,7 +769,9 @@ class PythonReader:
     def _call(self, file: _File, call: ast.Call, scope: _Scope) -> None:
         func = call.func
         attr = func.attr if isinstance(func, ast.Attribute) else ""
-        if attr in {"include_router", "register_blueprint", "mount"} and isinstance(func, ast.Attribute):
+        if attr in {"include_router", "register_blueprint", "mount"} and isinstance(
+            func, ast.Attribute
+        ):
             self._mount(file, call, func, attr, scope)
         elif attr in {"add_api_route", "add_url_rule"} and isinstance(func, ast.Attribute):
             self._registered(file, call, func, attr, scope)
@@ -748,7 +793,9 @@ class PythonReader:
         else:
             if not call.args:
                 return
-            prefix_node = _keyword(call, "prefix" if parent.framework == "fastapi" else "url_prefix")
+            prefix_node = _keyword(
+                call, "prefix" if parent.framework == "fastapi" else "url_prefix"
+            )
             child_nodes = [call.args[0]]
         if isinstance(child_nodes[0], ast.Name) and child_nodes[0].id in scope.loops:
             child_nodes = scope.loops[child_nodes[0].id]
@@ -794,7 +841,9 @@ class PythonReader:
                 scope,
             )
 
-    def _view(self, rel: str, view: ast.expr, scope: _Scope | None) -> list[tuple[str | None, str | None]]:
+    def _view(
+        self, rel: str, view: ast.expr, scope: _Scope | None
+    ) -> list[tuple[str | None, str | None]]:
         """The symbol a view names and, for a class-based one, one row per method it defines."""
         for _ in range(_MAX_UNWRAP):
             if not isinstance(view, ast.Call):
@@ -910,7 +959,7 @@ class PythonReader:
                 f"{len(self.unfollowed_mounts)} routers are included from a value that couldn't be followed: {shown}"
             )
         for what in sorted(self.unsupported):
-            self.limits.add(f"{what} aren't read as routes, though this repository uses them")
+            self.limits.add(f"{what} aren't read as routes, and this repository uses them")
         if self.unparsed:
             self.limits.add(
                 f"{len(self.unparsed)} Python files that mention a web framework don't parse: "
@@ -926,11 +975,10 @@ class PythonReader:
         entries: list[tuple[str, str, ast.expr | str | None, int, str]] = []
         for item in file.tree.body:
             value: ast.expr | None = None
-            if isinstance(item, ast.Assign) and any(
-                isinstance(t, ast.Name) and t.id == "urlpatterns" for t in item.targets
-            ):
-                value = item.value
-            elif (
+            if (
+                isinstance(item, ast.Assign)
+                and any(isinstance(t, ast.Name) and t.id == "urlpatterns" for t in item.targets)
+            ) or (
                 isinstance(item, ast.AugAssign)
                 and isinstance(item.target, ast.Name)
                 and item.target.id == "urlpatterns"
@@ -1073,9 +1121,7 @@ class PythonReader:
                     full = join_paths(prefix, route) if prefix or route else "/"
                     if kind == "include":
                         if str(target) not in trail and depth < _MAX_DJANGO_DEPTH:
-                            stack.append(
-                                (full, str(target), trail | {str(target)}, depth + 1)
-                            )
+                            stack.append((full, str(target), trail | {str(target)}, depth + 1))
                         continue
                     self._django_route(full, target, source, line)
         if self.django_regex_skipped:
@@ -1135,15 +1181,17 @@ def _name_of(node: ast.expr) -> str:
     return "param"
 
 
-def _class_value(cls: ast.ClassDef, name: str) -> ast.expr | None:
+def _class_values(cls: ast.ClassDef) -> dict[str, ast.expr]:
+    found: dict[str, ast.expr] = {}
     for item in cls.body:
         if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
-            if item.target.id == name and item.value is not None:
-                return _field_default(item.value)
+            if item.value is not None:
+                found.setdefault(item.target.id, _field_default(item.value))
         elif isinstance(item, ast.Assign):
-            if any(isinstance(t, ast.Name) and t.id == name for t in item.targets):
-                return _field_default(item.value)
-    return None
+            for target in item.targets:
+                if isinstance(target, ast.Name):
+                    found.setdefault(target.id, _field_default(item.value))
+    return found
 
 
 def _field_default(value: ast.expr) -> ast.expr:

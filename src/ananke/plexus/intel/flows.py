@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import json
 import tomllib
+import warnings
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
@@ -19,6 +20,8 @@ from ananke.plexus.intel.context import RepoContext
 
 MAX_DEPTH = 8  # calls followed from a handler
 MAX_NODES = 60  # symbols in one flow
+MAX_EDGES_READ = 2000  # edges looked at for one flow, so a function with thousands of calls can't cost every route that time
+MAX_SCRIPTS = 200  # commands read from one manifest
 MAX_CLIENTS = 20  # clients shown on one flow
 MAX_CALLERS = 8  # callers shown for one client
 MAX_FLOWS = 2000
@@ -33,7 +36,9 @@ class _Knowledge:
     labels: dict[str, str] = field(default_factory=dict)
     kinds: dict[str, str] = field(default_factory=dict)
     where: dict[str, str] = field(default_factory=dict)
-    calls: dict[str, list[tuple[str, str, str]]] = field(default_factory=dict)  # target, origin, location
+    calls: dict[str, list[tuple[str, str, str]]] = field(
+        default_factory=dict
+    )  # target, origin, location
     callers: dict[str, list[tuple[str, str, str]]] = field(default_factory=dict)
     usage: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
 
@@ -50,7 +55,9 @@ def _knowledge(ctx: RepoContext) -> _Knowledge:
             known.labels[node.node_id] = node.name
             known.kinds[node.node_id] = node.kind
             line = node.metadata.get("line")
-            known.where[node.node_id] = f"{node.path}:{line}" if isinstance(line, int) else node.path
+            known.where[node.node_id] = (
+                f"{node.path}:{line}" if isinstance(line, int) else node.path
+            )
     for edge in ctx.graph.edges:
         if edge.kind == "calls":
             known.calls.setdefault(edge.source, []).append(
@@ -124,17 +131,24 @@ class _Builder:
         queue: deque[tuple[str, int, tuple[int, int] | None]] = deque([(start, 0, lines)])
         seen = {start}
         reached: list[tuple[str, tuple[int, int] | None]] = [(start, lines)]
+        read = 0
         while queue:
             node, depth, span = queue.popleft()
             for target, origin, location in known.calls.get(node, ()):
+                read += 1
+                if read > MAX_EDGES_READ or self.symbols > MAX_NODES:
+                    truncated = True
+                    queue.clear()
+                    break
                 if span is not None and not span[0] <= _line_of(location) <= span[1]:
                     continue
                 if target in seen:
                     if target in self.steps:
                         self.edge(node, target, "calls", origin)
                     continue
-                if depth >= MAX_DEPTH or self.symbols >= MAX_NODES:
+                if depth >= MAX_DEPTH or self.symbols == MAX_NODES:
                     truncated = True
+                    self.symbols += depth < MAX_DEPTH  # one past the budget stops the walk
                     continue
                 seen.add(target)
                 self.symbols += 1
@@ -143,7 +157,7 @@ class _Builder:
                 reached.append((target, None))
                 queue.append((target, depth + 1, None))
         for node, span in reached:
-            for row in known.usage.get(node, ()):
+            for row in known.usage.get(node, ())[:MAX_EDGES_READ]:
                 if span is None or span[0] <= _line_of(row["evidence"]) <= span[1]:
                     self.table(node, row)
         return truncated
@@ -207,20 +221,20 @@ def _route_flow(
 
 def _main_blocks(ctx: RepoContext, limits: list[str]) -> list[dict[str, Any]]:
     found = []
-    paths = [
-        p
-        for p in ctx.files
-        if p.endswith(".py") and not (is_test_file(p) or is_fixture(p))
-    ]
+    paths = [p for p in ctx.files if p.endswith(".py") and not (is_test_file(p) or is_fixture(p))]
     if len(paths) > MAX_ENTRY_FILES:
-        limits.append(f"only the first {MAX_ENTRY_FILES} Python files were read for __main__ blocks")
+        limits.append(
+            f"only the first {MAX_ENTRY_FILES} Python files were read for __main__ blocks"
+        )
         paths = paths[:MAX_ENTRY_FILES]
     for path in paths:
         text = read_text(ctx, path)
         if text is None or "__main__" not in text:
             continue
         try:
-            tree = ast.parse(text)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                tree = ast.parse(text)
         except _PARSE_FAILURES:
             continue
         for item in tree.body:
@@ -250,7 +264,9 @@ def _is_main_test(test: ast.expr) -> bool:
     )
 
 
-def _declared_scripts(ctx: RepoContext, known: _Knowledge, limits: list[str]) -> list[dict[str, Any]]:
+def _declared_scripts(
+    ctx: RepoContext, known: _Knowledge, limits: list[str]
+) -> list[dict[str, Any]]:
     """Commands a ``pyproject.toml`` declares, and ``bin`` in a ``package.json``."""
     found: list[dict[str, Any]] = []
     for path in ctx.named("pyproject.toml"):
@@ -264,7 +280,7 @@ def _declared_scripts(ctx: RepoContext, known: _Knowledge, limits: list[str]) ->
             continue
         if not isinstance(scripts, dict):
             continue
-        for name, spec in sorted(scripts.items()):
+        for name, spec in sorted(scripts.items())[:MAX_SCRIPTS]:
             if not isinstance(spec, str):
                 continue
             module, _, attr = spec.partition(":")
@@ -297,7 +313,7 @@ def _declared_scripts(ctx: RepoContext, known: _Knowledge, limits: list[str]) ->
             declared = {str(manifest.get("name") or path): declared}
         if not isinstance(declared, dict):
             continue
-        for name, target in sorted(declared.items()):
+        for name, target in sorted(declared.items())[:MAX_SCRIPTS]:
             found.append(
                 {
                     "id": f"entrypoint:cli:{name}",
@@ -335,7 +351,11 @@ def _decorated_commands(ctx: RepoContext) -> list[dict[str, Any]]:
     found = []
     for node in ctx.graph.nodes:
         decorators = node.metadata.get("decorators")
-        if node.kind != "function" or node.path not in importers or not isinstance(decorators, list):
+        if (
+            node.kind != "function"
+            or node.path not in importers
+            or not isinstance(decorators, list)
+        ):
             continue
         if is_test_file(node.path) or is_fixture(node.path):
             continue
@@ -364,9 +384,10 @@ def _entrypoints(ctx: RepoContext, known: _Knowledge, limits: list[str]) -> list
         rows = rows[:MAX_ENTRYPOINTS]
     for row in rows:
         builder = _Builder(known)
-        builder.symbol(row["node"]) if row["node"] in known.kinds else builder.step(
-            row["node"], "file", row["name"], row["evidence"]
-        )
+        if row["node"] in known.kinds:
+            builder.symbol(row["node"])
+        else:
+            builder.step(row["node"], "file", row["name"], row["evidence"])
         row["truncated"] = builder.follow(row["node"])
         row["steps"], row["edges"] = builder.result()
     if any(r["kind"] == "main" for r in rows):
