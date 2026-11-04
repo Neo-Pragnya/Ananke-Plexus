@@ -23,6 +23,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   `ananke app code` and `ananke graph impact` use it. Existing node ids don't change.
 - **Repo intelligence: the data model.** Tables, fields, relationships and which functions read or write them, with a Mermaid ERD and
   `path:line` evidence, from SQLAlchemy, SQLModel, Django, SQL, Alembic, Prisma and simple TypeORM. Runs nothing.
+- **Repo intelligence: API pathways.** Routes from FastAPI, Flask, Django, Express and NestJS with prefixes joined across files; HTTP
+  calls from `fetch`, axios, Angular, `requests` and `httpx`; each call matched to its route, with literals beating parameters, and
+  the rest listed as unmatched or external. OpenAPI files are listed, and what they describe but the code lacks is noted.
+- **Repo intelligence: end-to-end flows.** One flow per route, from the code that calls it through the handler and its calls to the
+  tables, plus non-HTTP entry points. Every step comes from the graph, the API section or the data model, and none is invented.
 
 ### Fixed
 

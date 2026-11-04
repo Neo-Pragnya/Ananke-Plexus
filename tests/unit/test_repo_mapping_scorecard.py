@@ -25,9 +25,9 @@ FLOORS: dict[str, tuple[float, float]] = {
     "columns": (1.0, 1.0),
     "relationships": (1.0, 1.0),
     "usage": (1.0, 1.0),
-    "routes": (0.0, 0.0),
-    "client_links": (0.0, 0.0),
-    "flows": (0.0, 0.0),
+    "routes": (1.0, 1.0),
+    "client_links": (1.0, 1.0),
+    "flows": (1.0, 1.0),
     "calm_relationships": (1.0, 1.0),
     "packages": (1.0, 1.0),
 }
@@ -65,8 +65,11 @@ def found_by_measure(report: dict[str, Any], graph: Any) -> dict[str, set[Any]]:
         },
         "usage": {(u["symbol"], u["table"], u["access"]) for u in data.get("usage", [])},
         "routes": {(f"{r['method']} {r['path']}", r["handler"]) for r in api.get("routes", [])},
+        # A client with no route is scored by test_unmatched_clients_match_the_key, not as a wrong link.
         "client_links": {
-            (c["caller"], c.get("route", "").removeprefix("route:")) for c in api.get("clients", [])
+            (c["caller"], c["route"].removeprefix("route:"))
+            for c in api.get("clients", [])
+            if c.get("route")
         },
         "flows": flow_hits,
         "calm_relationships": {(r["source"], r["target"]) for r in model.get("relationships", [])},
@@ -143,6 +146,13 @@ def test_every_section_says_what_it_is(report: dict[str, Any]) -> None:
         }, name
         assert isinstance(section["limits"], list), name
         assert section["status"] != "failed", section["limits"]
+
+
+def test_unmatched_clients_match_the_key(report: dict[str, Any]) -> None:
+    unmatched = report["sections"]["api"]["unmatched_clients"]
+    assert sorted(f"{c['method']} {c['path']}" for c in unmatched) == sorted(
+        KEY["unmatched_clients"]
+    )
 
 
 def test_analysing_twice_gives_the_same_digest(shop: Path, report: dict[str, Any]) -> None:

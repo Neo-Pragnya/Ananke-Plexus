@@ -30,11 +30,12 @@ description: One analysis of a repository for products to present, its code map,
                         "handler": "function:backend/app/routers/orders.py:create", "framework": "fastapi", "evidence": "..."}],
             "clients": [{"id": "client:frontend/src/api.ts:8", "method": "POST", "path": "/api/orders", "caller": "function:frontend/src/api.ts:createOrder",
                          "framework": "fetch", "evidence": "...", "route": "route:POST /api/orders"}],
-            "unmatched_clients": [], "specs": []},
+            "unmatched_clients": [], "specs": [{"path": "docs/openapi.yaml", "title": "Shop", "version": "3.0.0", "routes": 12, "missing_from_code": []}]},
     "flows": {"status": "found", "limits": [],
               "flows": [{"id": "flow:POST /api/orders", "name": "POST /api/orders", "entry": "route:POST /api/orders", "truncated": false,
-                         "steps": [{"node": "client:...", "kind": "client|route|handler|function|table", "label": "...", "evidence": "...", "access": null}],
-                         "edges": [{"source": "...", "target": "...", "kind": "calls|handles|reads|writes|http", "origin": "extracted|inferred"}]}]},
+                         "steps": [{"node": "client:...", "kind": "client|route|handler|function|class|file|table", "label": "...", "evidence": "...", "access": null}],
+                         "edges": [{"source": "...", "target": "...", "kind": "calls|handles|reads|writes|http", "origin": "extracted|inferred"}]}],
+              "entrypoints": [{"id": "entrypoint:cli:tool", "kind": "main|cli", "name": "tool", "node": "function:...", "evidence": "...", "truncated": false, "steps": [], "edges": []}]},
     "calm": {"status": "found", "origin": "inferred", "limits": [],
              "model": {"schema_version": "0.1", "system": {"name": "shop"},
                        "components": [{"id": "backend", "name": "backend", "type": "service", "evidence": "..."}],
@@ -98,6 +99,80 @@ Migrations aren't replayed: a `DROP` or `RENAME` is counted in `limits` and the 
 left out. A repository method that takes its model as a variable (`session.query(self.model)`) isn't traced. Mermaid names are reduced to letters, digits and
 underscores, so a name in another script appears as `unnamed` in the ERD and keeps its real name in `tables`.
 
+
+## API pathways
+
+`sections.api` lists the routes a repository serves and the HTTP calls it makes, and joins them. Nothing is imported or run: Python
+is read with `ast`, and JavaScript and TypeScript with a linear scanner that keeps line numbers, so a comment or a string can't make
+a route.
+
+**Routes come from** FastAPI and Flask, including prefixes joined across files (`APIRouter(prefix=)`, `include_router`, blueprints,
+`register_blueprint`, `add_api_route`, `add_url_rule`); Django `urls.py` (`path`, `re_path`, `include`, class-based views); Express
+(`app.get`, `router.route`, `app.use('/prefix', router)`); and NestJS (`@Controller`, `@Get`, `setGlobalPrefix`). Parameters always
+read `{name}`, so Flask's `<int:id>` and Express's `:id` are both `{id}`. `method` is `ANY` when the code doesn't limit it, as a
+Django view doesn't.
+
+- A prefix held in a constant or in a settings class's default is followed. One known only at run time is left out, and the route
+  has `prefix_unknown: true`. A router nothing visibly includes has `unmounted: true`, and its path has only its own prefix.
+- `handler` is the graph's symbol id. A handler written inside another function, as in a `create_app()`, has the id of the function
+  around it, with `handler_name` and `handler_lines`. An inline Express handler is `file:<path>` with the name `<inline>`. A handler
+  that can't be resolved is `null`, with the name as written.
+- The same method and path found twice, as two services have, stay as two routes. The first keeps `route:<METHOD> <path>`, and later
+  ones add their place: `route:GET /health (svc/app.py:3)`.
+- A route written to catch everything at the root has `catch_all: true`, and no client matches it.
+
+**Clients come from** `fetch`, axios (including `axios.create({baseURL})` instances imported from another file), Angular's
+`HttpClient`, `requests` and `httpx`. `caller` is the graph's symbol, or `file:<path>` for top-level code. Template literals,
+concatenation and constants are followed, and a value only known at run time becomes a parameter: `` `/orders/${id}` `` is
+`/orders/{id}`. `method` is `UNKNOWN` when an options object is a variable or spreads one in.
+
+- Only a URL that's truly unknown is skipped, such as a helper's parameter, and a limit counts those. So calls through your own
+  `request(path)` wrapper aren't listed; the one `fetch` inside it is the skipped call.
+- `${API}/orders` keeps its path and is marked `base_unknown: true`.
+- A URL on another host has `external: true` and `host`, and is never matched. `localhost`, loopback addresses and a name with no
+  dot, like the compose service `backend`, count as local.
+- A file path such as `/data.json` that matches no route has `static: true`.
+
+**Matching** goes by method and path shape. Parameters match any parameter name, a literal in the client can match a parameter in the
+route, and a literal in a route always wins over a parameter: `/customers/reports/sales` finds its own route, not
+`/customers/{id}/sales`. A parameter in the client never matches a literal in the route. When two services have the same route, the
+one with the longest shared folder path wins; a tie has `ambiguous: true`. A client with an `UNKNOWN` method matches only when one
+route has that shape. A client with no route is in `clients` with no `route` field, and also in `unmatched_clients`.
+
+**A proxy that strips a prefix** is followed only if a config says so: `pathRewrite`, Vite's `rewrite` with an empty replacement, or
+an nginx `location /api/ { proxy_pass http://backend/; }`. It applies to clients under the config's folder, and the client has
+`proxy`. Anything else stays unmatched rather than guessed.
+
+**OpenAPI and Swagger** files named `openapi*`, `swagger*` or `api-docs*`, as JSON or YAML, are listed in `specs`. YAML is read line by
+line, so flow-style `paths` aren't seen. Operations missing from the code are in `missing_from_code` and in a limit, and never
+become routes.
+
+**Not read, and said in `limits` when it applies:** notebooks; test and fixture files; scripts inside `.vue`, `.svelte`, `.astro` and
+`.html` files; `http.server` handlers, aiohttp, Tornado, Starlette and Sanic routes; Flask-RESTful resources; Django REST framework
+routers. These aren't read and may not be noted: Next.js and other file-based routing, Fastify, Koa and Hono, other HTTP client
+libraries (`ky`, `got`, `superagent`, `aiohttp`), Express routes on regular expressions, GraphQL and WebSocket clients. A class-based view's inherited methods aren't
+seen, so it's listed as `ANY` on the class. Only a literal list is followed in `for r in [...]: app.include_router(r)`, and a
+`re_path` that says more than literals and named groups is counted and left out.
+
+## End-to-end flows
+
+`sections.flows` has one flow per route, from whoever calls it down to the tables it touches. It joins what the other sections found
+and adds nothing: each edge exists in the code graph (`calls`), in `api` (`handles`, `http`, and a caller's link to its client), or
+in `data`'s usage (`reads`, `writes`).
+
+A flow lists, in order, the callers one level above each client, the client's caller, the client, the route, the handler, the
+functions reached breadth-first through `calls`, and the tables each uses. A table's `access` is `read`, `write` or `read_write`. A route
+nothing calls and that calls nothing is just its route and handler, and one with no known handler is just its route. Cycles end.
+`truncated: true` means a budget stopped it: 8 calls deep, 60 symbols, or 20 clients.
+
+A handler written inside another function shares that function's symbol in the graph, so its flow takes only the calls and tables
+first seen within its own lines. A call made first by a neighbouring handler is missed there, and a limit says this can happen.
+Flows inherit what the graph can't see, such as dynamic dispatch.
+
+`entrypoints` lists non-HTTP starts: `__main__` blocks, `[project.scripts]` in `pyproject.toml`, `bin` in `package.json`, and
+`@x.command()` functions in a file that imports Click or Typer. A command whose function was found has steps. The graph doesn't hold
+calls made at the top of a module, so a `__main__` block has none. Background jobs, schedules and message consumers aren't traced,
+and a limit says so.
 
 ## Rules every section follows
 
