@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import bisect
 import re
+import warnings
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -47,7 +48,7 @@ SQL_SINKS = {
     "execute", "executemany", "executescript", "exec_driver_sql", "text", "read_sql", "read_sql_query",
     "sql", "raw", "fetch", "fetchrow", "fetchval", "mogrify", "query",
 }  # fmt: skip
-SQL_ARGUMENTS = ("sql", "query", "statement")
+SQL_ARGUMENTS = ("sql", "statement")
 MANAGERS = {"objects", "_default_manager", "query"}
 ORM_READS = {
     "filter", "filter_by", "get", "all", "exclude", "first", "last", "count", "exists", "values", "values_list", "aggregate",
@@ -66,6 +67,7 @@ ORM_WRITES = {
 READ_CALLS = {"select", "select_from", "join", "outerjoin", "exists", "with_entities"}
 PERSIST_CALLS = {"add", "add_all", "merge", "bulk_save_objects", "delete"}
 MERMAID_RESERVED = {"erdiagram", "style", "classdef", "class", "direction", "title", "acctitle", "accdescr", "pk", "fk", "uk", "tb", "bt", "lr", "rl"}  # fmt: skip
+DYNAMIC = "__dyn__"  # stands in for what only run time knows, such as an f-string value
 NOT_A_COLUMN_TYPE = {"Sequence", "Identity", "Computed"}
 DJANGO_BASES = {"Model", "AbstractUser", "AbstractBaseUser", "PermissionsMixin"}
 TYPEORM_COLUMNS = {
@@ -117,7 +119,16 @@ EXAMPLE_NAMES = {
     "example_table",
 }
 SYSTEM_SCHEMAS = {"information_schema", "pg_catalog", "sys", "mysql", "performance_schema"}
-SYSTEM_TABLES = {"sqlite_master", "sqlite_schema", "sqlite_sequence", "sqlite_temp_master", "dual"}
+# ``inserted`` and ``deleted`` are what a T-SQL trigger sees, not tables.
+SYSTEM_TABLES = {
+    "sqlite_master",
+    "sqlite_schema",
+    "sqlite_sequence",
+    "sqlite_temp_master",
+    "dual",
+    "inserted",
+    "deleted",
+}
 FROM_ARGUMENT_FUNCTIONS = {"EXTRACT", "SUBSTRING", "SUBSTR", "TRIM", "OVERLAY", "POSITION"}
 COLUMN_ENDS = {
     "NOT", "NULL", "DEFAULT", "PRIMARY", "UNIQUE", "REFERENCES", "CHECK", "CONSTRAINT", "COLLATE", "GENERATED", "AUTO_INCREMENT",
@@ -237,6 +248,7 @@ class _Sql:
     not_replayed: int = 0
     views: int = 0
     malformed: list[int] = field(default_factory=list)
+    temporary: set[str] = field(default_factory=set)
 
 
 @dataclass(slots=True)
@@ -282,7 +294,7 @@ def _tokenize(text: str) -> list[_Tok]:
             toks.append(_Tok("quoted", text[i + 1 : end], "", i))
             i = end + 1
         elif c == "{" and (end := text.find("}", i, i + 256)) > 0:
-            toks.append(_Tok("word", "__dyn__", "__DYN__", i))
+            toks.append(_Tok("word", DYNAMIC, DYNAMIC.upper(), i))
             i = end + 1
         elif c == "$" and (tag := _DOLLAR_TAG.match(text, i)):
             end = text.find(tag.group(), tag.end())
@@ -335,7 +347,7 @@ def _name_at(toks: list[_Tok], i: int) -> tuple[str, str | None, int] | None:
     while _is(_at(toks, i), ".") and _is_name(_at(toks, i + 1)):
         parts.append(toks[i + 1].text)
         i += 2
-    schema = parts[-2] if len(parts) > 1 and parts[-2] != "__dyn__" else None
+    schema = parts[-2] if len(parts) > 1 and DYNAMIC not in parts[-2] else None
     return parts[-1], schema, i
 
 
@@ -361,7 +373,12 @@ def _bracketed_names(toks: list[_Tok], i: int) -> tuple[list[str], int]:
     end = _close(toks, i)
     if end < 0:
         return [], i
-    return [t.text for t in toks[i + 1 : end] if t.kind in ("word", "quoted")], end + 1
+    named = (
+        t
+        for t in toks[i + 1 : end]
+        if t.kind == "quoted" or (t.kind == "word" and t.upper not in ("ASC", "DESC"))
+    )
+    return [t.text for t in named], end + 1
 
 
 def _is_system_table(name: str, schema: str | None) -> bool:
@@ -400,9 +417,9 @@ class _Dml:
             self.computed += 1
             return i, None
         name, schema, after = parsed
-        if _is(_at(toks, after), "("):
+        if access == "read" and _is(_at(toks, after), "("):
             return after, None  # a table function
-        if name == "__dyn__":
+        if DYNAMIC in name:
             self.computed += 1
             return after, None
         low = name.lower()
@@ -448,7 +465,7 @@ class _Dml:
                 return after
             if table:
                 line = self.line_of(toks[after].pos)
-                self.columns += [(table, name, line) for name in names if name != "__dyn__"]
+                self.columns += [(table, name, line) for name in names if DYNAMIC not in name]
             after = end
         if table and not _is(
             _at(toks, after), "VALUES", "VALUE", "SELECT", "DEFAULT", "WITH", "SET", "__DYN__", "("
@@ -491,7 +508,7 @@ class _Dml:
                 and _is_name(tok)
                 and _is(_at(toks, k + 1), "=")
                 and table
-                and tok.text != "__dyn__"
+                and DYNAMIC not in tok.text
             ):
                 self.columns.append((table, tok.text, self.line_of(tok.pos)))
             expect = False
@@ -634,7 +651,7 @@ class _Dml:
         sql.columns += [
             (table, column, line)
             for alias, column, line in qualified
-            if (table := owner(alias)) and column != "__dyn__"
+            if (table := owner(alias)) and DYNAMIC not in column
         ]
         for left, left_col, right, right_col, line in self.joins:
             a, b = owner(left), owner(right)
@@ -719,10 +736,10 @@ def _strong_select(toks: list[_Tok], head: int) -> bool:
 def _sql_type(toks: list[_Tok]) -> str | None:
     out = ""
     for tok in toks:
-        if tok.kind == "punct" and tok.text in "(),":
+        if tok.kind == "punct" and tok.text in "(),.":
             out += tok.text
         else:
-            out += (" " if out and not out.endswith(("(", ",")) else "") + tok.text
+            out += (" " if out and not out.endswith(("(", ",", ".")) else "") + tok.text
         if len(out) > 64:
             break
     return out[:64] or None
@@ -813,6 +830,7 @@ def _constraint(item: list[_Tok], line_of: _LineOf, table: _Table) -> bool:
 
 def _create(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
     i = head + 1
+    temporary = False
     while _is(
         _at(toks, i),
         "TEMP",
@@ -825,6 +843,7 @@ def _create(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
         "REPLACE",
         "EXTERNAL",
     ):
+        temporary = temporary or _is(_at(toks, i), "TEMP", "TEMPORARY")
         i += 1
     if _is(_at(toks, i), "VIEW", "MATERIALIZED"):
         sql.views += 1
@@ -838,17 +857,27 @@ def _create(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
     if parsed is None:
         return
     name, schema, after = parsed
-    if name == "__dyn__":
+    if DYNAMIC in name:
         sql.computed += 1
         return
     if name.lower() in PROSE_WORDS or name.lower() in EXAMPLE_NAMES:
         return
     table = _Table(name, schema, "sql", "", line_of(toks[i].pos))
     next_tok = _at(toks, after)
+    if temporary:
+        sql.temporary.add(name.lower())
     if _is(next_tok, "AS"):  # CREATE TABLE ... AS SELECT
-        sql.tables.append(table)
-        sql.refs.append(_Ref(name, schema, "write", line_of(toks[i].pos)))
-        _Dml(toks[after + 1 :], line_of, set(), 0).run(sql)
+        if not temporary:
+            sql.tables.append(table)
+            sql.refs.append(_Ref(name, schema, "write", line_of(toks[i].pos)))
+        rest = toks[after + 1 :]
+        start = 0
+        while _is(_at(rest, start), "("):
+            start += 1
+        ctes = _cte_names(rest, start) if _is(_at(rest, start), "WITH") else None
+        _Dml(rest, line_of, ctes[0] if ctes else set(), ctes[1] if ctes else start).run(sql)
+        return
+    if temporary:
         return
     if _is(next_tok, "USING", "LIKE"):
         sql.tables.append(table)
@@ -880,8 +909,10 @@ def _alter(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
     name, schema, after = parsed
     table = _Table(name, schema, "sql", "", line_of(toks[i].pos), partial=True)
     for action in _split(toks[after:]):
+        if _is(_at(action, 0), "WITH") and _is(_at(action, 1), "CHECK", "NOCHECK"):
+            action = action[2:]
         if not _is(_at(action, 0), "ADD"):
-            sql.not_replayed += 1
+            sql.not_replayed += _is(_at(action, 0), "DROP", "RENAME", "ALTER", "MODIFY", "CHANGE")
             continue
         item = action[1:]
         if not item:
@@ -895,6 +926,16 @@ def _alter(toks: list[_Tok], head: int, line_of: _LineOf, sql: _Sql) -> None:
         elif not _constraint(item, line_of, table) and _is_name(item[0]):
             _column_def(item, line_of, table)
     sql.tables.append(table)
+
+
+def _is_batch_end(toks: list[_Tok], i: int, line_of: _LineOf) -> bool:
+    """T-SQL's ``GO``, alone on its line."""
+    if not (toks[i].kind == "word" and toks[i].upper == "GO"):
+        return False
+    line = line_of(toks[i].pos)
+    return (i == 0 or line_of(toks[i - 1].pos) != line) and (
+        i + 1 == len(toks) or line_of(toks[i + 1].pos) != line
+    )
 
 
 def _read_sql(text: str, *, trusted: bool) -> _Sql:
@@ -912,10 +953,18 @@ def _read_sql(text: str, *, trusted: bool) -> _Sql:
     toks = _tokenize(text)
     start = 0
     for i in range(len(toks) + 1):
-        if i == len(toks) or (toks[i].kind == "punct" and toks[i].text == ";"):
+        if (
+            i == len(toks)
+            or (toks[i].kind == "punct" and toks[i].text == ";")
+            or _is_batch_end(toks, i, line_of)
+        ):
             if i > start:
                 _statement(toks[start:i], line_of, sql, trusted)
             start = i + 1
+    if sql.temporary:
+        sql.refs = [r for r in sql.refs if r.name.lower() not in sql.temporary]
+        sql.columns = [c for c in sql.columns if c[0] not in sql.temporary]
+        sql.joins = [j for j in sql.joins if not {j[0], j[2]} & sql.temporary]
     return sql
 
 
@@ -1062,16 +1111,14 @@ def _string_value(node: ast.expr, depth: int = 0) -> str | None:
         parts = []
         for value in node.values:
             literal = _string_value(value, depth + 1) if isinstance(value, ast.Constant) else None
-            parts.append(literal if literal is not None else " __dyn__ ")
+            parts.append(literal if literal is not None else DYNAMIC)
         return "".join(parts)
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         left = _string_value(node.left, depth + 1)
         right = _string_value(node.right, depth + 1)
         if left is None and right is None:
             return None
-        return (left if left is not None else " __dyn__ ") + (
-            right if right is not None else " __dyn__ "
-        )
+        return (left if left is not None else DYNAMIC) + (right if right is not None else DYNAMIC)
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
         return _string_value(node.left, depth + 1)
     if (
@@ -1144,6 +1191,7 @@ class _Analysis:
         self.string_names: set[str] = set()
         self.django_user: str | None = None
         self.seen_ddl: set[tuple[str, int, str]] = set()
+        self.listed_sql = 0
         self.referenced: set[tuple[str, str]] = set()
         self.parsed: dict[tuple[str, bool], _Sql] = {}
 
@@ -1188,7 +1236,10 @@ class _Analysis:
         if text is None:
             return
         try:
-            self.files[path] = self._index_file(path, ast.parse(text))
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", SyntaxWarning)
+                tree = ast.parse(text)
+            self.files[path] = self._index_file(path, tree)
         except (SyntaxError, ValueError, RecursionError, MemoryError) as exc:
             self._limit(f"{path} couldn't be parsed ({type(exc).__name__}), so it wasn't read")
 
@@ -2293,6 +2344,10 @@ class _Analysis:
             self._limit(
                 f"{self.not_replayed} DROP, RENAME or ALTER COLUMN statements weren't replayed, so a table may show what it once had"
             )
+        if self.listed_sql:
+            self._limit(
+                f"{self.listed_sql} SQL strings listed at module level weren't counted as table use"
+            )
         if self.views:
             self._limit(f"{self.views} views were seen and aren't listed as tables")
 
@@ -2678,7 +2733,7 @@ class _Walker:
     def _names_given_to_sinks(self, node: ast.AST) -> set[str]:
         names: set[str] = set()
         for inner in ast.walk(node):
-            if isinstance(inner, ast.Call) and _tail(inner.func) in SQL_SINKS:
+            if isinstance(inner, ast.Call):
                 names |= {a.id for a in _sql_arguments(inner) if isinstance(a, ast.Name)}
         return names
 
@@ -2694,6 +2749,9 @@ class _Walker:
             key = f"{self.klass}.{name}" if self.klass else name
             if key in self.file.strings:
                 return  # read where it's used, or for the file if it never is
+            if isinstance(value, (ast.List, ast.Tuple, ast.Set, ast.Dict)):
+                self._collection(value)
+                return
         if name is not None and name in self.sink_names:
             text = _string_value(value)
             if text is not None:
@@ -2704,6 +2762,23 @@ class _Walker:
             if table:
                 self.vars[name] = table
         self._visit(value)
+
+    def _collection(self, node: ast.expr) -> None:
+        """SQL listed at module level, such as examples of what to refuse. Nothing says it runs, so it isn't use."""
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            for item in node.elts:
+                self._collection(item)
+        elif isinstance(node, ast.Dict):
+            for item in node.values:
+                self._collection(item)
+        elif isinstance(node, (ast.Constant, ast.JoinedStr)):
+            text = _string_value(node)
+            if text is not None and _head_of(text) in SQL_HEADS:
+                sql = self.a._parsed(text, False)
+                self.a._define(sql, self.path, node.lineno, text)
+                self.a.listed_sql += bool(sql.refs)
+        else:
+            self._visit(node)
 
     def _produces_row(self, call: ast.Call) -> str | None:
         table = self._constructed(call)
@@ -2755,8 +2830,6 @@ class _Walker:
         self.a._apply_use(sql, self.path, self.symbol, 0.9 if trusted else 0.7, lambda _: at)
 
     def _sql_call(self, call: ast.Call) -> None:
-        if _tail(call.func) not in SQL_SINKS:
-            return
         for arg in _sql_arguments(call):
             if isinstance(arg, (ast.Name, ast.Attribute)):
                 self.handled.add(id(arg))
@@ -2897,7 +2970,11 @@ class _Walker:
 
 
 def _sql_arguments(call: ast.Call) -> list[ast.expr]:
-    return [*call.args[:1], *[k.value for k in call.keywords if k.arg in SQL_ARGUMENTS]]
+    """What a call says is SQL: ``sql=`` and ``statement=`` anywhere, and the first argument of a database call."""
+    named = [k.value for k in call.keywords if k.arg in SQL_ARGUMENTS]
+    if _tail(call.func) in SQL_SINKS:
+        return [*call.args[:1], *named, *[k.value for k in call.keywords if k.arg == "query"]]
+    return named
 
 
 def _is_session(node: ast.expr) -> bool:
