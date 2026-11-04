@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from ananke.plexus.graph.models import GraphEdge, GraphSnapshot
@@ -335,3 +336,50 @@ def test_the_code_view_draws_resolved_imports(tmp_path: Path) -> None:
 def test_rebuilds_give_the_same_digest(tmp_path: Path) -> None:
     write(tmp_path, {"a/x/__init__.py": "", "a/x/m.py": "from . import n\n", "a/x/n.py": "import x.m\n"})  # fmt: skip
     assert graph_digest(build_graph(tmp_path)) == graph_digest(build_graph(tmp_path))
+
+
+def test_hostile_python_is_a_parse_error_and_the_build_continues(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        {
+            "chain.py": "x = " + "+".join(["a"] * 200_000) + "\n",
+            "nest.py": "x = " + "[" * 200_000 + "]" * 200_000 + "\n",
+            "fine.py": "def ok(): ...\n",
+        },
+    )
+    nodes = {n.node_id: n for n in build_graph(tmp_path).nodes}
+    assert nodes["file:chain.py"].metadata["parse_error"] is True
+    assert nodes["file:nest.py"].metadata["parse_error"] is True
+    assert "function:fine.py:ok" in nodes
+
+
+def test_hostile_notebooks_do_not_stop_the_build(tmp_path: Path) -> None:
+    cell = {"cell_type": "code", "source": "x = " + "+".join(["a"] * 200_000)}
+    good = {"cell_type": "code", "source": "def ok(): ..."}
+    write(
+        tmp_path,
+        {
+            "brackets.ipynb": "[" * 200_000,
+            "cell.ipynb": json.dumps({"cells": [cell, good], "metadata": {}, "nbformat": 4}),
+            "fine.py": "def ok(): ...\n",
+        },
+    )
+    nodes = {n.node_id: n for n in build_graph(tmp_path).nodes}
+    assert nodes["file:brackets.ipynb"].metadata["parse_error"] is True
+    assert nodes["file:cell.ipynb"].metadata["unparsed_cells"] == [
+        1
+    ]  # one bad cell, not the notebook
+    assert "function:cell.ipynb:ok" in nodes
+    assert "function:fine.py:ok" in nodes
+
+
+def test_a_signature_too_deep_to_print_keeps_its_symbol(tmp_path: Path) -> None:
+    write(tmp_path, {"deep.py": f"def f(a={'-' * 900}1): ...\n"})
+    nodes = {n.node_id: n for n in build_graph(tmp_path).nodes}
+    assert "function:deep.py:f" in nodes
+
+
+def test_an_oversized_source_is_listed_but_not_read(tmp_path: Path) -> None:
+    write(tmp_path, {"big.py": "x = 1\n" * 400_000})
+    nodes = {n.node_id: n for n in build_graph(tmp_path).nodes}
+    assert nodes["file:big.py"].metadata["parse_error"] is True
