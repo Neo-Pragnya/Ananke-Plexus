@@ -614,7 +614,10 @@ def _request(url: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if data is not None:
         headers["Content-Type"] = "application/json"
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     request = urllib.request.Request(url, data=data, headers=headers)  # noqa: S310 - fixed https URL
+    # always https://api.osv.dev; repository content never chooses the host
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urllib.request.urlopen(request, timeout=OSV_TIMEOUT) as response:  # noqa: S310 - fixed https URL
         raw = response.read(OSV_MAX_RESPONSE + 1)
     if len(raw) > OSV_MAX_RESPONSE:
