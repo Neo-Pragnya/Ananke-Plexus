@@ -34,9 +34,7 @@ Feature: apm installs and audits agent packages
     Then it succeeds
     And the output contains "graph-reviewer@1.0.0"
 
-  @known_issue
   Scenario: A skill installed from the registry can be shared as a bundle
-    # Registry installs carry ananke.registry.json, bundles expect ananke-skill.toml: install says "missing manifest".
     Given I have run "apm install good-skill@0.1.0"
     And I have run "apm bundle export --name local.good-skill@0.1.0 --output $SANDBOX/team.tar.gz"
     When I run "mkdir -p $SANDBOX/other && cd $SANDBOX/other && git init -q && apm bundle install --bundle $SANDBOX/team.tar.gz"

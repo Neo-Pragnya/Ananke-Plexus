@@ -1,0 +1,91 @@
+{
+  "_about": "The answer key, written by reading the code. Every entry can be checked by hand.",
+  "languages": ["python", "typescript", "sql"],
+  "source_roots": ["backend", "worker"],
+  "components": {"backend": "service", "frontend": "frontend", "worker": "worker", "db": "database"},
+  "import_links": [
+    ["backend/app/main.py", "backend/app/routers/orders.py"],
+    ["backend/app/main.py", "backend/app/routers/customers.py"],
+    ["backend/app/models.py", "backend/app/db.py"],
+    ["backend/app/services/orders.py", "backend/app/db.py"],
+    ["backend/app/services/orders.py", "backend/app/models.py"],
+    ["backend/app/services/customers.py", "backend/app/db.py"],
+    ["backend/app/services/customers.py", "backend/app/models.py"],
+    ["backend/app/reports/sales.py", "backend/app/db.py"],
+    ["backend/app/routers/orders.py", "backend/app/services/orders.py"],
+    ["backend/app/routers/customers.py", "backend/app/services/customers.py"],
+    ["backend/app/routers/customers.py", "backend/app/reports/sales.py"],
+    ["frontend/src/api.ts", "frontend/src/lib/http.ts"],
+    ["frontend/src/pages/Orders.ts", "frontend/src/api.ts"]
+  ],
+  "call_links": [
+    ["function:backend/app/routers/orders.py:create", "function:backend/app/services/orders.py:create_order"],
+    ["function:backend/app/routers/orders.py:for_customer", "function:backend/app/services/orders.py:list_orders"],
+    ["function:backend/app/routers/customers.py:read", "function:backend/app/services/customers.py:get_customer"],
+    ["function:backend/app/routers/customers.py:sales", "function:backend/app/reports/sales.py:sales_by_customer"],
+    ["function:backend/app/services/orders.py:create_order", "function:backend/app/db.py:get_session"],
+    ["function:worker/worker/jobs.py:archive_orders", "function:worker/worker/jobs.py:record_audit"],
+    ["method:frontend/src/pages/Orders.ts:OrdersPage.submit", "function:frontend/src/api.ts:createOrder"],
+    ["method:frontend/src/pages/Orders.ts:OrdersPage.owner", "function:frontend/src/api.ts:getCustomer"]
+  ],
+  "tables": {
+    "customers": ["id", "email"],
+    "orders": ["id", "customer_id", "total"],
+    "order_items": ["id", "order_id", "sku", "quantity"],
+    "audit_log": ["id", "action", "order_id"]
+  },
+  "primary_keys": [["customers", "id"], ["orders", "id"], ["order_items", "id"], ["audit_log", "id"]],
+  "relationships": [
+    ["orders", "customer_id", "customers", "id"],
+    ["order_items", "order_id", "orders", "id"],
+    ["audit_log", "order_id", "orders", "id"]
+  ],
+  "usage": [
+    ["function:backend/app/services/orders.py:create_order", "orders", "write"],
+    ["function:backend/app/services/orders.py:create_order", "order_items", "write"],
+    ["function:backend/app/services/orders.py:list_orders", "orders", "read"],
+    ["function:backend/app/services/customers.py:get_customer", "customers", "read"],
+    ["function:backend/app/reports/sales.py:sales_by_customer", "orders", "read"],
+    ["function:backend/app/reports/sales.py:sales_by_customer", "customers", "read"],
+    ["function:worker/worker/jobs.py:record_audit", "audit_log", "write"],
+    ["function:worker/worker/jobs.py:archive_orders", "orders", "read"]
+  ],
+  "routes": {
+    "POST /api/orders": "function:backend/app/routers/orders.py:create",
+    "GET /api/orders/{customer_id}": "function:backend/app/routers/orders.py:for_customer",
+    "GET /api/customers/{customer_id}": "function:backend/app/routers/customers.py:read",
+    "GET /api/customers/reports/sales": "function:backend/app/routers/customers.py:sales",
+    "GET /health": "function:backend/app/main.py:health"
+  },
+  "client_links": {
+    "function:frontend/src/api.ts:createOrder": "POST /api/orders",
+    "function:frontend/src/api.ts:getCustomer": "GET /api/customers/{customer_id}"
+  },
+  "unmatched_clients": ["GET /api/invoices"],
+  "flows": {
+    "POST /api/orders": {
+      "must_include": [
+        "function:frontend/src/api.ts:createOrder",
+        "function:backend/app/routers/orders.py:create",
+        "function:backend/app/services/orders.py:create_order",
+        "table:orders",
+        "table:order_items"
+      ]
+    },
+    "GET /api/customers/reports/sales": {
+      "must_include": [
+        "function:backend/app/routers/customers.py:sales",
+        "function:backend/app/reports/sales.py:sales_by_customer",
+        "table:orders",
+        "table:customers"
+      ]
+    }
+  },
+  "calm_relationships": [["frontend", "backend"], ["backend", "db"], ["worker", "db"]],
+  "quality": {"hotspot_includes": "function:backend/app/services/orders.py:discount", "test_functions": 2, "test_files": 1},
+  "coverage": {"line_rate": 0.75, "branch_rate": 0.5, "file": ["backend/app/services/orders.py", 0.75]},
+  "packages": [
+    ["PyPI", "fastapi", "0.95.0"], ["PyPI", "sqlalchemy", "2.0.20"], ["PyPI", "jinja2", "2.11.2"],
+    ["npm", "axios", "0.21.0"], ["npm", "typescript", "5.4.0"]
+  ]
+}

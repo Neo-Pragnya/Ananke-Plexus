@@ -10,6 +10,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.20] — 2026-11-04
+
+### Added
+
+- **Repo intelligence: overview, CALM, quality, coverage and dependencies.** Languages and components with the evidence for each
+  kind; an inferred CALM model that's never written, with `drift` against a declared one; complexity and hotspots, with tests
+  counted apart; coverage from existing reports, never 0% when there are none; a package inventory from manifests and lockfiles,
+  and an OSV lookup only when asked. See `docs/reference/repo-intelligence.md`.
+- The code graph now links imports to files. It works out source roots, resolves relative imports and aliases, and reads
+  JavaScript and TypeScript, including `tsconfig` path aliases. Import edges gain an optional `resolved_target`, and
+  `ananke app code` and `ananke graph impact` use it. Existing node ids don't change.
+- **Repo intelligence: the data model.** Tables, fields, relationships and which functions read or write them, with a Mermaid ERD and
+  `path:line` evidence, from SQLAlchemy, SQLModel, Django, SQL, Alembic, Prisma and simple TypeORM. Runs nothing.
+- **Repo intelligence: API pathways.** Routes from FastAPI, Flask, Django, Express and NestJS with prefixes joined across files; HTTP
+  calls from `fetch`, axios, Angular, `requests` and `httpx`; each call matched to its route, with literals beating parameters, and
+  the rest listed as unmatched or external. OpenAPI files are listed, and what they describe but the code lacks is noted.
+- **Repo intelligence: end-to-end flows.** One flow per route, from the code that calls it through the handler and its calls to the
+  tables, plus non-HTTP entry points. Every step comes from the graph, the API section or the data model, and none is invented.
+
+### Fixed
+
+- `ananke graph build` no longer stops on a file nested too deeply to parse: the file, or just the notebook cell, is
+  reported as unparsed and the build continues. Python files over 2 MB are now listed without being read.
+
+- `apm bundle install` can now install a skill that came from the registry. It used to fail with "missing manifest", and a
+  bundle can't use its manifest to write outside the install folder.
+
+---
+
 ## [0.3.19] — 2026-11-03
 
 Publishes the security fixes listed under 0.3.18. That version was tagged but never reached PyPI, because its release workflow

@@ -134,6 +134,7 @@ class AppFacade:
             "graph.build": _graph_build,
             "graph.impact": _graph_impact,
             "workflow.run": _workflow_run,
+            "repo.analyze": _repo_analyze,
         }
 
     # ------------------------------------------------------------------ negotiation and discovery
@@ -539,9 +540,11 @@ class AppFacade:
             and (not wanted or n.kind in wanted)
             and all(w in f"{n.name} {n.path}".lower() for w in words)
         ]
-        # An import names a module; inside this repository, that is a file.
+        # An import names a module; inside this repository, that is a file. A snapshot built before imports were
+        # resolved only has the module name to go on.
+        legacy = not any(e.resolved_target for e in snapshot.edges)
         modules: dict[str, str] = {}
-        for n in snapshot.nodes:
+        for n in snapshot.nodes if legacy else ():
             module = n.metadata.get("module")
             if n.kind == "file" and isinstance(module, str):
                 modules[f"module:{module}"] = n.node_id
@@ -563,7 +566,9 @@ class AppFacade:
         touching = []
         external = 0
         for edge in snapshot.edges:
-            target = modules.get(edge.target, edge.target)
+            target = edge.resolved_target or edge.target
+            if target.startswith("module:") and edge.source.endswith((".py", ".ipynb")):
+                target = modules.get(target, target)
             if edge.source not in picked and target not in picked:
                 continue
             if target not in all_groups:
@@ -833,6 +838,21 @@ def _graph_impact(app: AppFacade, run_id: str, params: dict[str, Any]) -> None:
         media_type="application/json",
         producer="ananke.graph.impact",
         input_refs=[f"file:{c}" for c in changed],
+    )
+
+
+def _repo_analyze(app: AppFacade, run_id: str, params: dict[str, Any]) -> None:
+    from ananke.plexus.intel import analyze
+
+    report = analyze(app.workspace, check_vulnerabilities=bool(params.get("check_vulnerabilities")))
+    report["source_snapshot"] = app.source_snapshot()
+    app.register_artifact(
+        run_id,
+        "repo-intel.json",
+        json.dumps(report, indent=1, ensure_ascii=False).encode(),
+        media_type="application/json",
+        producer="ananke.intel",
+        input_refs=[f"source:{report['source_snapshot']}"],
     )
 
 
