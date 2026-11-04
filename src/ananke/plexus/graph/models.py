@@ -72,6 +72,7 @@ class GraphEdge(BaseModel):
     confidence: float = 1.0
     source_location: str = ""
     snapshot_id: str = ""
+    resolved_target: str = ""  # imports: ``file:<path>`` when the module is in the repository
 
 
 class GraphSnapshot(BaseModel):

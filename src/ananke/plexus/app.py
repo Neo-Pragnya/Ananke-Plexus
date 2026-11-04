@@ -540,9 +540,11 @@ class AppFacade:
             and (not wanted or n.kind in wanted)
             and all(w in f"{n.name} {n.path}".lower() for w in words)
         ]
-        # An import names a module; inside this repository, that is a file.
+        # An import names a module; inside this repository, that is a file. A snapshot built before imports were
+        # resolved only has the module name to go on.
+        legacy = not any(e.resolved_target for e in snapshot.edges)
         modules: dict[str, str] = {}
-        for n in snapshot.nodes:
+        for n in snapshot.nodes if legacy else ():
             module = n.metadata.get("module")
             if n.kind == "file" and isinstance(module, str):
                 modules[f"module:{module}"] = n.node_id
@@ -564,7 +566,7 @@ class AppFacade:
         touching = []
         external = 0
         for edge in snapshot.edges:
-            target = modules.get(edge.target, edge.target)
+            target = edge.resolved_target or modules.get(edge.target, edge.target)
             if edge.source not in picked and target not in picked:
                 continue
             if target not in all_groups:

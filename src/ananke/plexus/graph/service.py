@@ -3,13 +3,23 @@
 import ast
 import hashlib
 import json
+import os
 import posixpath
 from datetime import UTC, datetime
 from pathlib import Path
 
 from ananke.plexus.graph.models import GraphEdge, GraphNode, GraphSnapshot, ImpactReport
+from ananke.plexus.graph.python_imports import (
+    ROOT_MARKERS,
+    FileImports,
+    ModuleIndex,
+    Symbols,
+    attribute_chain,
+    read_imports,
+)
 
 _SKIP_DIRS = {"node_modules", "site-packages", "__pycache__"}
+_MAX_SOURCE_BYTES = 2_000_000
 _MAX_NOTEBOOK_BYTES = 50_000_000  # outputs can make a notebook huge; only its source is used
 _DATA_SUFFIXES = {
     ".csv", ".tsv", ".parquet", ".json", ".jsonl", ".xlsx", ".xls", ".feather", ".pkl", ".pickle",
@@ -23,29 +33,35 @@ _DATA_WRITERS = {
     "to_csv", "to_parquet", "to_json", "to_excel", "to_feather", "to_pickle", "to_hdf", "to_orc",
     "save", "savez", "savetxt",
 }  # fmt: skip
+# A hostile file can overflow the parser rather than fail its grammar; either way it just doesn't parse.
+_PARSE_FAILURES = (SyntaxError, ValueError, RecursionError, MemoryError)
 _PYTHON_CELL_MAGICS = {"%%time", "%%timeit", "%%capture", "%%prun"}  # the body is ordinary Python
 _PATH_READERS = {"read_text", "read_bytes"}
 _PATH_WRITERS = {"write_text", "write_bytes"}
 _PATH_KEYWORDS = ("path", "filepath_or_buffer", "path_or_buf", "file", "fname")
 
 
-def _iter_project_files(repository_root: Path, pattern: str) -> list[Path]:
+def _iter_project_files(
+    repository_root: Path, suffixes: tuple[str, ...], skip: frozenset[str] = frozenset()
+) -> list[Path]:
     """Sources of the project itself: not hidden directories (.git, .venv, caches), dependencies or virtual
-    environments (any directory holding a ``pyvenv.cfg``)."""
-    venvs = {cfg.parent for cfg in repository_root.rglob("pyvenv.cfg")}
+    environments (any directory holding a ``pyvenv.cfg``). Skipped folders aren't walked at all."""
     found = []
-    for path in repository_root.rglob(pattern):
-        rel_parts = path.relative_to(repository_root).parts[:-1]
-        if any(part.startswith(".") or part in _SKIP_DIRS for part in rel_parts):
+    for folder, directories, files in os.walk(repository_root):
+        if "pyvenv.cfg" in files:
+            directories.clear()
             continue
-        if any(parent in venvs for parent in path.parents):
-            continue
-        found.append(path)
+        directories[:] = [
+            d
+            for d in directories
+            if not d.startswith(".") and d not in _SKIP_DIRS and d not in skip
+        ]
+        found += [Path(folder, name) for name in files if name.endswith(suffixes)]
     return sorted(found)
 
 
 def _iter_python_files(repository_root: Path) -> list[Path]:
-    return _iter_project_files(repository_root, "*.py")
+    return _iter_project_files(repository_root, (".py",))
 
 
 def _parse_notebook_source(source: str) -> ast.Module:
@@ -96,7 +112,7 @@ def _read_notebook(path: Path) -> tuple[str, list[tuple[int, int]], dict[str, ob
             cleaned.append(f"{line[: len(line) - len(body)]}pass" if magic else line)
         try:
             _parse_notebook_source("\n".join(cleaned))
-        except SyntaxError:
+        except _PARSE_FAILURES:
             unparsed.append(number)
             continue
         lines += cleaned
@@ -190,12 +206,16 @@ def _doc(node: ast.AST) -> str:
     return text.strip().splitlines()[0][:200] if text.strip() else ""
 
 
-def _signature(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+def _unparse(node: ast.AST) -> str:
     try:
-        args = ast.unparse(fn.args)
-    except Exception:  # pragma: no cover - ast.unparse handles every parsed tree
-        args = "..."
-    returns = f" -> {ast.unparse(fn.returns)}" if fn.returns is not None else ""
+        return ast.unparse(node)
+    except (RecursionError, MemoryError):  # an expression nested too deeply to print
+        return "..."
+
+
+def _signature(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+    args = _unparse(fn.args)
+    returns = f" -> {_unparse(fn.returns)}" if fn.returns is not None else ""
     return (
         f"{'async ' if isinstance(fn, ast.AsyncFunctionDef) else ''}def {fn.name}({args}){returns}"
     )
@@ -211,10 +231,27 @@ def _symbol_meta(node: ast.AST) -> dict[str, object]:
         meta["doc"] = doc
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         meta["signature"] = _signature(node)
-        decorators = [ast.unparse(d) for d in node.decorator_list]
+        decorators = [_unparse(d) for d in node.decorator_list]
         if decorators:
             meta["decorators"] = decorators
     return meta
+
+
+def _module_index(repository_root: Path, python_files: list[Path]) -> ModuleIndex:
+    """Python files by the names they can be imported as, with the folders that declare a project."""
+    rel_paths = [str(path.relative_to(repository_root)) for path in python_files]
+    folders = {""}
+    for rel_path in rel_paths:
+        folder = posixpath.dirname(rel_path)
+        while folder not in folders:
+            folders.add(folder)
+            folder = posixpath.dirname(folder)
+    declared = [
+        folder
+        for folder in sorted(folders)
+        if folder and any((repository_root / folder / marker).is_file() for marker in ROOT_MARKERS)
+    ]
+    return ModuleIndex(rel_paths, declared)
 
 
 def build_graph(repository_root: Path) -> GraphSnapshot:
@@ -222,9 +259,11 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
 
     Node ids are stable: ``file:<path>``, ``function:<path>:<name>``, ``class:<path>:<name>`` and
     ``method:<path>:<Class>.<name>``. Symbol metadata carries ``line``, ``end_line``, a one-line ``doc`` and, for
-    functions, a ``signature``. ``calls`` and ``inherits`` edges are resolved through each file's own definitions
-    and its ``import``/``from … import`` statements to other files in the repository; they are ``inferred``, and
-    dynamic dispatch or re-exports beyond one level are not followed.
+    functions, a ``signature``. ``imports`` edges keep ``module:<name>`` as their target and, when the module is in the
+    repository, hold ``file:<path>`` in ``resolved_target``; source roots are detected, so a module can live in a
+    subfolder. Two equally good files are never guessed between: the edge's origin is ``ambiguous``. ``calls`` and
+    ``inherits`` edges follow each file's definitions, imports and re-exports; they are ``inferred``, and dynamic
+    dispatch isn't followed.
 
     A notebook is a ``file`` node with ``notebook: true``, and its symbols take the same id forms, so adding one
     never changes another file's ids. Its locations read ``<path>#cell=<n>:<line>``, its top-level calls belong to
@@ -234,9 +273,6 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
     parsed: dict[str, ast.Module] = {}
-    modules: dict[
-        str, str
-    ] = {}  # dotted module name (with and without a leading "src.") → rel path
     cell_maps: dict[str, list[tuple[int, int]]] = {}
 
     def where(rel: str, line: int) -> str:
@@ -246,14 +282,22 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
         cell, in_cell = cells[line - 1] if 0 < line <= len(cells) else (0, line)
         return f"{rel}#cell={cell}:{in_cell}"
 
-    for path in _iter_python_files(repository_root):
+    python_files = _iter_python_files(repository_root)
+    index = _module_index(repository_root, python_files)
+    source_roots = set(index.source_roots())
+
+    for path in python_files:
         rel_path = str(path.relative_to(repository_root))
         file_id = f"file:{rel_path}"
         file_meta: dict[str, object] = {"module": _module_name(rel_path)}
+        if index.root_of(rel_path) in source_roots:
+            file_meta["source_root"] = index.root_of(rel_path)
         try:
+            if path.stat().st_size > _MAX_SOURCE_BYTES:
+                raise ValueError("source file too large")
             source = path.read_text(encoding="utf-8")
             tree = ast.parse(source)
-        except (SyntaxError, UnicodeDecodeError):
+        except (*_PARSE_FAILURES, OSError):
             file_meta["parse_error"] = True
             nodes.append(
                 GraphNode(
@@ -271,18 +315,14 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
             )
         )
         parsed[rel_path] = tree
-        module = _module_name(rel_path)
-        modules[module] = rel_path
-        if module.startswith("src."):
-            modules[module.removeprefix("src.")] = rel_path
 
-    for path in _iter_project_files(repository_root, "*.ipynb"):
+    for path in _iter_project_files(repository_root, (".ipynb",)):
         rel_path = str(path.relative_to(repository_root))
         file_id = f"file:{rel_path}"
         try:
             source, line_map, file_meta = _read_notebook(path)
             tree = _parse_notebook_source(source)
-        except (ValueError, KeyError, TypeError, AttributeError, SyntaxError, OSError):
+        except (*_PARSE_FAILURES, KeyError, TypeError, AttributeError, OSError):
             nodes.append(
                 GraphNode(
                     node_id=file_id,
@@ -374,68 +414,34 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         )
                         methods[rel_path][item.name][member.name] = m_id
 
-            if isinstance(item, ast.Import):
-                for alias in item.names:
-                    edges.append(
-                        GraphEdge(
-                            source=file_id,
-                            target=f"module:{alias.name}",
-                            kind="imports",
-                            source_location=where(rel_path, item.lineno),
-                        )
-                    )
-            elif isinstance(item, ast.ImportFrom) and item.module:
-                edges.append(
-                    GraphEdge(
-                        source=file_id,
-                        target=f"module:{item.module}",
-                        kind="imports",
-                        source_location=where(rel_path, item.lineno),
-                    )
+    imports: dict[str, FileImports] = {
+        rel_path: read_imports(index, rel_path, tree) for rel_path, tree in parsed.items()
+    }
+    for rel_path, file_imports in imports.items():
+        written: set[tuple[str, str, int]] = set()
+        for link in file_imports.links:
+            if (link.target, link.file, link.line) in written:
+                continue
+            written.add((link.target, link.file, link.line))
+            edges.append(
+                GraphEdge(
+                    source=f"file:{rel_path}",
+                    target=link.target,
+                    kind="imports",
+                    origin="ambiguous" if link.ambiguous else "extracted",
+                    confidence=0.5 if link.ambiguous else 1.0,
+                    source_location=where(rel_path, link.line),
+                    resolved_target=f"file:{link.file}" if link.file else "",
                 )
+            )
+    symbols = Symbols(index, imports, defs, methods)
 
     seen: set[tuple[str, str, str]] = set()
     data_nodes: dict[str, GraphNode] = {}
     for rel_path, tree in parsed.items():
-        # Names this file can see: its own definitions and what it imports from repository files.
-        names: dict[str, str] = dict(defs[rel_path])
-        module_alias: dict[str, str] = {}
-        for item in tree.body:
-            if isinstance(item, ast.ImportFrom) and item.module and item.module in modules:
-                target_file = modules[item.module]
-                for alias in item.names:
-                    if alias.name in defs.get(target_file, {}):
-                        names[alias.asname or alias.name] = defs[target_file][alias.name]
-                    sub = f"{item.module}.{alias.name}"
-                    if sub in modules:
-                        module_alias[alias.asname or alias.name] = modules[sub]
-            elif isinstance(item, ast.Import):
-                for alias in item.names:
-                    if alias.name in modules:
-                        module_alias[alias.asname or alias.name.split(".")[0]] = modules[alias.name]
 
-        def resolve(
-            func: ast.expr,
-            cls: str | None,
-            rel: str = rel_path,
-            scope: dict[str, str] = names,
-            aliases: dict[str, str] = module_alias,
-        ) -> str | None:
-            if isinstance(func, ast.Name):
-                return scope.get(func.id)
-            if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-                owner = func.value.id
-                if owner == "self" and cls is not None:
-                    return methods[rel].get(cls, {}).get(func.attr)
-                if owner in aliases:
-                    return defs.get(aliases[owner], {}).get(func.attr)
-                owner_id = scope.get(owner, "")
-                if owner_id.startswith(
-                    "class:"
-                ):  # Cls.method(...): a classmethod, staticmethod or explicit call
-                    _, cls_file, cls_name = owner_id.split(":", 2)
-                    return methods.get(cls_file, {}).get(cls_name, {}).get(func.attr)
-            return None
+        def resolve(func: ast.expr, cls: str | None, rel: str = rel_path) -> str | None:
+            return symbols.resolve(attribute_chain(func), rel, cls)
 
         def add(source: str, target: str, kind: str, line: int, rel: str = rel_path) -> None:
             key = (source, target, kind)
@@ -569,9 +575,12 @@ def impact_from_paths(repository_root: Path, changed_files: list[str]) -> Impact
     impacted_symbols: list[str] = []
     impacted_files: set[str] = set()
     path_set = set(changed_files)
+    changed_ids = {f"file:{path}" for path in changed_files}
+    # A snapshot built before imports were resolved only has the module name to go on.
+    legacy = not any(edge.resolved_target for edge in snapshot.edges)
     changed_modules: set[str] = set()
     for node in snapshot.nodes:
-        if node.kind == "file" and node.path in path_set:
+        if legacy and node.kind == "file" and node.path in path_set:
             module = str(node.metadata.get("module") or _module_name(node.path))
             changed_modules |= {module, module.removeprefix("src.")}
     for edge in snapshot.edges:
@@ -582,10 +591,14 @@ def impact_from_paths(repository_root: Path, changed_files: list[str]) -> Impact
         elif edge.kind == "imports" and edge.source.startswith("file:"):
             # A file that imports a changed module is impacted (dependents, not dependencies).
             importer = edge.source.removeprefix("file:")
-            if edge.target.removeprefix("module:") in changed_modules and importer not in path_set:
+            hit = (
+                edge.resolved_target in changed_ids
+                or edge.target.removeprefix("module:") in changed_modules
+            )
+            if hit and importer not in path_set:
                 impacted_files.add(importer)
         elif (
-            edge.kind == "calls"
+            edge.kind in ("calls", "inherits")
             and edge.target.split(":")[1:2]
             and edge.target.split(":")[1] in path_set
         ):
