@@ -10,6 +10,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ### Added
 
+- **Repo intelligence: overview, CALM, quality, coverage and dependencies.** Languages and components with the evidence for each
+  kind; an inferred CALM model that's never written, with `drift` against a declared one; complexity and hotspots, with tests
+  counted apart; coverage from existing reports, never 0% when there are none; a package inventory from manifests and lockfiles,
+  and an OSV lookup only when asked. See `docs/reference/repo-intelligence.md`.
 - The code graph now links imports to files. It works out source roots, resolves relative imports and aliases, and reads
   JavaScript and TypeScript, including `tsconfig` path aliases. Import edges gain an optional `resolved_target`, and
   `ananke app code` and `ananke graph impact` use it. Existing node ids don't change.
@@ -34,12 +38,8 @@ couldn't install a scanner.
 ### Fixed
 
 - The release and security workflows install Trivy with retries and a pinned checksum, so one failed DNS lookup can't block a release.
-### Added
 
-- **Repo intelligence: overview, CALM, quality, coverage and dependencies.** Languages and components with the evidence for each
-  kind; an inferred CALM model that's never written, with `drift` against a declared one; complexity and hotspots, with tests
-  counted apart; coverage from existing reports, never 0% when there are none; a package inventory from manifests and lockfiles,
-  and an OSV lookup only when asked. See `docs/reference/repo-intelligence.md`.
+---
 
 ---
 
