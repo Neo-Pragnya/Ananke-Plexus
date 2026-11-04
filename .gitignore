@@ -263,3 +263,5 @@ Debug-Specs/**
 acceptance/report/
 scan-report/
 !tests/fixtures/repo-mapping/**/coverage.xml
+!tests/fixtures/repo-mapping/**/lib/
+!tests/fixtures/repo-mapping/**/lib/**
