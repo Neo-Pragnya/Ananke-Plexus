@@ -10,6 +10,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.19] — 2026-11-03
+
+Publishes the security fixes listed under 0.3.18. That version was tagged but never reached PyPI, because its release workflow
+couldn't install a scanner.
+
+### Fixed
+
+- The release and security workflows install Trivy with retries and a pinned checksum, so one failed DNS lookup can't block a release.
+
+---
+
 ## [0.3.18] — 2026-11-03
 
 ### Security
