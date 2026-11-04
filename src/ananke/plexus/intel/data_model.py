@@ -65,6 +65,7 @@ ORM_WRITES = {
 }
 READ_CALLS = {"select", "select_from", "join", "outerjoin", "exists", "with_entities"}
 PERSIST_CALLS = {"add", "add_all", "merge", "bulk_save_objects", "delete"}
+MERMAID_RESERVED = {"erdiagram", "style", "classdef", "class", "direction", "title", "acctitle", "accdescr", "pk", "fk", "uk", "tb", "bt", "lr", "rl"}  # fmt: skip
 NOT_A_COLUMN_TYPE = {"Sequence", "Identity", "Computed"}
 DJANGO_BASES = {"Model", "AbstractUser", "AbstractBaseUser", "PermissionsMixin"}
 TYPEORM_COLUMNS = {
@@ -132,6 +133,7 @@ _WORD = re.compile(r"[^\W\d][\w$]*")
 _NUMBER = re.compile(r"\d[\w.]*")
 _DOLLAR_TAG = re.compile(r"\$\w{0,64}\$")
 _NEWLINE = re.compile(r"\n")
+_SAFE_CHAR = re.compile(r"[^A-Za-z0-9_]")
 _TS_DECORATOR = re.compile(r"\s{0,200}@(\w{1,64})")
 _TS_PROPERTY = re.compile(
     r"\s{0,200}(?:(?:public|private|protected|readonly)\s{1,8}){0,4}(\w{1,128})[!?]?\s{0,8}:"
@@ -2407,7 +2409,7 @@ class _Analysis:
             "tables": [self._table_dict(t, counts[t.name.lower()] > 1) for t in listed],
             "relationships": relationships,
             "usage": usage,
-            "erd_mermaid": "",
+            "erd_mermaid": _mermaid(listed, relationships),
         }
 
     def _capped_limits(self) -> list[str]:
@@ -2904,6 +2906,48 @@ def _is_session(node: ast.expr) -> bool:
     return any("session" in p.lower() for p in parts) or (
         parts[-1:] in (["db"], ["s"], ["tx"], ["uow"])
     )
+
+
+# ---------------------------------------------------------------- the ERD
+
+
+def _safe(name: str | None, fallback: str = "unnamed") -> str:
+    """A name Mermaid will parse whatever the source said. Letters, digits and underscores only."""
+    cleaned = _SAFE_CHAR.sub("_", name or "").strip("_")[:64] or fallback
+    if cleaned[0].isdigit():
+        cleaned = f"_{cleaned}"
+    return f"{cleaned}_" if cleaned.lower() in MERMAID_RESERVED else cleaned
+
+
+def _mermaid(tables: list[_Table], relationships: list[dict[str, Any]]) -> str:
+    entity: dict[str, str] = {}
+    used: set[str] = set()
+    for table in tables:
+        if table.name.lower() in entity:
+            continue
+        base = safe = _safe(table.name)
+        count = 1
+        while safe.lower() in used:
+            count += 1
+            safe = f"{base}_{count}"
+        used.add(safe.lower())
+        entity[table.name.lower()] = safe
+    lines = ["erDiagram"]
+    for table in tables:
+        fks = {fk.column.lower() for fk in table.fks}
+        lines.append(f"    {entity[table.name.lower()]} {{")
+        for lowered, column in table.columns.items():
+            keys = [k for k, on in (("PK", column.primary_key), ("FK", lowered in fks)) if on]
+            suffix = f" {', '.join(keys)}" if keys else ""
+            lines.append(f"        {_safe(column.type, 'unknown')} {_safe(column.name)}{suffix}")
+        lines.append("    }")
+    shapes = {"many-to-one": ("}o", "||"), "one-to-one": ("||", "||"), "many-to-many": ("}o", "o{")}
+    for rel in relationships:
+        left, right = shapes[rel["cardinality"]]
+        line = ".." if rel["origin"] == "inferred" else "--"
+        source, target = entity[rel["from_table"].lower()], entity[rel["to_table"].lower()]
+        lines.append(f'    {source} {left}{line}{right} {target} : "{_safe(rel["from_column"])}"')
+    return "\n".join(lines) + "\n"
 
 
 def analyze(ctx: RepoContext) -> dict[str, Any]:
