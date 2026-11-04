@@ -2608,7 +2608,11 @@ class _Analysis:
 
     def _is_key(self, table: _Table, column: str) -> bool:
         keys = [lowered for lowered, c in table.columns.items() if c.primary_key]
-        return column.lower() in keys if keys else column.lower() == "id"
+        if keys:
+            return column.lower() in keys
+        return column.lower() == "id" and (
+            "id" in table.columns or table.source.startswith("inferred")
+        )
 
 
 class _Walker:

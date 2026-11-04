@@ -8,6 +8,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **Repo intelligence: the data model.** Tables, fields, relationships and which functions read or write them, with a Mermaid ERD and
+  `path:line` evidence, from SQLAlchemy, SQLModel, Django, SQL, Alembic, Prisma and simple TypeORM. Runs nothing.
+
 ### Fixed
 
 - `apm bundle install` can now install a skill that came from the registry. It used to fail with "missing manifest", and a
