@@ -10,6 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.27] — 2026-11-05
+
+### Added
+
+- **A `findings` section in `repo.analyze`.** Scanner findings from SARIF reports, worst first, with their source and fix, and test results from JUnit reports, naming what failed. Nothing is run. With no report, the section says it's unknown, not zero.
+
+---
+
 ## [0.3.26] — 2026-11-05
 
 ### Added
