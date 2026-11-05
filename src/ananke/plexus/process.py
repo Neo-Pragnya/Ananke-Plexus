@@ -359,14 +359,12 @@ def from_bpmn(xml: str) -> dict[str, Any]:
     """A model from BPMN XML, as another tool may have edited it. Refuses what could attack the parser."""
     if len(xml.encode("utf-8", "replace")) > MAX_BYTES * 5:
         raise ProcessError("this file is too large to read as BPMN")
-    if re.search(r"<!\s*(DOCTYPE|ENTITY)", xml, re.I):
-        raise ProcessError(
-            "this file declares a DOCTYPE or entities, which BPMN doesn't need, so it isn't read"
-        )
+    from ananke.plexus.intel.coverage import _BadReport, _safe_xml
+
     try:
-        root = ET.fromstring(xml)  # noqa: S314 - DOCTYPE and entities refused above
-    except ET.ParseError as exc:
-        raise ProcessError(f"this isn't valid XML: {exc}") from exc
+        root = _safe_xml(xml.encode("utf-8", "replace"))
+    except _BadReport as exc:
+        raise ProcessError(f"this file isn't read: {exc}") from exc
     process = root.find(f"{{{BPMN}}}process")
     if process is None:
         raise ProcessError("no BPMN process in this file")

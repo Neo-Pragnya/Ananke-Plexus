@@ -106,3 +106,10 @@ def test_broken_and_hostile_reports_are_named_and_dont_stop_it(tmp_path: Path) -
 def test_an_ordinary_xml_file_isnt_taken_for_test_results(tmp_path: Path) -> None:
     (tmp_path / "pom.xml").write_text("<project/>")
     assert analyze(tmp_path)["sections"]["findings"]["tests"] == []
+
+
+def test_a_doctype_hidden_by_another_encoding_is_refused(tmp_path: Path) -> None:
+    hidden = '<?xml version="1.0" encoding="utf-16"?><!DOCTYPE x [<!ENTITY a "b">]><testsuite/>'
+    (tmp_path / "junit.xml").write_bytes(hidden.encode("utf-16"))
+    section = analyze(tmp_path)["sections"]["findings"]
+    assert section["tests"] == [] and any("junit.xml" in note for note in section["limits"])

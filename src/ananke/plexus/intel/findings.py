@@ -9,12 +9,10 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
-from xml.etree import (
-    ElementTree as ET,
-)
 
-from ananke.plexus.intel._common import is_fixture, read_text
+from ananke.plexus.intel._common import is_fixture, read_bytes, read_text
 from ananke.plexus.intel.context import RepoContext
+from ananke.plexus.intel.coverage import _BadReport, _safe_xml
 
 MAX_REPORT_BYTES = 30_000_000
 MAX_FINDINGS = 2_000
@@ -24,8 +22,8 @@ _JUNIT_NAME = re.compile(r"(^|/)(junit|test-?results?|pytest|TEST-)[^/]*\.xml$",
 
 
 def _severity(result: dict[str, Any], rule: dict[str, Any]) -> str:
-    properties = rule.get("properties") if isinstance(rule.get("properties"), dict) else {}
-    score = properties.get("security-severity")
+    properties = rule.get("properties")
+    score = properties.get("security-severity") if isinstance(properties, dict) else None
     try:
         number = float(score) if score is not None else None
     except (TypeError, ValueError):
@@ -92,14 +90,11 @@ def _read_sarif(path: str, text: str, limits: list[str]) -> list[dict[str, Any]]
     return found
 
 
-def _read_junit(path: str, text: str, limits: list[str]) -> dict[str, Any] | None:
-    if re.search(r"<!\s*(DOCTYPE|ENTITY)", text, re.I):
-        limits.append(f"{path} declares a DOCTYPE or entities, so it wasn't read")
-        return None
+def _read_junit(path: str, raw: bytes, limits: list[str]) -> dict[str, Any] | None:
     try:
-        root = ET.fromstring(text)  # noqa: S314 - DOCTYPE and entities refused above
-    except ET.ParseError:
-        limits.append(f"{path} couldn't be read as JUnit XML")
+        root = _safe_xml(raw)
+    except _BadReport as exc:
+        limits.append(f"{path} couldn't be read as JUnit XML: {exc}")
         return None
     if root.tag not in {"testsuite", "testsuites"}:
         return None
@@ -146,11 +141,11 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
             continue
         findings += _read_sarif(path, text, limits)
     for path in junit:
-        text = read_text(ctx, path, MAX_REPORT_BYTES)
-        if text is None:
+        raw = read_bytes(ctx, path, MAX_REPORT_BYTES)
+        if raw is None:
             limits.append(f"{path} is too large to read")
             continue
-        result = _read_junit(path, text, limits)
+        result = _read_junit(path, raw, limits)
         if result:
             tests.append(result)
     order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
