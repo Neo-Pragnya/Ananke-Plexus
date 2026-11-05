@@ -158,6 +158,7 @@ class AppFacade:
             "operations": [
                 "context_map",
                 "context_lookup",
+                "process_model",
                 "context_status",
                 "resolve_capabilities",
                 "prepare_run",
@@ -684,6 +685,16 @@ class AppFacade:
             return repo_map(self.workspace, budget=budget, refresh=refresh)
         except ContextError as exc:
             raise AppError(exc.code, exc.message) from exc
+
+    def process_model(self, text: str, source: str = "", bpmn: str = "") -> dict[str, Any]:
+        """The process a document states, or a BPMN file says, with its BPMN 2.0. Nothing runs."""
+        from ananke.plexus.process import ProcessError, extract, from_bpmn, to_bpmn
+
+        try:
+            model = from_bpmn(bpmn) if bpmn else extract(text, source)
+        except ProcessError as exc:
+            raise AppError("INVALID_REQUEST", str(exc)) from exc
+        return {"model": model, "bpmn": to_bpmn(model)}
 
     def context_lookup(self, what: str, target: str, path: str | None = None) -> dict[str, Any]:
         """``outline`` of a file, or the ``symbol`` or ``callers`` of a name. Always reflects the current code."""

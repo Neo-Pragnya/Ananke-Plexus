@@ -178,6 +178,8 @@ surface:
   - ananke context status
   - ananke context pack
   - ananke context benchmark
+  - ananke process extract
+  - ananke process check
   - ananke context outline
   - ananke context symbol
   - ananke context callers

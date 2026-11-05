@@ -11,6 +11,7 @@ from ananke.plexus.api import Ananke
 from ananke.plexus.cli.app_facade_cli import app_app as app_facade_app
 from ananke.plexus.cli.context_cli import context_app
 from ananke.plexus.cli.learning_cli import learning_app
+from ananke.plexus.cli.process_cli import process_app
 from ananke.plexus.cli.rendering import render_result
 from ananke.plexus.core.paths import safe_child
 from ananke.plexus.mcp.http import serve_http
@@ -74,6 +75,7 @@ app.add_typer(eval_app, name="eval")
 app.add_typer(registry_app, name="registry")
 app.add_typer(app_facade_app, name="app")
 app.add_typer(context_app, name="context")
+app.add_typer(process_app, name="process")
 app.add_typer(learning_app, name="learning")
 app.add_typer(skill_app, name="skill")
 app.add_typer(agent_app, name="agent")

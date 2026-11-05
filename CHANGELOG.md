@@ -10,6 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.26] — 2026-11-05
+
+### Added
+
+- **`ananke process`: business processes from reviewed text.** `extract` reads a numbered list, where each step names who does it, into lanes, tasks, decisions and links, and each cites its line. It can write BPMN 2.0, which other BPMN tools open. `check` validates IDs, links and reachability, and that a file still says what the document says. What doesn't hold together is reported, not repaired, and a process is never marked executable. Guide: [Business processes](docs/guides/business-processes.md).
+
+---
+
 ## [0.3.25] — 2026-11-05
 
 ### Added
