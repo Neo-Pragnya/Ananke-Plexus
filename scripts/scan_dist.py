@@ -5,7 +5,9 @@ Package firewalls (Black Duck, JFrog Xray/Curation, Sonatype, Socket) quarantine
 reasons. This script checks each one against the exact files in ``dist/``:
 
   secrets      gitleaks over every unpacked wheel and sdist                          BLOCK on any finding
-  vulns        pip-audit over the dependency tree the wheel resolves to              BLOCK on any finding
+  vulns        pip-audit over the dependency tree the wheel resolves to, and Grype and  BLOCK on any finding
+               osv-scanner when installed: three advisory databases, so one that lags
+               doesn't let a CVE through
   bundled      minified or third-party code, and whether the declared licence covers it  BLOCK unless accepted
   signatures   what infostealers and droppers do: keychain dumps, browser stores,      BLOCK unless accepted
                SSH and cloud keys, pipe-to-shell, encoded PowerShell, exec of decoded
@@ -324,7 +326,53 @@ def check_vulns(wheels: list[Path], extras: str, work: Path) -> dict:
             for v in dep.get("vulns", []):
                 fixed = ", ".join(v.get("fix_versions") or []) or "-"
                 findings.append(f"{dep['name']} {dep['version']}: {v['id']} (fixed in {fixed})")
-    return {"status": "block" if findings else "pass", "resolved": resolved, "findings": findings}
+        findings += _second_opinions(venv, req_file, work)
+    tools = ["pip-audit", *(t for t in ("grype", "osv-scanner") if shutil.which(t))]
+    return {
+        "status": "block" if findings else "pass",
+        "resolved": resolved,
+        "findings": sorted(set(findings)),
+        "tools": tools,
+    }
+
+
+def _second_opinions(venv: Path, req_file: Path, work: Path) -> list[str]:
+    """Grype (through a Syft SBOM) and osv-scanner, when installed. Their databases differ from pip-audit's."""
+    findings: list[str] = []
+    if shutil.which("grype") and shutil.which("syft"):
+        sbom = work / f"{venv.name}.sbom.json"
+        run(["syft", "-q", f"dir:{venv}", "-o", f"syft-json={sbom}"])
+        res = run(["grype", "-q", f"sbom:{sbom}", "-o", "json"])
+        try:
+            for m in json.loads(res.stdout).get("matches", []):
+                a, v = m["artifact"], m["vulnerability"]
+                fixed = ", ".join((v.get("fix") or {}).get("versions") or []) or "-"
+                findings.append(f"{a['name']} {a['version']}: {v['id']} (fixed in {fixed}, grype)")
+        except json.JSONDecodeError:
+            findings.append(f"grype failed: {(res.stderr or res.stdout).strip()[-200:]}")
+    if shutil.which("osv-scanner"):
+        res = run(
+            [
+                "osv-scanner",
+                "scan",
+                "source",
+                "-L",
+                f"requirements.txt:{req_file}",
+                "--format",
+                "json",
+            ]
+        )
+        try:
+            for r in json.loads(res.stdout or "{}").get("results", []):
+                for pkg in r.get("packages", []):
+                    for v in pkg.get("vulnerabilities", []):
+                        info = pkg.get("package", {})
+                        findings.append(
+                            f"{info.get('name')} {info.get('version')}: {v['id']} (osv-scanner)"
+                        )
+        except json.JSONDecodeError:
+            findings.append(f"osv-scanner failed: {(res.stderr or res.stdout).strip()[-200:]}")
+    return findings
 
 
 def check_heuristics(
@@ -437,7 +485,7 @@ def summary_md(result: dict) -> str:
         c = result[name]
         detail = c.get("detail") or f"{len(c.get('findings', []))} finding(s)"
         if "resolved" in c:
-            detail += f" in {c['resolved']} resolved dependencies"
+            detail += f" in {c['resolved']} resolved dependencies ({', '.join(c.get('tools', ['pip-audit']))})"
         if c.get("accepted"):
             detail += f", {len(c['accepted'])} accepted"
         lines.append(f"| {name} | {icon.get(c['status'], '')} {c['status']} | {detail} |")

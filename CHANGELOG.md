@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.30] — 2026-11-05
+
+Everything in 0.3.29, which never reached PyPI: its own new release gate stopped it, because the release guide quoted the keychain command it was explaining. The guide now describes it instead.
+
+### Added
+
+- **Two more CVE databases in the release gate.** When installed, Grype (through a Syft SBOM) and osv-scanner check the resolved dependency tree alongside pip-audit, and any finding blocks. Each reads a different advisory database, so one that lags doesn't let a CVE through.
+
+---
+
 ## [0.3.29] — 2026-11-05
 
 Package firewalls quarantined Ananke and, through it, Dev Guru. Every version scanned showed the same causes, so it wasn't new code.
