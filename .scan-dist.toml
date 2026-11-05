@@ -24,3 +24,30 @@ paths = [
   "src/ananke/plexus/app.py",
   "src/ananke/plexus/config/credentials.py",
 ]
+
+# ---- licences: every resolved dependency outside the permissive set needs a reason
+[[licence]]
+package = "certifi"
+reason = "Mozilla's CA bundle, MPL-2.0, pulled in by httpx; file-level copyleft that applies only to certifi's own files, used unmodified"
+
+# ---- licence names inside shipped files. A licence search reads one as a declaration; these aren't Ananke's licence.
+# Each line here is written to triage.md for Black Duck and similar tools.
+[[mention]]
+path = "*ananke/plexus/registry/importers/common.py"
+reason = "a table that recognises licence texts so a policy can refuse copyleft skills; Ananke is Apache-2.0"
+
+[[mention]]
+path = "*ananke/plexus/registry/importers/python_pkg.py"
+reason = "a table mapping licence classifiers to SPDX ids so a policy can refuse copyleft packages; Ananke is Apache-2.0"
+
+[[mention]]
+path = "*ananke/plexus/context.py"
+reason = "notes that Serena is GPL-3.0-or-later, which is why Ananke only runs it as a separate process and never bundles it"
+
+[[mention]]
+path = "*docs/guides/saving-tokens.md"
+reason = "the same note about Serena's licence, in the documentation"
+
+[[mention]]
+path = "*docs/concepts/policy-security.md"
+reason = "documents the licence policy Ananke enforces: no GPL in production dependencies"

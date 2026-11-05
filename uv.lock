@@ -471,7 +471,7 @@ requires-dist = [
     { name = "hypothesis", marker = "extra == 'test-all'", specifier = ">=6.100" },
     { name = "hypothesis", marker = "extra == 'test-property'", specifier = ">=6.100" },
     { name = "inspect-ai", marker = "extra == 'eval-inspect'", specifier = ">=0.3" },
-    { name = "jinja2", specifier = ">=3.1,<4" },
+    { name = "jinja2", specifier = ">=3.1.6,<4" },
     { name = "jsonschema", marker = "extra == 'all'", specifier = ">=4.23" },
     { name = "jsonschema", marker = "extra == 'eval-enterprise'", specifier = ">=4.23" },
     { name = "jsonschema", marker = "extra == 'registry'", specifier = ">=4.23" },

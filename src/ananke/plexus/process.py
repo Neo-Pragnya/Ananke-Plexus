@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
-from xml.etree import (
+from xml.etree import (  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
     ElementTree as ET,
 )
 

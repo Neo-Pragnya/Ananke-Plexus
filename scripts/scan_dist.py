@@ -13,6 +13,20 @@ reasons. This script checks each one against the exact files in ``dist/``:
                SSH and cloud keys, pipe-to-shell, encoded PowerShell, exec of decoded
                data, chat webhooks, tunnels, hidden Unicode in code
   heuristics   GuardDog rules compared with a reviewed baseline; Bandit HIGH         BLOCK on anything new
+  metadata     what an SCA tool parses first: Metadata-Version 2.4 or older, a licence  BLOCK
+               classifier and a licence file, so no parser sees an unknown licence
+  bounds       the oldest version every declared range allows, audited: a range that   BLOCK
+               still admits a vulnerable release is flagged even when today's install
+               is fine
+  licences     the licence of every package in the resolved tree (pip-licenses' view),  BLOCK unless accepted
+               with what pulls each one in (pipdeptree's view): copyleft or unknown blocks
+  mentions     copyleft licence names inside shipped files, which licence search reads  BLOCK unless accepted
+               as a declaration; each accepted one becomes a line in triage.md for
+               Black Duck and similar tools
+  maturity     dependency versions published in the last 14 days, which firewalls with   reported
+               a maturity rule block: when one is, installing this package fails even
+               though nothing here changed. The report gives the --exclude-newer date
+               that avoids them
   inventory    what a heuristic scanner sees: scripts, minified JS, binaries, licences  reported
 
 Anything accepted goes in ``.scan-dist.toml`` with a reason, and a bundled file's licence must be in the package's
@@ -111,15 +125,34 @@ SIGNATURES = {
     "chat-webhook": r"discord(?:app)?\.com/api/webhooks|api\.telegram\.org/bot|hooks\.slack\.com/services",
     "tunnel-or-paste-host": r"\bngrok\.(?:io|app)|pastebin\.com/raw|transfer\.sh/|\.trycloudflare\.com",
 }
+GATES = (
+    "secrets",
+    "vulns",
+    "bundled",
+    "signatures",
+    "heuristics",
+    "metadata",
+    "bounds",
+    "licences",
+    "mentions",
+)
+COPYLEFT = re.compile(
+    r"\b(?:A|L)?GPL(?:v?[23])?(?:-[0-9.]+(?:-only|-or-later)?)?\b|GNU (?:Affero |Lesser )?General Public License"
+    r"|\bSSPL\b|Server Side Public License|Commons Clause|Business Source License|\bBUSL\b|CC-BY-NC|CC-BY-SA|Elastic License"
+)
+PERMISSIVE = re.compile(
+    r"^(?:MIT|BSD|Apache|ISC|PSF|Python Software Foundation|Unlicense|0BSD|Zlib|CC0|Public Domain)",
+    re.IGNORECASE,
+)
 HIDDEN_UNICODE = re.compile("[\u202a-\u202e\u2066-\u2069\u200b-\u200d\u2060]")
 
 
 def load_accepted(path: Path) -> dict:
     """What a person has reviewed and accepted, with reasons. A missing reason is no acceptance."""
     if not path.is_file() or tomllib is None:
-        return {"heuristics": {}, "bundled": [], "signature": []}
+        return {"heuristics": {}, "bundled": [], "signature": [], "licence": [], "mention": []}
     data = tomllib.loads(path.read_text(encoding="utf-8"))
-    for kind in ("bundled", "signature"):
+    for kind in ("bundled", "signature", "licence", "mention"):
         for entry in data.get(kind, []):
             if not str(entry.get("reason", "")).strip():
                 raise SystemExit(f"{path}: every [[{kind}]] needs a reason: {entry}")
@@ -131,6 +164,8 @@ def load_accepted(path: Path) -> dict:
         "heuristics": data.get("heuristics", {}),
         "bundled": data.get("bundled", []),
         "signature": data.get("signature", []),
+        "licence": data.get("licence", []),
+        "mention": data.get("mention", []),
     }
 
 
@@ -422,6 +457,254 @@ def check_heuristics(
     return out
 
 
+MATURE_DAYS = 14
+
+
+def check_maturity(wheels: list[Path], work: Path, days: int = MATURE_DAYS) -> dict:
+    """Resolved dependency versions younger than ``days``. Reported: the ranges are open on purpose."""
+    import datetime
+    import urllib.request
+
+    now = datetime.datetime.now(datetime.UTC)
+    cutoff = (now - datetime.timedelta(days=days)).date()
+    young: list[str] = []
+    names: set[str] = set()
+    for wheel in wheels:
+        req_file = work / f"{wheel.stem}.requirements.txt"
+        if not req_file.is_file():
+            return {"status": "skipped", "detail": "needs the environment the vulns check installs"}
+        for line in req_file.read_text().splitlines():
+            if "==" not in line:
+                continue
+            name, version = line.split("==", 1)
+            url = f"https://pypi.org/pypi/{name}/{version.strip()}/json"
+            try:
+                with urllib.request.urlopen(url, timeout=15) as response:
+                    files = json.load(response).get("urls", [])
+            except (OSError, ValueError):
+                continue
+            stamps = [f["upload_time_iso_8601"] for f in files if f.get("upload_time_iso_8601")]
+            if not stamps:
+                continue
+            published = min(
+                datetime.datetime.fromisoformat(s.replace("Z", "+00:00")) for s in stamps
+            )
+            age = (now - published).days
+            if age < days:
+                young.append(f"{name} {version} was published {published.date()} ({age} days ago)")
+                names.add(name)
+    # only the young dependencies get a cutoff: this package itself may be days old too
+    advice = ""
+    if names:
+        flags = " ".join(f"--exclude-newer-package {n}={cutoff}" for n in sorted(names))
+        advice = f"behind a firewall with a maturity rule: uv pip install <package> {flags}"
+    return {
+        "status": "report",
+        "findings": sorted(set(young)),
+        "detail": advice or f"every dependency is over {days} days old",
+    }
+
+
+def check_metadata(trees: list[Path]) -> dict:
+    """What an SCA parser reads first. A format it doesn't know, or no licence it can read, is an unknown component."""
+    findings = []
+    for tree in (t for t in trees if t.name.endswith(".whl")):
+        meta = next(iter(tree.glob("*.dist-info/METADATA")), None)
+        if meta is None:
+            findings.append(f"{tree.name}: no METADATA")
+            continue
+        fields = meta.read_text(errors="replace").split("\n\n", 1)[0].splitlines()
+        version = next(
+            (f.split(":", 1)[1].strip() for f in fields if f.startswith("Metadata-Version:")), ""
+        )
+        if tuple(int(x) for x in version.split(".") if x.isdigit()) > (2, 4):
+            findings.append(
+                f'{tree.name}: Metadata-Version {version}; older parsers stop at 2.4. Set core-metadata-version = "2.4"'
+            )
+        if not any(f.startswith("Classifier: License ::") for f in fields):
+            findings.append(
+                f"{tree.name}: no licence classifier, so a parser that ignores License-Expression sees none"
+            )
+        if not any(f.startswith(("License-Expression:", "License:")) for f in fields):
+            findings.append(f"{tree.name}: no licence field")
+        if not any(f.startswith("License-File:") for f in fields):
+            findings.append(f"{tree.name}: no licence file")
+    return {"status": "block" if findings else "pass", "findings": findings}
+
+
+def check_bounds(wheels: list[Path], work: Path) -> dict:
+    """Audit the oldest version every declared range allows, as a tool reading the ranges would."""
+    audit = tool("pip-audit")
+    if not audit or not shutil.which("uv"):
+        return {"status": "skipped", "detail": "install uv and pip-audit"}
+    findings = []
+    for wheel in wheels:
+        with zipfile.ZipFile(wheel) as z:
+            meta = next(n for n in z.namelist() if n.endswith(".dist-info/METADATA"))
+            head = z.read(meta).decode("utf-8", "replace").split("\n\n", 1)[0]
+        requires = [
+            r.split(":", 1)[1].strip() for r in head.splitlines() if r.startswith("Requires-Dist:")
+        ]
+        base = [r for r in requires if "extra ==" not in r]
+        if not base:
+            continue
+        req_in, low = work / f"{wheel.stem}.bounds.in", work / f"{wheel.stem}.bounds.txt"
+        req_in.write_text("\n".join(base) + "\n")
+        res = run(
+            [
+                "uv",
+                "pip",
+                "compile",
+                "-q",
+                "--resolution",
+                "lowest-direct",
+                "--python-version",
+                "3.11",
+                str(req_in),
+                "-o",
+                str(low),
+            ]
+        )
+        if res.returncode != 0:
+            findings.append(
+                f"{wheel.name}: the oldest allowed versions don't resolve: {res.stderr.strip()[-200:]}"
+            )
+            continue
+        res = run(
+            [
+                *audit,
+                "-r",
+                str(low),
+                "--no-deps",
+                "--disable-pip",
+                "-f",
+                "json",
+                "--progress-spinner",
+                "off",
+            ]
+        )
+        try:
+            for dep in json.loads(res.stdout).get("dependencies", []):
+                for v in dep.get("vulns", []):
+                    fixed = ", ".join(v.get("fix_versions") or []) or "-"
+                    findings.append(
+                        f"{wheel.name}: allows {dep['name']} {dep['version']}, which has {v['id']}; raise the lower bound to {fixed}"
+                    )
+        except json.JSONDecodeError:
+            findings.append(f"{wheel.name}: pip-audit failed on the lower bounds")
+    return {"status": "block" if findings else "pass", "findings": sorted(set(findings))}
+
+
+LICENCE_PROBE = """
+import importlib.metadata as m, json
+out = []
+for d in m.distributions():
+    md = d.metadata
+    lic = md.get("License-Expression") or ""
+    if not lic:
+        cls = [c.split("::")[-1].strip() for c in (md.get_all("Classifier") or []) if c.startswith("License ::")]
+        text = (md.get("License") or "").strip().splitlines()
+        lic = " OR ".join(cls) or (text[0][:80] if text else "")
+    reqs = [r.split(";")[0].split("[")[0].strip() for r in (d.requires or []) if "extra ==" not in r]
+    out.append({"name": md["Name"], "version": d.version, "licence": lic or "UNKNOWN", "requires": reqs})
+print(json.dumps(out))
+"""
+
+
+def check_licences(wheels: list[Path], work: Path, accepted: list[dict]) -> dict:
+    """Every resolved package's licence, read from its own metadata, and what pulls it in."""
+    findings, notes, table = [], [], []
+    canon = lambda s: re.sub(r"[-_.]+", "-", s).lower()  # noqa: E731
+    for wheel in wheels:
+        python = work / f"venv-{wheel.stem}" / "bin" / "python"
+        if not python.exists():
+            return {"status": "skipped", "detail": "needs the environment the vulns check installs"}
+        res = run([str(python), "-c", LICENCE_PROBE])
+        try:
+            dists = json.loads(res.stdout)
+        except json.JSONDecodeError:
+            return {"status": "error", "detail": res.stderr.strip()[-300:]}
+        pulled: dict[str, set[str]] = {}
+        for d in dists:
+            for r in d["requires"]:
+                name = re.split(r"[ <>=!~(]", r, maxsplit=1)[0]
+                pulled.setdefault(canon(name), set()).add(d["name"])
+        for d in sorted(dists, key=lambda d: canon(d["name"])):
+            lic = d["licence"]
+            via = ", ".join(sorted(pulled.get(canon(d["name"]), set()))) or "top level"
+            table.append(f"{d['name']} {d['version']}: {lic} (pulled in by {via})")
+            if lic != "UNKNOWN" and not COPYLEFT.search(lic) and PERMISSIVE.search(lic):
+                continue
+            ok = next(
+                (e for e in accepted if canon(e.get("package", "")) == canon(d["name"])), None
+            )
+            if ok:
+                notes.append(f"{d['name']} ({lic}): accepted ({ok['reason']})")
+            else:
+                findings.append(
+                    f"{wheel.name}: {d['name']} {d['version']} is {lic}, pulled in by {via}"
+                )
+    return {
+        "status": "block" if findings else "pass",
+        "findings": sorted(set(findings)),
+        "accepted": sorted(set(notes)),
+        "table": table,
+    }
+
+
+def check_mentions(trees: list[Path], accepted: list[dict]) -> dict:
+    """Copyleft licence names in shipped files. Licence search reads one as a declaration for the whole component."""
+    findings, notes, triage = [], [], []
+    for tree in trees:
+        for file in sorted(
+            p for p in tree.rglob("*") if p.is_file() and p.stat().st_size < 5_000_000
+        ):
+            data = file.read_bytes()
+            if b"\0" in data[:4096]:
+                continue
+            names = sorted(
+                {m.group(0) for m in COPYLEFT.finditer(data.decode("utf-8", errors="replace"))}
+            )
+            if not names:
+                continue
+            rel = _inside(str(file.relative_to(tree)))
+            ok = next((e for e in accepted if fnmatch.fnmatch(rel, e.get("path", ""))), None)
+            if ok:
+                notes.append(f"{tree.name}/{rel}: {', '.join(names)} accepted")
+                triage.append(f"| `{rel}` | {', '.join(names)} | {ok['reason']} |")
+            else:
+                findings.append(f"{tree.name}/{rel}: names {', '.join(names)}")
+    return {
+        "status": "block" if findings else "pass",
+        "findings": findings,
+        "accepted": notes,
+        "triage": sorted(set(triage)),
+    }
+
+
+def triage_md(result: dict) -> str:
+    """What to tell Black Duck (or another licence search) about matches that aren't the component's licence."""
+    lines = [
+        "# Licence-search triage",
+        "",
+        "Each file below names a licence, but the package isn't under it. Mark these as false identifications",
+        "(licence not applicable to the component) with the reason given. The package's own licence is its",
+        "License-Expression. Every dependency's licence is in scan.json under licences.table.",
+        "",
+        "| File | Names | Why it isn't this package's licence |",
+        "| --- | --- | --- |",
+        *result["mentions"].get("triage", []),
+    ]
+    if result["licences"].get("accepted"):
+        lines += [
+            "",
+            "## Dependencies outside the permissive set, reviewed",
+            "",
+            *[f"- {n}" for n in result["licences"]["accepted"]],
+        ]
+    return "\n".join(lines) + "\n"
+
+
 def _unreviewed(guarddog: dict, accepted: dict) -> list[str]:
     """GuardDog hits nobody has accepted. A rule accepted with ``paths`` counts only at those paths."""
     findings = []
@@ -481,7 +764,7 @@ def summary_md(result: dict) -> str:
         "| Check | Status | Detail |",
         "| --- | --- | --- |",
     ]
-    for name in ("secrets", "vulns", "bundled", "signatures", "heuristics"):
+    for name in GATES:
         c = result[name]
         detail = c.get("detail") or f"{len(c.get('findings', []))} finding(s)"
         if "resolved" in c:
@@ -489,7 +772,7 @@ def summary_md(result: dict) -> str:
         if c.get("accepted"):
             detail += f", {len(c['accepted'])} accepted"
         lines.append(f"| {name} | {icon.get(c['status'], '')} {c['status']} | {detail} |")
-    for name in ("secrets", "vulns", "bundled", "signatures", "heuristics"):
+    for name in GATES:
         if result[name].get("findings"):
             lines += ["", f"## {name}", "", *[f"- {f}" for f in result[name]["findings"]]]
         if result[name].get("accepted"):
@@ -499,6 +782,9 @@ def summary_md(result: dict) -> str:
                 "",
                 *[f"- {f}" for f in result[name]["accepted"]],
             ]
+    maturity = result.get("maturity", {})
+    lines += ["", "## Maturity (reported)", "", maturity.get("detail", "")]
+    lines += [f"- {f}" for f in maturity.get("findings", [])]
     lines += ["", "## Heuristics (what a malicious-package scanner flags)", ""]
     gd = result["heuristics"]["guarddog"]
     if isinstance(gd, str):
@@ -562,11 +848,16 @@ def main() -> int:
             "bundled": check_bundled(trees, accepted["bundled"]),
             "signatures": check_signatures(trees, accepted["signature"]),
             "heuristics": check_heuristics(artifacts, trees, accepted["heuristics"]),
+            "metadata": check_metadata(trees),
+            "bounds": check_bounds([a for a in artifacts if a.suffix == ".whl"], work),
+            "licences": check_licences(
+                [a for a in artifacts if a.suffix == ".whl"], work, accepted["licence"]
+            ),
+            "mentions": check_mentions(trees, accepted["mention"]),
+            "maturity": check_maturity([a for a in artifacts if a.suffix == ".whl"], work),
             "inventory": inventory(trees),
         }
-    statuses = {
-        result[k]["status"] for k in ("secrets", "vulns", "bundled", "signatures", "heuristics")
-    }
+    statuses = {result[k]["status"] for k in GATES}
     if statuses & {"block", "error"} or ("skipped" in statuses and args.require_all):
         result["verdict"] = "BLOCK"
     elif "skipped" in statuses:
@@ -576,6 +867,7 @@ def main() -> int:
     (args.out / "scan.json").write_text(json.dumps(result, indent=2) + "\n")
     md = summary_md(result)
     (args.out / "summary.md").write_text(md)
+    (args.out / "triage.md").write_text(triage_md(result))
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
             fh.write(md)

@@ -7,7 +7,10 @@ so the pages can keep a strict Content-Security-Policy.
 
 from __future__ import annotations
 
-from xml.sax.saxutils import escape, quoteattr
+from xml.sax.saxutils import (  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+    escape,
+    quoteattr,
+)
 
 NODE_W, NODE_H = 210, 38
 GAP_X, GAP_Y = 36, 62

@@ -43,6 +43,21 @@ pip install "ananke-plexus[registry]"
 pip install "ananke-plexus[all]"
 ```
 
+### Behind a package firewall
+
+Some firewalls block any package version published in the last week or two. When a dependency, such as `pydantic`,
+has a release that new, installing Ananke fails even though Ananke itself is allowed. uv can skip the newest
+releases of the named packages and keep everything else current:
+
+```bash
+uv pip install ananke-plexus \
+  --exclude-newer-package pydantic=2026-10-22 \
+  --exclude-newer-package pydantic-core=2026-10-22
+```
+
+Each release's scan report (`scan-report/summary.md`, under **Maturity**) lists which dependencies were days old when it
+was published, and the exact command.
+
 ### From source (development)
 
 ```bash
