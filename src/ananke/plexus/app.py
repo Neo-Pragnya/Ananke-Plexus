@@ -706,6 +706,13 @@ class AppFacade:
 
         return status(self.workspace)
 
+    def _written_file(self, rel: str) -> bytes | None:
+        """A file a notebook writes with ``%%writefile``: it's evidence too, though it isn't on disk yet."""
+        from ananke.plexus.context import written_text
+
+        text = written_text(self.workspace, rel)
+        return None if text is None else text.encode("utf-8")
+
     def read_source(self, path: str, *, start: int = 1, end: int | None = None) -> dict[str, Any]:
         """Lines of one source file, read-only, inside the workspace. Evidence for a claim, with its digest."""
         target = (self.workspace / path).resolve()
@@ -718,8 +725,11 @@ class AppFacade:
                 f"{path} isn't source: harness state, Git data and environment files aren't served",
             )
         if not target.is_file():
-            raise AppError("SOURCE_NOT_FOUND", f"{path} isn't a file in this workspace")
-        data = target.read_bytes()
+            data = self._written_file(target.relative_to(self.workspace).as_posix())
+            if data is None:
+                raise AppError("SOURCE_NOT_FOUND", f"{path} isn't a file in this workspace")
+        else:
+            data = target.read_bytes()
         lines = data.decode("utf-8", "replace").splitlines()
         first = max(1, start)
         last = min(

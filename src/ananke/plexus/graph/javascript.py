@@ -12,7 +12,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from ananke.plexus.graph.models import GraphEdge, GraphNode
 
@@ -1373,7 +1373,7 @@ class _Linker:
 
 
 def build_javascript(
-    repository_root: Path, paths: list[Path]
+    repository_root: Path, paths: list[Path], generated: dict[Path, Any] | None = None
 ) -> tuple[list[GraphNode], list[GraphEdge]]:
     """Nodes and edges for these files. ``.d.ts``, minified and oversized files are left out; broken ones are listed."""
     nodes: list[GraphNode] = []
@@ -1385,9 +1385,12 @@ def build_javascript(
         if name.endswith(".d.ts") or path.is_symlink():
             continue
         try:
-            if path.stat().st_size > MAX_SOURCE_BYTES:
-                continue
-            text = path.read_text(encoding="utf-8")
+            if generated and path in generated:
+                text = generated[path].text
+            else:
+                if path.stat().st_size > MAX_SOURCE_BYTES:
+                    continue
+                text = path.read_text(encoding="utf-8")
         except (OSError, ValueError):
             nodes.append(_file_node(rel, name, {"language": _language(rel), "parse_error": True}))
             continue

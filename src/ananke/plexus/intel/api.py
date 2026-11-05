@@ -473,7 +473,9 @@ def _match(
 def _note_gaps(ctx: RepoContext, skipped: int, limits: set[str], python: PythonReader) -> None:
     notebooks = [p for p in ctx.files if p.endswith(".ipynb")]
     if notebooks:
-        limits.add(f"{len(notebooks)} notebooks weren't read for routes or calls")
+        limits.add(
+            f"{len(notebooks)} notebooks' own cells weren't read for routes or calls; files they write were"
+        )
     templates = [p for p in ctx.files if p.endswith((".vue", ".svelte", ".astro", ".html"))]
     if templates:
         limits.add(

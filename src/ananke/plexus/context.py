@@ -350,6 +350,14 @@ def fresh_graph(root: Path) -> GraphSnapshot:
     return graph
 
 
+def written_text(root: Path, rel: str) -> str | None:
+    """The text of a file a notebook writes with ``%%writefile``, which may not exist on disk yet."""
+    from ananke.plexus.graph.notebook_files import find_written
+    from ananke.plexus.graph.service import _iter_project_files
+
+    return find_written(root, _iter_project_files(root, (".ipynb",))).text(rel)
+
+
 def _inside(root: Path, path: str) -> str:
     """A repository-relative path, refusing anything outside the repository."""
     resolved = os.path.realpath(os.path.join(root, path))
@@ -377,10 +385,15 @@ def outline(root: Path, path: str, *, signatures: bool = False) -> dict[str, Any
     root = root.resolve()
     rel = _inside(root, path)
     target = root / rel
-    if not target.is_file():
+    text = (
+        target.read_text(encoding="utf-8", errors="replace")
+        if target.is_file()
+        else written_text(root, rel)
+    )
+    if text is None:
         raise ContextError("NOT_FOUND", f"{path} isn't a file in this repository")
     nodes = [n for n in fresh_graph(root).nodes if n.path == rel and n.kind in SYMBOL_KINDS]
-    cost = estimate_tokens(target.read_text(encoding="utf-8", errors="replace"))
+    cost = estimate_tokens(text)
     if not nodes:
         raise ContextError(
             "NO_SYMBOLS",
@@ -431,7 +444,12 @@ def symbol(root: Path, name: str, *, path: str | None = None) -> dict[str, Any]:
         if n.metadata.get("cell"):  # a notebook's lines are per cell, and the file is JSON
             parts.append(f"{heading}\n(in a notebook: open that cell)")
             continue
-        lines = (root / n.path).read_text(encoding="utf-8", errors="replace").splitlines()
+        source = root / n.path
+        lines = (
+            source.read_text(encoding="utf-8", errors="replace")
+            if source.is_file()
+            else (written_text(root, n.path) or "")
+        ).splitlines()
         body = lines[start - 1 : min(end, start - 1 + MAX_BODY_LINES)]
         cut = (
             f"\n... cut at {MAX_BODY_LINES} lines of {end - start + 1}"

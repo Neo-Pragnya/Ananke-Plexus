@@ -174,6 +174,27 @@ Flows inherit what the graph can't see, such as dynamic dispatch.
 calls made at the top of a module, so a `__main__` block has none. Background jobs, schedules and message consumers aren't traced,
 and a limit says so.
 
+## Notebooks
+
+A folder of notebooks needs nothing special. A file a notebook writes with `%%writefile` or `%%file` counts as a file at that path, relative to the notebook, in every section, even before anyone runs it: its functions, imports, routes, tables, requirements and Compose services. Nothing is run or created.
+
+- A file really on disk wins, since that's what would be imported.
+- Later cells replace earlier ones, and `-a` appends, as when it runs. If different notebooks write one path differently, the first by path is used, and the section says how many differ.
+- A computed path, or one outside the folder, isn't read, and the section says how many.
+
+The `notebooks` section explains each one from its own text and code:
+
+| Field | What it holds |
+| --- | --- |
+| `notebooks[].title`, `purpose` | Its first heading, and the first paragraph under its headings |
+| `notebooks[].outline` | Each heading, its cell and a short summary |
+| `notebooks[].written` | Files it writes: path, cell, language, lines and what they define |
+| `notebooks[].imports`, `uses`, `defines` | Outside packages, files in this repository, and its own functions and classes |
+| `notebooks[].reads`, `writes` | Data files named with a literal path |
+| `notebooks[].same_as` | The notebook this one repeats, such as an executed copy. Copies don't add links |
+| `groups` | Notebooks by folder, in natural order: Week-2 before Week-10 |
+| `links` | One notebook importing a file another writes, or reading data another writes |
+
 ## Rules every section follows
 
 - **Evidence.** Each table, field, route, usage and step cites `path:line`.

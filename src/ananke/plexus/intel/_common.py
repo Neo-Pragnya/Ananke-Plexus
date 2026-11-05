@@ -76,6 +76,9 @@ def is_inside(root: Path, path: str) -> bool:
 
 def read_bytes(ctx: RepoContext, path: str, cap: int = MAX_TEXT_BYTES) -> bytes | None:
     """A regular file inside the repository, at most ``cap`` bytes, or ``None``."""
+    if path in ctx.written.files:
+        raw = ctx.written.files[path].text.encode("utf-8")
+        return raw if len(raw) <= cap else None
     target = ctx.root / path
     if not is_inside(ctx.root, path):
         return None

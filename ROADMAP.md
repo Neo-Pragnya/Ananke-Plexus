@@ -20,6 +20,8 @@ Dev Guru is the current priority, and Ananke does the computing for it. This tab
 All of it is one analysis (`ananke app run repo.analyze`), described in
 [Repo intelligence](docs/reference/repo-intelligence.md).
 
+**Notebook folders**: `%%writefile` cells are read as files, and `repo.analyze` explains each notebook and how they connect.
+
 **Saving tokens**: `ananke context` gives a small map, `outline`, `symbol` and `callers` from Ananke's own graph, all current with every edit, and `enable` makes a project use them by default in Claude Code, Codex, Copilot, Kiro, Cursor and Amazon Q.
 
 ## Next

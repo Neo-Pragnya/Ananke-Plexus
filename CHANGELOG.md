@@ -10,6 +10,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.25] — 2026-11-05
+
+### Added
+
+- **Code inside `%%writefile` cells now counts.** Course and research repositories often keep their real code in notebook cells, so a folder could look nearly empty. A file a notebook writes is now read as a file at that path, without creating it, so its functions, imports, routes, tables, requirements and Compose services all appear. A file really on disk wins, and nothing is run. `ananke context outline` and `symbol` can read these too.
+- **A `notebooks` section in `repo.analyze`.** For each notebook: its title, purpose and outline from its own headings, what it imports, defines and writes, the data it reads and writes, and how notebooks feed each other. Identical copies, such as an executed version, are marked rather than counted twice.
+
+---
+
 ## [0.3.24] — 2026-11-05
 
 ### Added

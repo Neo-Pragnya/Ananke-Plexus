@@ -133,3 +133,19 @@ Feature: A small map of a repository that can't go stale
     And the output contains "CLAUDE.local.md: removed the block"
     And the output contains ".git/info/exclude: removed our lines"
 
+  @cap_context
+  Scenario: Code a notebook writes can be looked up before anyone runs it
+    Given the file "Week-1/build.ipynb" with content:
+      """
+      {"cells": [{"cell_type": "code", "metadata": {}, "outputs": [], "source": "%%writefile app/store.py\ndef load_orders():\n    return 1\n"}], "metadata": {}, "nbformat": 4}
+      """
+    When I run "ananke context outline Week-1/app/store.py"
+    Then it succeeds
+    And the output contains "load_orders"
+    When I run "ananke context symbol load_orders"
+    Then it succeeds
+    And the output contains "return 1"
+    When I run "ls Week-1"
+    Then it succeeds
+    And the output does not contain "app"
+
