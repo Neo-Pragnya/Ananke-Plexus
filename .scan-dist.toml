@@ -1,0 +1,26 @@
+# Findings a person has reviewed, read by scripts/scan_dist.py at every release. Each needs a reason. A rule accepted
+# with `paths` is accepted only there: the same rule matching anywhere else blocks the release.
+
+[heuristics]
+capability-process-spawn = "runs git (app.py), uv and the agent CLIs a user configures, each with a list of arguments"
+capability-network-outbound = "the HTTP API for Jira, Confluence and Bitbucket, and osv.dev only when a CVE check is asked for"
+capability-network-download = "the osv.dev CVE lookup (intel/dependencies.py), only when a check is asked for: a fixed https URL, bounded size and time"
+capability-filesystem-read = "reads the repository it analyses, its own config, and the manifest inside an APM bundle"
+capability-filesystem-delete = "removes only what it wrote itself, such as the hook ananke context disable takes out"
+capability-process-schedule = "ananke docs serve starts a local server thread on the loopback address"
+capability-filesystem-write-executable = "hooks/manager.py installs the Git and assistant hooks a user asks for"
+
+[heuristics.threat-filesystem-destruction]
+reason = "a deny-list: the governance evaluator fails any agent run that tries rm -rf /"
+paths = ["ananke/plexus/evals/evaluators/safety/governance.py", "src/ananke/plexus/evals/evaluators/safety/governance.py"]
+
+[heuristics.threat-filesystem-read]
+reason = "refusals and the user's own store: paths an agent must not read, read_source refusing .env, and the 0700 adapter credentials file"
+paths = [
+  "ananke/plexus/evals/evaluators/safety/governance.py",
+  "ananke/plexus/app.py",
+  "ananke/plexus/config/credentials.py",
+  "src/ananke/plexus/evals/evaluators/safety/governance.py",
+  "src/ananke/plexus/app.py",
+  "src/ananke/plexus/config/credentials.py",
+]

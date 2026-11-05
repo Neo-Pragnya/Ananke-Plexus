@@ -61,6 +61,8 @@ telemetry = [
   "opentelemetry-sdk>=1.30",
 ]
 jira = ["atlassian-python-api>=3"]
+# reading { keychain = ... } secrets from the macOS Keychain, Windows Credential Manager or the Secret Service
+keychain = ["keyring>=25"]
 # Dex Trove: a licence-clean library of skills, agents and plugins (see docs/guides/dex-trove.md)
 dex = ["dex-trove>=0.3.0"]
 security = [
@@ -160,7 +162,7 @@ registry = [
   "ananke-plexus[registry-fast,registry-zstd,registry-validate,registry-signing,registry-watch]",
 ]
 all = [
-  "ananke-plexus[mcp,telemetry,jira,security,docs,eval-enterprise,test-python,registry]",
+  "ananke-plexus[mcp,telemetry,jira,keychain,security,docs,eval-enterprise,test-python,registry]",
 ]
 
 [project.urls]
@@ -298,6 +300,8 @@ module = [
   "compression.*",
   "mkdocs",
   "mkdocs.*",
+  "keyring",  # optional: the keychain extra
+  "keyring.*",
 ]
 ignore_missing_imports = true
 

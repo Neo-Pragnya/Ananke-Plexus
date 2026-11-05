@@ -107,7 +107,7 @@ api_key = { keychain = "ananke-my-service-key" }
 Reference types:
 - `{ env = "VAR_NAME" }` — read from environment variable
 - `{ cmd = "command args" }` — execute command, use stdout
-- `{ keychain = "service-name" }` — read from OS keychain (macOS Keychain or secret-tool)
+- `{ keychain = "service-name" }`, optionally with `account = "name"`: read that one entry from the OS keychain (macOS Keychain, Windows Credential Manager or the Secret Service on Linux) through `keyring`. Install it with `pip install 'ananke-plexus[keychain]'`
 
 ## CLI global flags
 

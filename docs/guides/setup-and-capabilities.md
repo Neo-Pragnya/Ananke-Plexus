@@ -142,11 +142,14 @@ ananke configure auth \
   --bitbucket-bearer-token "" \
   --bitbucket-bearer-token-cmd ""
 
-# token broker / SSO command sources (optional)
+# token broker / SSO command sources (optional): your password manager's own CLI
 ananke configure auth \
-  --jira-token-cmd "security find-generic-password -w -s ANANKE_JIRA_TOKEN" \
-  --confluence-token-cmd "security find-generic-password -w -s ANANKE_CONFLUENCE_TOKEN" \
-  --bitbucket-app-password-cmd "security find-generic-password -w -s ANANKE_BITBUCKET_APP_PASSWORD"
+  --jira-token-cmd "op read op://work/jira/token" \
+  --confluence-token-cmd "op read op://work/confluence/token" \
+  --bitbucket-app-password-cmd "op read op://work/bitbucket/app-password"
+
+# or keep them in the OS keychain, read through keyring (pip install 'ananke-plexus[keychain]'):
+# token = { keychain = "ANANKE_JIRA_TOKEN" } in .ananke/config.toml
 
 # safer for terminals and shell history
 ananke configure auth-interactive

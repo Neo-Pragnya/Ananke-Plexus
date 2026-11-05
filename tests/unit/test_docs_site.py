@@ -155,86 +155,28 @@ class TestPackagingHook:
         assert all(Path(src).stat().st_size < 600_000 for src in image_sources)
         assert sum(Path(src).stat().st_size for src in image_sources) < 4_000_000
 
-    def test_vendored_mermaid_is_bundled(self, tmp_path: Path) -> None:
-        _, build_data = self._hook(tmp_path)
-        dests = set(build_data["force_include"].values())  # type: ignore[attr-defined]
-        assert "ananke/plexus/_docsite/docs/assets/javascripts/mermaid.min.js" in dests
 
+class TestNoThirdPartyCodeAndNoFetch:
+    """The wheel carries no third-party script, and the offline site never reaches for one.
 
-class TestMermaidRendersOffline:
-    """Material lazy-loads Mermaid from https://unpkg.com on first use *unless*
-    ``window.mermaid`` is already defined — so a page opened via file:// with no network (or
-    the CDN merely being slow/unreachable) silently never renders any diagram. mkdocs.yml
-    vendors mermaid.min.js via extra_javascript specifically to pre-empt that fetch; these
-    tests prove the mechanics are in place and, where a browser is available, that a diagram
-    actually renders with the real CDN host unreachable.
+    A vendored, minified Mermaid bundle (3.5 MB, MIT, with DOMPurify and others inside) made package firewalls flag the
+    wheel: minified code, and licences the package didn't declare. Without it, Material would fetch Mermaid from a CDN
+    for any ``mermaid`` fence, so the offline site shows diagrams as their source instead.
     """
 
-    def test_mkdocs_yml_vendors_mermaid_before_relying_on_a_cdn(self) -> None:
+    def test_the_site_ships_no_javascript(self, tmp_path: Path) -> None:
+        _, build_data = TestPackagingHook()._hook(tmp_path)
+        dests = set(build_data["force_include"].values())  # type: ignore[attr-defined]
+        assert not [d for d in dests if d.endswith((".js", ".mjs"))]
+
+    def test_no_diagram_fence_makes_material_fetch_mermaid(self) -> None:
         root = bundled_docs_root()
         assert root is not None
         config = (root / "mkdocs.yml").read_text()
-        assert "assets/javascripts/mermaid.min.js" in config
-        assert (root / "docs" / "assets" / "javascripts" / "mermaid.min.js").is_file()
-
-    def test_vendored_file_defines_the_global_mermaid_expects(self) -> None:
-        root = bundled_docs_root()
-        assert root is not None
-        js = (root / "docs" / "assets" / "javascripts" / "mermaid.min.js").read_text()
-        # this is literally the check Material's bundle makes before deciding to fetch the
-        # CDN copy (`typeof mermaid=="undefined"`) — the vendored file must satisfy it
-        assert 'globalThis["mermaid"]' in js or "globalThis.mermaid" in js
-
-    def test_diagram_renders_with_the_cdn_host_unreachable(self, tmp_path: Path) -> None:
-        import shutil
-        import subprocess
-
-        chrome = (
-            shutil.which("google-chrome")
-            or shutil.which("chromium")
-            or (
-                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-                if Path("/Applications/Google Chrome.app").exists()
-                else None
-            )
-        )
-        if not chrome:
-            pytest.skip("no headless Chrome available to render against")
-
-        out = build_docs(tmp_path / "out")
-        page = out / "concepts" / "architecture.html"
-        assert page.is_file()
-        # the markdown pipeline must still be emitting what Material's `pre.mermaid`
-        # selector looks for — if this regresses, nothing downstream has a chance
-        assert '<pre class="mermaid">' in page.read_text()
-        shot = tmp_path / "shot.png"
-        # Chrome can exit with an error on a busy Mac after a display problem that has nothing to do with the
-        # page, so what's checked is the screenshot, with one more try.
-        for _ in range(2):
-            subprocess.run(
-                [
-                    chrome,
-                    "--headless=new",
-                    "--disable-gpu",
-                    f"--user-data-dir={tmp_path / 'chrome'}",  # parallel runs can't share a profile
-                    "--virtual-time-budget=8000",
-                    "--window-size=1200,2000",
-                    "--host-resolver-rules=MAP unpkg.com 0.0.0.0",  # simulate no network to the CDN
-                    f"--screenshot={shot}",
-                    page.as_uri(),
-                ],
-                capture_output=True,
-                timeout=120,  # Chrome starts slowly on a busy machine, which isn't what this test is about
-                check=False,
-            )
-            if shot.is_file() and shot.stat().st_size > 10_000:
-                break
-        assert shot.is_file() and shot.stat().st_size > 10_000
-        # Material renders the diagram inside a *closed* shadow root for CSS isolation, so
-        # its content is invisible to DOM dumps/serialization — a screenshot (or a human
-        # looking at the page) is the only way to actually observe whether it rendered.
-        # We can't pixel-diff a diagram cheaply here, so this asserts the one thing a crash
-        # or a silently-empty page would fail: a real, non-trivial screenshot was produced.
+        assert "mermaid.min.js" not in config
+        assert (
+            "class: mermaid" not in config
+        )  # Material fetches Mermaid from unpkg.com only for this class
 
 
 class TestStaticServer:

@@ -108,3 +108,71 @@ def test_idempotency_key_differs():
     k1 = idempotency_key("jira", "PROJ-101")
     k2 = idempotency_key("jira", "PROJ-102")
     assert k1 != k2
+
+
+# ---- the keychain, through keyring: never a shell-out to a keychain tool
+class _Credential:
+    def __init__(self, password: str) -> None:
+        self.password = password
+
+
+class _FakeKeyring:
+    def __init__(self) -> None:
+        self.asked: list[tuple[str, str | None]] = []
+
+    def get_password(self, service: str, account: str) -> str | None:
+        self.asked.append((service, account))
+        return " s3cret \n" if account == "me" else None
+
+    def get_credential(self, service: str, account: str | None) -> _Credential | None:
+        self.asked.append((service, account))
+        return _Credential("t0ken") if service == "ananke-jira" else None
+
+
+def _with_keyring(monkeypatch: pytest.MonkeyPatch) -> _FakeKeyring:
+    import sys
+    import types
+
+    fake = _FakeKeyring()
+    module = types.ModuleType("keyring")
+    module.get_password = fake.get_password  # type: ignore[attr-defined]
+    module.get_credential = fake.get_credential  # type: ignore[attr-defined]
+    errors = types.ModuleType("keyring.errors")
+
+    class KeyringError(Exception):
+        pass
+
+    errors.KeyringError = KeyringError  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "keyring", module)
+    monkeypatch.setitem(sys.modules, "keyring.errors", errors)
+    return fake
+
+
+def test_a_keychain_secret_is_read_through_keyring(monkeypatch: pytest.MonkeyPatch) -> None:
+    from ananke.plexus.config.secrets import resolve_secret
+
+    fake = _with_keyring(monkeypatch)
+    assert resolve_secret({"keychain": "ananke-jira"}) == "t0ken"
+    assert resolve_secret({"keychain": "svc", "account": "me"}) == "s3cret"
+    assert resolve_secret({"keychain": "missing"}) is None
+    assert fake.asked == [("ananke-jira", None), ("svc", "me"), ("missing", None)]
+
+
+def test_a_keychain_secret_never_runs_a_keychain_tool(monkeypatch: pytest.MonkeyPatch) -> None:
+    import subprocess
+
+    from ananke.plexus.config.secrets import resolve_secret
+
+    _with_keyring(monkeypatch)
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail(f"ran {a}"))
+    resolve_secret({"keychain": "ananke-jira"})
+
+
+def test_without_keyring_it_says_how_to_get_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    from ananke.plexus.config.secrets import SecretResolutionError, resolve_secret
+
+    monkeypatch.setitem(sys.modules, "keyring", None)
+    with pytest.raises(SecretResolutionError, match=r"ananke-plexus\[keychain\]"):
+        resolve_secret({"keychain": "anything"})
