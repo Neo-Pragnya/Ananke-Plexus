@@ -67,6 +67,24 @@ def _language(path: str) -> str:
     }.get(Path(path).suffix.lower(), "other")  # fmt: skip
 
 
+def _content(cells: list[dict[str, object]]) -> str:
+    text = "\0".join(f"{c.get('cell_type')}:{cell_text(c)}" for c in cells)
+    return hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()
+
+
+def _originals(ctx: RepoContext, paths: list[str]) -> dict[str, str]:
+    """For notebooks with the same text, the one to call the original: nearest the top, and not an executed copy."""
+    groups: dict[str, list[str]] = {}
+    for path in paths:
+        cells = read_cells(ctx.root / path)
+        if cells:
+            groups.setdefault(_content(cells), []).append(path)
+    return {
+        digest: min(group, key=lambda p: (p.count("/"), "executed" in p.lower(), natural(p)))
+        for digest, group in groups.items()
+    }
+
+
 def analyze(ctx: RepoContext) -> dict[str, Any]:
     paths = sorted(ctx.with_suffix(".ipynb"), key=natural)
     if not paths:
@@ -105,16 +123,11 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
             )
     written_by: dict[str, str] = {}
     entries: list[dict[str, Any]] = []
-    seen_content: dict[str, str] = {}
+    best_copy = _originals(ctx, paths)
     for path in paths:
         cells = read_cells(ctx.root / path)
         # an executed copy or a delivery folder repeats a notebook: outputs aren't compared, only what it says
-        content = hashlib.sha256(
-            "\0".join(f"{c.get('cell_type')}:{cell_text(c)}" for c in cells).encode(
-                "utf-8", "replace"
-            )
-        ).hexdigest()
-        same_as = seen_content.setdefault(content, path) if cells else path
+        same_as = best_copy.get(_content(cells), path) if cells else path
         outline = _outline(cells)
         title = next(
             (o["title"] for o in outline if o["level"] == 1),

@@ -154,14 +154,24 @@ def test_notebooks_are_linked_by_the_data_they_share(tmp_path: Path) -> None:
 
 
 def test_a_copy_is_marked_rather_than_counted_twice(course: Path) -> None:
-    (course / "Week-2" / "build (Executed).ipynb").write_bytes(
-        (course / "Week-2" / "build.ipynb").read_bytes()
-    )
+    original = (course / "Week-2" / "build.ipynb").read_bytes()
+    (course / "Week-2" / "build (Executed).ipynb").write_bytes(original)
+    (course / "Week-2" / "delivery").mkdir()
+    (course / "Week-2" / "delivery" / "build.ipynb").write_bytes(original)
     entries: list[dict[str, Any]] = analyze(course)["sections"]["notebooks"]["notebooks"]
     marks = {e["path"]: e["same_as"] for e in entries}
-    assert sorted(v for v in marks.values() if v) == ["Week-2/build (Executed).ipynb"] or sorted(
-        v for v in marks.values() if v
-    ) == ["Week-2/build.ipynb"]
+    assert marks["Week-2/build.ipynb"] is None
+    assert marks["Week-2/build (Executed).ipynb"] == "Week-2/build.ipynb"
+    assert marks["Week-2/delivery/build.ipynb"] == "Week-2/build.ipynb"
+
+
+def test_reading_a_written_file_sees_an_edit(tmp_path: Path) -> None:
+    from ananke.plexus.context import written_text
+
+    path = _notebook(tmp_path / "n.ipynb", ("code", "%%writefile x.py\nfirst = 1\n"))
+    assert written_text(tmp_path, "x.py") == "first = 1\n"
+    _notebook(path, ("code", "%%writefile x.py\nsecond = 2\nand_more = 3\n"))
+    assert "second" in (written_text(tmp_path, "x.py") or "")
 
 
 def test_a_real_file_wins(course: Path) -> None:

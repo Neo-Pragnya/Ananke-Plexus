@@ -350,12 +350,23 @@ def fresh_graph(root: Path) -> GraphSnapshot:
     return graph
 
 
+_WRITTEN_CACHE: dict[str, tuple[tuple[str, ...], Any]] = {}
+
+
 def written_text(root: Path, rel: str) -> str | None:
     """The text of a file a notebook writes with ``%%writefile``, which may not exist on disk yet."""
     from ananke.plexus.graph.notebook_files import find_written
     from ananke.plexus.graph.service import _iter_project_files
 
-    return find_written(root, _iter_project_files(root, (".ipynb",))).text(rel)
+    notebooks = _iter_project_files(root, (".ipynb",))
+    # reading many of these shouldn't re-read every notebook each time, and an edit must still show
+    stamp = tuple(f"{p}:{p.stat().st_mtime_ns}:{p.stat().st_size}" for p in notebooks)
+    cached = _WRITTEN_CACHE.get(str(root))
+    if cached is None or cached[0] != stamp:
+        cached = (stamp, find_written(root, notebooks))
+        _WRITTEN_CACHE[str(root)] = cached
+    text: str | None = cached[1].text(rel)
+    return text
 
 
 def _inside(root: Path, path: str) -> str:
