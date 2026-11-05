@@ -122,6 +122,13 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
                 edge.target.removeprefix("data:")
             )
     written_by: dict[str, str] = {}
+    # what a notebook writes is part of it, so what those files read and import counts as its own
+    for path, items in ctx.written.by_notebook.items():
+        for item in items:
+            reads.setdefault(path, set()).update(reads.get(item.path, set()))
+            writes.setdefault(path, set()).update(writes.get(item.path, set()))
+            local.setdefault(path, set()).update(local.get(item.path, set()))
+            externals.setdefault(path, set()).update(externals.get(item.path, set()))
     entries: list[dict[str, Any]] = []
     best_copy = _originals(ctx, paths)
     for path in paths:

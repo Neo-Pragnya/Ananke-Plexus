@@ -174,6 +174,22 @@ def test_reading_a_written_file_sees_an_edit(tmp_path: Path) -> None:
     assert "second" in (written_text(tmp_path, "x.py") or "")
 
 
+def test_what_a_written_file_reads_counts_for_its_notebook(tmp_path: Path) -> None:
+    _notebook(
+        tmp_path / "w1" / "a.ipynb",
+        ("code", "import pandas as pd\npd.DataFrame().to_parquet('clean.parquet')\n"),
+    )
+    _notebook(
+        tmp_path / "w2" / "b.ipynb",
+        (
+            "code",
+            "%%writefile m.py\nimport pandas as pd\n\ndef load():\n    return pd.read_parquet('../w1/clean.parquet')\n",
+        ),
+    )
+    links = analyze(tmp_path)["sections"]["notebooks"]["links"]
+    assert any(k["from"] == "w1/a.ipynb" and k["to"] == "w2/b.ipynb" for k in links), links
+
+
 def test_a_real_file_wins(course: Path) -> None:
     (course / "Week-2" / "app").mkdir()
     (course / "Week-2" / "app" / "store.py").write_text("def on_disk():\n    return 1\n")
