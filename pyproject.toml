@@ -300,6 +300,8 @@ module = [
   "compression.*",
   "mkdocs",
   "mkdocs.*",
+  "keyring",  # optional: the keychain extra
+  "keyring.*",
 ]
 ignore_missing_imports = true
 
