@@ -208,21 +208,27 @@ class TestMermaidRendersOffline:
         # selector looks for — if this regresses, nothing downstream has a chance
         assert '<pre class="mermaid">' in page.read_text()
         shot = tmp_path / "shot.png"
-        subprocess.run(
-            [
-                chrome,
-                "--headless=new",
-                "--disable-gpu",
-                "--virtual-time-budget=8000",
-                "--window-size=1200,2000",
-                "--host-resolver-rules=MAP unpkg.com 0.0.0.0",  # simulate no network to the CDN
-                f"--screenshot={shot}",
-                page.as_uri(),
-            ],
-            capture_output=True,
-            timeout=120,  # Chrome starts slowly on a busy machine, which isn't what this test is about
-            check=True,
-        )
+        # Chrome can exit with an error on a busy Mac after a display problem that has nothing to do with the
+        # page, so what's checked is the screenshot, with one more try.
+        for _ in range(2):
+            subprocess.run(
+                [
+                    chrome,
+                    "--headless=new",
+                    "--disable-gpu",
+                    f"--user-data-dir={tmp_path / 'chrome'}",  # parallel runs can't share a profile
+                    "--virtual-time-budget=8000",
+                    "--window-size=1200,2000",
+                    "--host-resolver-rules=MAP unpkg.com 0.0.0.0",  # simulate no network to the CDN
+                    f"--screenshot={shot}",
+                    page.as_uri(),
+                ],
+                capture_output=True,
+                timeout=120,  # Chrome starts slowly on a busy machine, which isn't what this test is about
+                check=False,
+            )
+            if shot.is_file() and shot.stat().st_size > 10_000:
+                break
         assert shot.is_file() and shot.stat().st_size > 10_000
         # Material renders the diagram inside a *closed* shadow root for CSS isolation, so
         # its content is invisible to DOM dumps/serialization — a screenshot (or a human

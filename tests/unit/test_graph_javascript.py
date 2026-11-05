@@ -596,3 +596,43 @@ def test_strip_jsonc_leaves_strings_alone() -> None:
 def test_tokenize_keeps_lines_and_drops_comments() -> None:
     tokens = tokenize("a // b\n/* c\n*/ d\n'e'")
     assert [(t.text, t.line) for t in tokens] == [("a", 1), ("d", 3), ("e", 4)]
+
+
+def _symbols_in(tmp_path, text):
+    (tmp_path / "w.js").write_text(text)
+    nodes, _edges = build_javascript(tmp_path, [tmp_path / "w.js"])
+    return sorted(n.name for n in nodes if n.kind in {"function", "method", "class"})
+
+
+@pytest.mark.parametrize(
+    "wrapper",
+    [
+        "(function () {\n%s\n})();",
+        "(function () {\n%s\n}());",
+        "(() => {\n%s\n})();",
+        "(async function () {\n%s\n})();",
+        "!function () {\n%s\n}();",
+        ";(function (window) {\n%s\n})(window);",
+    ],
+)
+def test_what_an_immediately_called_function_wraps_is_read(tmp_path, wrapper) -> None:
+    body = "function inner(a) { return a; }\nconst arrow = (x) => x + 1;\nclass K { m() { return 1; } }"
+    names = _symbols_in(tmp_path, wrapper % body)
+    assert {"inner", "arrow", "K"} <= set(names)
+
+
+def test_a_function_only_defined_isnt_unwrapped(tmp_path) -> None:
+    names = _symbols_in(tmp_path, "const later = function () {\n  function hidden() {}\n};\n")
+    assert "later" in names and "hidden" not in names
+
+
+def test_functions_kept_on_an_object_are_read(tmp_path) -> None:
+    names = _symbols_in(
+        tmp_path,
+        "(function () {\n  views.map = async (q) => { return q; };\n  window.go = function () {};\n})();\n",
+    )
+    assert {"views.map", "window.go"} <= set(names)
+
+
+def test_an_unclosed_wrapper_doesnt_stop_the_read(tmp_path) -> None:
+    assert _symbols_in(tmp_path, "(function () {\n  function inner() {}\n") is not None
