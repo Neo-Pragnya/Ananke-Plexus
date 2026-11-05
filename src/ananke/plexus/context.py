@@ -152,7 +152,7 @@ def source_state(root: Path) -> str:
     changed = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
     if head is None or changed is None:
         stamps = sorted(
-            f"{p.relative_to(root)}:{p.stat().st_mtime_ns}"
+            f"{p.relative_to(root).as_posix()}:{p.stat().st_mtime_ns}"
             for p in root.rglob("*")
             if p.is_file() and p.suffix in SOURCE_SUFFIXES and ".ananke" not in p.parts
         )
@@ -320,9 +320,11 @@ def repo_map(root: Path, *, budget: int = DEFAULT_BUDGET, refresh: bool = False)
         saved = _read_cache(root, name)
         if isinstance(saved, dict) and saved.get("source_state") == state:
             return {**saved, "cached": True}
-    from ananke.plexus.intel import analyze
+    # a report from a CVE check describes the same code, so the map can use it too
+    from ananke.plexus.intel import analyze, cached
 
-    text = _render_map(root, analyze(root), budget, state)
+    report = cached(root, state, checked_too=True) or analyze(root)
+    text = _render_map(root, report, budget, state)
     result = {
         "source_state": state,
         "budget": budget,
@@ -333,8 +335,11 @@ def repo_map(root: Path, *, budget: int = DEFAULT_BUDGET, refresh: bool = False)
     return {**result, "cached": False}
 
 
-def fresh_graph(root: Path) -> GraphSnapshot:
-    """The code graph for the repository as it is now, rebuilt only if its fingerprint changed."""
+def fresh_graph(root: Path, *, save: bool = True) -> GraphSnapshot:
+    """The code graph for the repository as it is now, rebuilt only if its fingerprint changed.
+
+    ``save=False`` reads a kept graph but never writes one, for callers that promise to write nothing.
+    """
     root = root.resolve()
     state = source_state(root)
     saved = _read_cache(root, "graph.json")
@@ -344,9 +349,10 @@ def fresh_graph(root: Path) -> GraphSnapshot:
         except (ValueError, KeyError):
             pass  # a damaged cache is only a slower answer
     graph = build_graph(root)
-    _write_cache(
-        root, "graph.json", {"source_state": state, "graph": graph.model_dump(mode="json")}
-    )
+    if save:
+        _write_cache(
+            root, "graph.json", {"source_state": state, "graph": graph.model_dump(mode="json")}
+        )
     return graph
 
 
@@ -915,7 +921,7 @@ def benchmark(root: Path) -> dict[str, Any]:
     names = (
         tracked.split("\0")
         if tracked
-        else [str(p.relative_to(root)) for p in root.rglob("*") if p.is_file()]
+        else [p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()]
     )
     total = 0
     biggest: tuple[int, str] = (0, "")

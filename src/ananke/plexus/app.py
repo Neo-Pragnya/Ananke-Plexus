@@ -176,6 +176,7 @@ class AppFacade:
                 "suggest_capabilities",
                 "code_view",
                 "read_source",
+                "read_sources",
                 "architecture_view",
                 "evidence_view",
             ],
@@ -724,7 +725,28 @@ class AppFacade:
         text = written_text(self.workspace, rel)
         return None if text is None else text.encode("utf-8")
 
-    def read_source(self, path: str, *, start: int = 1, end: int | None = None) -> dict[str, Any]:
+    def read_sources(self, paths: list[str], *, max_files: int = 2000) -> dict[str, Any]:
+        """Many files at once, as ``read_source`` gives each, with the source snapshot worked out once for all.
+
+        A file that can't be read is listed under ``problems`` with its code, and the rest still come back.
+        """
+        if len(paths) > max_files:
+            raise AppError(
+                "INVALID_REQUEST", f"at most {max_files} files at once, not {len(paths)}"
+            )
+        snapshot = self.source_snapshot()
+        files: dict[str, Any] = {}
+        problems: dict[str, str] = {}
+        for path in paths:
+            try:
+                files[path] = self.read_source(path, snapshot=snapshot)
+            except AppError as exc:
+                problems[path] = exc.code
+        return {"source_snapshot": snapshot, "files": files, "problems": problems}
+
+    def read_source(
+        self, path: str, *, start: int = 1, end: int | None = None, snapshot: str | None = None
+    ) -> dict[str, Any]:
         """Lines of one source file, read-only, inside the workspace. Evidence for a claim, with its digest."""
         target = (self.workspace / path).resolve()
         if self.workspace not in target.parents:
@@ -754,7 +776,7 @@ class AppFacade:
             "end": last,
             "total_lines": len(lines),
             "sha256": _sha(data),
-            "source_snapshot": self.source_snapshot(),
+            "source_snapshot": snapshot or self.source_snapshot(),
             "lines": lines[first - 1 : last],
         }
 

@@ -9,8 +9,10 @@ skipped CVE scan is ``not_scanned``, never clean. Everything found cites its evi
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
@@ -44,8 +46,59 @@ SECTIONS = (
 )
 
 
+# Analyses kept in memory, by folder and by whether a CVE check was asked for. Analysis writes nothing to the
+# repository, so this lives only as long as the process: one dev explore, or one dev serve.
+_KEPT: OrderedDict[tuple[str, bool], dict[str, Any]] = OrderedDict()
+_KEEP = 4
+
+
 def analyze(root: Path, *, check_vulnerabilities: bool = False) -> dict[str, Any]:
-    """Every section for ``root``. One analyzer failing leaves its section ``failed``, and the rest still answer."""
+    """Every section for ``root``. One analyzer failing leaves its section ``failed``, and the rest still answer.
+
+    The same sources give the same report, so asking again before anything changes gets the one already made.
+    A CVE check always asks again: what's known about a package changes while its code doesn't.
+    """
+    from ananke.plexus.context import source_state
+
+    root = root.resolve()
+    state = source_state(root)  # before reading anything, so an edit made meanwhile isn't lost
+    if not check_vulnerabilities:
+        saved = cached(root, state)
+        if saved is not None:
+            return saved
+    report, ctx = _analyze(root, check_vulnerabilities=check_vulnerabilities)
+    folders = coverage.probe_folders(ctx)
+    key = (str(root), check_vulnerabilities)
+    _KEPT[key] = {
+        "state": state,
+        "folders": folders,
+        "stamp": coverage.report_stamp(root, folders),
+        "report": copy.deepcopy(report),
+    }
+    _KEPT.move_to_end(key)
+    while len(_KEPT) > _KEEP:
+        _KEPT.popitem(last=False)
+    return report
+
+
+def cached(root: Path, state: str, *, checked_too: bool = False) -> dict[str, Any] | None:
+    """The analysis made for exactly these sources, if no coverage report has appeared or changed since.
+
+    One made with a CVE check counts only when ``checked_too``, so a plain question never gets an old check.
+    """
+    for checked in (False, True) if checked_too else (False,):
+        kept = _KEPT.get((str(root.resolve()), checked))
+        if (
+            kept is not None
+            and kept["state"] == state
+            and coverage.report_stamp(root, kept["folders"]) == kept["stamp"]
+        ):
+            report: dict[str, Any] = copy.deepcopy(kept["report"])
+            return report
+    return None
+
+
+def _analyze(root: Path, *, check_vulnerabilities: bool) -> tuple[dict[str, Any], RepoContext]:
     ctx = RepoContext.open(root, check_vulnerabilities=check_vulnerabilities)
     for name, analyzer in SECTIONS:
         try:
@@ -59,7 +112,7 @@ def analyze(root: Path, *, check_vulnerabilities: bool = False) -> dict[str, Any
         "schema": SCHEMA,
         "sections": ctx.sections,
         "content_digest": digest(ctx.sections),
-    }
+    }, ctx
 
 
 def digest(sections: dict[str, Any]) -> str:

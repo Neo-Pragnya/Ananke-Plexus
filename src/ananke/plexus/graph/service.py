@@ -245,7 +245,7 @@ def _symbol_meta(node: ast.AST) -> dict[str, object]:
 
 def _module_index(repository_root: Path, python_files: list[Path]) -> ModuleIndex:
     """Python files by the names they can be imported as, with the folders that declare a project."""
-    rel_paths = [str(path.relative_to(repository_root)) for path in python_files]
+    rel_paths = [path.relative_to(repository_root).as_posix() for path in python_files]
     folders = {""}
     for rel_path in rel_paths:
         folder = posixpath.dirname(rel_path)
@@ -304,7 +304,7 @@ def build_graph(repository_root: Path, generated: WrittenFiles | None = None) ->
     source_roots = set(index.source_roots())
 
     for path in python_files:
-        rel_path = str(path.relative_to(repository_root))
+        rel_path = path.relative_to(repository_root).as_posix()
         file_id = f"file:{rel_path}"
         file_meta: dict[str, object] = {"module": _module_name(rel_path)}
         if index.root_of(rel_path) in source_roots:
@@ -339,7 +339,7 @@ def build_graph(repository_root: Path, generated: WrittenFiles | None = None) ->
         parsed[rel_path] = tree
 
     for path in _iter_project_files(repository_root, (".ipynb",)):
-        rel_path = str(path.relative_to(repository_root))
+        rel_path = path.relative_to(repository_root).as_posix()
         file_id = f"file:{rel_path}"
         try:
             source, line_map, file_meta = _read_notebook(path)

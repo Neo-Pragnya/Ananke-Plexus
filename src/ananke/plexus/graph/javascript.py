@@ -1380,7 +1380,7 @@ def build_javascript(
     edges: list[GraphEdge] = []
     parsed: dict[str, _Parsed] = {}
     for path in paths:
-        rel = str(path.relative_to(repository_root))
+        rel = path.relative_to(repository_root).as_posix()
         name = path.name
         if name.endswith(".d.ts") or path.is_symlink():
             continue

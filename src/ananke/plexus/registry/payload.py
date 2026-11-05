@@ -65,7 +65,7 @@ def collect_directory(root: Path) -> CollectReport:
         base = Path(dirpath)
         for d in list(dirnames):
             if (base / d).is_symlink():
-                report.skipped_symlinks.append(str((base / d).relative_to(root)))
+                report.skipped_symlinks.append((base / d).relative_to(root).as_posix())
                 dirnames.remove(d)
         for fname in sorted(filenames):
             full = base / fname

@@ -93,7 +93,7 @@ def _call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -
             return {
                 "ok": False,
                 "summary": "no bmad.yaml: run `ananke bmad compile --feature-dir …` first",
-                "details": {"feature_dir": str(path.relative_to(repository_root.resolve()))},
+                "details": {"feature_dir": path.relative_to(repository_root.resolve()).as_posix()},
             }
         return {
             "ok": True,
