@@ -10,6 +10,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.28] — 2026-11-05
+
+### Added
+
+- **`read_sources(paths)` on the app facade.** Reads many files in one call, with the source snapshot worked out once rather than once per file. Each file comes back as `read_source` gives it, and a file it can't read is listed under `problems` with its code.
+
+### Fixed
+
+- **Windows: paths in the code graph used backslashes.** File ids, paths and import targets were written with the platform's separator, so on Windows imports between a repository's own files weren't matched, folders collapsed into one package, and about half the calls were lost. Every path is now written with forward slashes on every platform. A new CI job builds the same graph on Linux, macOS and Windows and checks the exact counts.
+
+### Changed
+
+- **Asking for the same analysis twice reuses the first answer.** `repo.analyze` keeps its report in memory for the sources it read. Within one process, such as one `dev explore` or one `dev serve`, the same question gets the same answer without running again. Any edit makes a new analysis, and so does a coverage report that appears or changes, even when Git ignores it. A CVE check always runs again, because what's known about a package changes while its code doesn't. Nothing is written to the repository.
+- **The repository map reuses that analysis** instead of running a second one.
+- **An analysis reads the code graph a lookup already kept** for the same sources, instead of building another. It never writes one.
+
+With Dev Guru 0.11.0, which reads source with `read_sources`, `dev explore` on a 700-file repository went from 40 seconds to 13, with the same report.
+
+---
+
 ## [0.3.27] — 2026-11-05
 
 ### Added

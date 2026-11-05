@@ -6,6 +6,7 @@ refused before it reaches a parser, which rules out external entities and entity
 
 from __future__ import annotations
 
+import hashlib
 import json
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -324,8 +325,8 @@ class _PathMapper:
         return best[0] if len(best) == 1 and most >= need else None
 
 
-def _candidates(ctx: RepoContext) -> list[str]:
-    """Reports are usually ignored by Git, so well-known places are looked in as well as the file list."""
+def probe_folders(ctx: RepoContext) -> list[str]:
+    """The folders whose well-known places are looked in for a report."""
     summary = ctx.sections.get("overview") or {}
     folders = {""}
     folders |= {f"{p.split('/', 1)[0]}/" for p in ctx.files if "/" in p}
@@ -334,6 +335,27 @@ def _candidates(ctx: RepoContext) -> list[str]:
         for c in summary.get("components", [])
         if isinstance(c, dict) and c.get("path") not in {"", ".", None}
     }
+    return sorted(folders)
+
+
+def report_stamp(root: Path, folders: list[str]) -> str:
+    """Changes when a report appears, goes or changes in any place looked in, ignored by Git or not."""
+    seen = []
+    for path in [
+        ".coverage",
+        *(f"{f}{i}{n}" for f in folders for i in _REPORT_FOLDERS for n in _REPORT_NAMES),
+    ]:
+        try:
+            info = (root / path).stat()
+        except OSError:
+            continue
+        seen.append(f"{path}:{info.st_size}:{info.st_mtime_ns}")
+    return hashlib.sha256("\n".join(sorted(seen)).encode()).hexdigest()[:16]
+
+
+def _candidates(ctx: RepoContext) -> list[str]:
+    """Reports are usually ignored by Git, so well-known places are looked in as well as the file list."""
+    folders = probe_folders(ctx)
     found = {p for p in ctx.files if p.rsplit("/", 1)[-1] in _REPORT_NAMES and not is_fixture(p)}
     for folder in folders:
         for inner in _REPORT_FOLDERS:

@@ -10,7 +10,6 @@ from typing import Any
 
 from ananke.plexus.graph.models import GraphSnapshot
 from ananke.plexus.graph.notebook_files import WrittenFiles, find_written
-from ananke.plexus.graph.service import build_graph
 
 SKIP_DIRS = {
     "node_modules", "site-packages", "__pycache__", "dist", "build", "target", "vendor", "venv", "env", "htmlcov", "coverage",
@@ -47,7 +46,9 @@ def _walk_files(root: Path) -> list[str]:
     found = []
     for folder, dirs, names in os.walk(root):
         dirs[:] = [d for d in dirs if not d.startswith(".") and d not in SKIP_DIRS]
-        found += [os.path.relpath(os.path.join(folder, n), root) for n in names]
+        found += [
+            os.path.relpath(os.path.join(folder, n), root).replace(os.sep, "/") for n in names
+        ]
     return found
 
 
@@ -75,7 +76,12 @@ class RepoContext:
         files = [p for p in files if (root / p).is_file()]
         written = find_written(root, [root / p for p in files if p.endswith(".ipynb")])
         files = sorted({*files, *(p for p in written.files if _keep(p))})
-        return cls(root, files, build_graph(root, written), check_vulnerabilities, written=written)
+        # a graph kept for these sources, rather than a second one. Analysis writes nothing, so it's only read
+        from ananke.plexus.context import fresh_graph
+
+        return cls(
+            root, files, fresh_graph(root, save=False), check_vulnerabilities, written=written
+        )
 
     def text(self, path: str) -> str | None:
         """A file's text, or ``None`` when it's too big to be source or can't be read."""
