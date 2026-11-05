@@ -16,7 +16,7 @@ def _feature_dir(repository_root: Path, args: dict[str, object]) -> Path | dict[
         return {"ok": False, "summary": "feature_dir required", "details": {}}
     root = os.path.realpath(repository_root)
     resolved = os.path.realpath(os.path.join(root, raw))
-    if resolved != root and not resolved.startswith(root + os.sep):
+    if not resolved.startswith(root + os.sep):
         return {
             "ok": False,
             "summary": "feature_dir must be inside the project",

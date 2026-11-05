@@ -100,6 +100,9 @@ def expected_by_measure() -> dict[str, set[Any]]:
 def shop(tmp_path_factory: pytest.TempPathFactory) -> Path:
     copy = tmp_path_factory.mktemp("repo") / "shop"
     shutil.copytree(SHOP, copy, ignore=shutil.ignore_patterns("expected.json"))
+    # old pins on purpose, kept out of the repository as manifests so no scanner mistakes them for ours
+    for pinned in copy.rglob("*.pins"):
+        pinned.rename(pinned.with_suffix(""))
     return copy
 
 

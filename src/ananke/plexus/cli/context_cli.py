@@ -104,9 +104,14 @@ def enable(
         help="claude-code, codex, copilot, kiro, cursor, amazon-q or all (repeat). Default: detect",
     ),
     session_map: bool = typer.Option(
-        True,
+        False,
         "--session-map/--no-session-map",
-        help="Claude Code: load the map at the start of each session",
+        help="Claude Code: also load the map at the start of every session, which costs its tokens each time",
+    ),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Keep it to yourself: nothing goes in a commit, and tracked files are left alone",
     ),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Say what would change, and change nothing"
@@ -119,7 +124,13 @@ def enable(
     try:
         typer.echo(
             json.dumps(
-                run(project, clients=list(client), session_map=session_map, dry_run=dry_run),
+                run(
+                    project,
+                    clients=list(client),
+                    session_map=session_map,
+                    local=local,
+                    dry_run=dry_run,
+                ),
                 indent=1,
             )
         )

@@ -16,6 +16,21 @@ from ananke.plexus.registry.docsgen.svg import render_graph_svg, render_lineage_
 from ananke.plexus.registry.learn import inspect_source
 
 
+def _script_tags(html: str) -> list[dict[str, str | None]]:
+    """Every script tag's attributes, as a browser would parse them."""
+    from html.parser import HTMLParser
+
+    found: list[dict[str, str | None]] = []
+
+    class Scripts(HTMLParser):
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            if tag == "script":
+                found.append(dict(attrs))
+
+    Scripts().feed(html)
+    return found
+
+
 def populate(reg) -> None:  # type: ignore[no-untyped-def]
     add(
         reg, "graph-query", "1.0.0", approve=True, capabilities=["graph.query"], tags=None
@@ -330,8 +345,10 @@ class TestSecurity:
         build_site(reg)
         for rel, html in all_html(reg.root / "docs").items():
             assert "default-src 'none'" in html, rel
-            for tag in re.findall(r"<script\b[^>]*>", html):
-                assert "src=" in tag or "application/json" in tag, f"{rel}: inline script {tag}"
+            for attrs in _script_tags(html):
+                assert "src" in attrs or attrs.get("type") == "application/json", (
+                    f"{rel}: inline script {attrs}"
+                )
             assert " style=" not in html, rel
             assert not re.search(
                 r'<(?:script|link|img|iframe)\b[^>]*(?:src|href)="(?:https?:)?//', html

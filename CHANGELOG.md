@@ -10,6 +10,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.24] — 2026-11-05
+
+### Added
+
+- **`ananke context enable --local`: adopt it without sharing anything.** Claude Code gets `CLAUDE.local.md`. Other assistants get their usual file only if Git doesn't track it, and every file goes in `.git/info/exclude`, so nothing reaches a commit. A file Git already tracks is left alone and named. `ananke context disable` undoes it. See [Saving tokens](docs/guides/saving-tokens.md).
+- A test that every lookup makes no network connection, and a fuzz target for the JavaScript reader.
+
+### Changed
+
+- **`enable` no longer adds the session hook unless you ask.** The map at the start of every session costs its tokens every time, including on chats that never needed it. The assistant now runs it when it's useful. `--session-map` still adds the hook.
+- The instruction block is smaller, about 80 tokens rather than 130.
+
+### Security
+
+- `feature_dir` in the MCP tools can no longer be the repository root.
+- The golden test repository no longer keeps its deliberately old package pins as real manifest files, so a scanner reading this repository or its source doesn't report them as ours. They're restored only while a test runs.
+- Updated: GitHub Actions for artifacts, dependency review, Pages, build attestations and gitleaks; rich, pre-commit, pact-python, watchfiles and schemathesis.
+
+---
+
 ## [0.3.23] — 2026-11-04
 
 ### Fixed

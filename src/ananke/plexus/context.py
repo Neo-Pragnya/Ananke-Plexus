@@ -91,16 +91,16 @@ BLOCK_END = "<!-- ananke-context:end -->"
 PROJECT_BLOCK = f"""{BLOCK_START}
 ## Reading this repository
 
-Save tokens: use these before reading whole files. They always reflect the current code, including uncommitted edits.
-
-- `ananke context outline FILE`: what's in a file
-- `ananke context symbol NAME`: one function or class, with its source
-- `ananke context callers NAME`: what calls it
-- `ananke context map`: the whole repository, small. Start here if you haven't seen it
-
-Read a file directly when it's small, or when you need most of it.
+Before reading a whole file, use `ananke context outline FILE`, `symbol NAME` or `callers NAME`. If you haven't seen this repository, start with `ananke context map`. They include uncommitted edits. Read a file directly when it's small or you need most of it.
 {BLOCK_END}
 """
+
+LOCAL_CLAUDE = "CLAUDE.local.md"  # Claude Code reads this too, and it's meant for one person
+SHARED_SETTINGS = ".claude/settings.json"
+LOCAL_SETTINGS = ".claude/settings.local.json"
+EXCLUDE_START = "# ananke context enable --local: start"
+EXCLUDE_END = "# ananke context enable --local: end"
+
 # Where each assistant reads project instructions, and what its file needs at the top.
 CLIENTS = {
     "claude-code": ("CLAUDE.md", ""),
@@ -545,23 +545,83 @@ def _is_our_hook(entry: object) -> bool:
     return any(isinstance(h, dict) and h.get("command") == SESSION_HOOK for h in inner)
 
 
+def _tracked(root: Path, relative: str) -> bool:
+    return _git(root, "ls-files", "--error-unmatch", "--", relative) is not None
+
+
+def _exclude_path(root: Path) -> Path:
+    found = _git(root, "rev-parse", "--git-path", "info/exclude")
+    if found is None:
+        raise ContextError(
+            "INVALID_REQUEST", "--local needs a Git repository, to keep the files out of commits"
+        )
+    return root / found.strip()
+
+
+def _remove_exclude_block(text: str) -> str:
+    start, end = text.find(EXCLUDE_START), text.find(EXCLUDE_END)
+    if start == -1 or end == -1:
+        return text
+    return (
+        text[:start].rstrip("\n")
+        + ("\n" if text[:start].strip() else "")
+        + text[end + len(EXCLUDE_END) :].lstrip("\n")
+    )
+
+
+def _exclude_locally(root: Path, relatives: list[str]) -> None:
+    """List files in .git/info/exclude: like .gitignore, but it never leaves this checkout."""
+    path = _exclude_path(root)
+    kept = _remove_exclude_block(_read(path))
+    existing = _read(path)
+    listed = []
+    if EXCLUDE_START in existing:
+        inside = existing[
+            existing.find(EXCLUDE_START) + len(EXCLUDE_START) : existing.find(EXCLUDE_END)
+        ]
+        listed = [line for line in inside.splitlines() if line.strip()]
+    wanted = sorted({*listed, *(f"/{r}" for r in relatives)})
+    block = "\n".join([EXCLUDE_START, *wanted, EXCLUDE_END]) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text((kept.rstrip("\n") + "\n" if kept.strip() else "") + block, encoding="utf-8")
+
+
 def enable(
-    root: Path, *, clients: list[str] | None = None, session_map: bool = True, dry_run: bool = False
+    root: Path,
+    *,
+    clients: list[str] | None = None,
+    session_map: bool = False,
+    local: bool = False,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Make a project use the graph by default: short instructions where each assistant looks for them.
 
-    Claude Code also gets the map at the start of each session, through its hook. The others are told to ask for it.
+    With ``local``, nothing is shared: files stay out of commits, and a file Git already tracks is left alone.
+    ``session_map`` also loads the map at the start of every Claude Code session, which costs its tokens each time.
     """
     root = root.resolve()
     chosen = _choose_clients(root, clients)
-    changes = []
+    changes: list[str] = []
+    skipped: list[str] = []
+    hidden: list[str] = []
+    if local:
+        _exclude_path(root)
     for name in chosen:
         relative, header = CLIENTS[name]
+        if local and name == "claude-code":
+            relative = LOCAL_CLAUDE
         target = root / _inside(root, relative)
         current = _read(target)
         if BLOCK_START in current:
             continue
+        if local and _tracked(root, relative):
+            skipped.append(
+                f"{relative}: Git tracks it, so a change would be shared. Left alone ({name})"
+            )
+            continue
         changes.append(f"{relative}: add a short block on reading this repository ({name})")
+        if local:
+            hidden.append(relative)
         if dry_run:
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -570,41 +630,37 @@ def enable(
         else:
             target.write_text(header + PROJECT_BLOCK, encoding="utf-8")
     if session_map and "claude-code" in chosen:
-        settings_path = root / _inside(root, ".claude/settings.json")
+        relative = LOCAL_SETTINGS if local else SHARED_SETTINGS
+        settings_path = root / _inside(root, relative)
         settings = _load_settings(settings_path)
-        if not any(_is_our_hook(entry) for entry in _hook_entries(settings)):
-            changes.append(
-                ".claude/settings.json: load the map at the start of each session (claude-code)"
+        if local and _tracked(root, relative):
+            skipped.append(
+                f"{relative}: Git tracks it, so a change would be shared. Left alone (claude-code)"
             )
+        elif not any(_is_our_hook(entry) for entry in _hook_entries(settings)):
+            changes.append(f"{relative}: load the map at the start of each session (claude-code)")
+            if local:
+                hidden.append(relative)
             if not dry_run:
                 settings.setdefault("hooks", {}).setdefault("SessionStart", []).append(
                     {"hooks": [{"type": "command", "command": SESSION_HOOK}]}
                 )
                 settings_path.parent.mkdir(parents=True, exist_ok=True)
                 settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-    return {"clients": chosen, "changes": changes, "dry_run": dry_run, "enabled": True}
+    if hidden and not dry_run:
+        _exclude_locally(root, hidden)
+    return {
+        "clients": chosen,
+        "changes": changes,
+        "skipped": skipped,
+        "local": local,
+        "dry_run": dry_run,
+        "enabled": True,
+    }
 
 
-def disable(root: Path) -> dict[str, Any]:
-    """Remove exactly what ``enable`` added, for every client, and leave everything else."""
-    root = root.resolve()
-    changes = []
-    for relative, header in {v[0]: v[1] for v in CLIENTS.values()}.items():
-        target = root / _inside(root, relative)
-        current = _read(target)
-        start, end = current.find(BLOCK_START), current.find(BLOCK_END)
-        if start == -1 or end == -1:
-            continue
-        kept = (
-            current[:start].rstrip() + "\n\n" + current[end + len(BLOCK_END) :].lstrip()
-        ).strip()
-        if kept and kept != header.strip():
-            target.write_text(kept + "\n", encoding="utf-8")
-        else:
-            target.unlink()
-        changes.append(f"{relative}: removed the block")
-    settings_path = root / _inside(root, ".claude/settings.json")
-    settings = _load_settings(settings_path)
+def _remove_hook(path: Path, relative: str, changes: list[str]) -> None:
+    settings = _load_settings(path)
     entries = _hook_entries(settings)
     kept_entries = []
     for entry in entries:
@@ -618,19 +674,50 @@ def disable(root: Path) -> dict[str, Any]:
         ]
         if left:
             kept_entries.append({**entry, "hooks": left})
-    if json.dumps(kept_entries) != json.dumps(entries):
-        hooks = settings["hooks"]
-        if kept_entries:
-            hooks["SessionStart"] = kept_entries
+    if json.dumps(kept_entries) == json.dumps(entries):
+        return
+    hooks = settings["hooks"]
+    if kept_entries:
+        hooks["SessionStart"] = kept_entries
+    else:
+        del hooks["SessionStart"]
+        if not hooks:
+            del settings["hooks"]
+    if settings:
+        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    else:
+        path.unlink()
+    changes.append(f"{relative}: removed the hook")
+
+
+def disable(root: Path) -> dict[str, Any]:
+    """Remove exactly what ``enable`` added, shared or local, for every client, and leave everything else."""
+    root = root.resolve()
+    changes: list[str] = []
+    places = {v[0]: v[1] for v in CLIENTS.values()} | {LOCAL_CLAUDE: ""}
+    for relative, header in places.items():
+        target = root / _inside(root, relative)
+        current = _read(target)
+        start, end = current.find(BLOCK_START), current.find(BLOCK_END)
+        if start == -1 or end == -1:
+            continue
+        kept = (
+            current[:start].rstrip() + "\n\n" + current[end + len(BLOCK_END) :].lstrip()
+        ).strip()
+        if kept and kept != header.strip():
+            target.write_text(kept + "\n", encoding="utf-8")
         else:
-            del hooks["SessionStart"]
-            if not hooks:
-                del settings["hooks"]
-        if settings:
-            settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-        else:
-            settings_path.unlink()
-        changes.append(".claude/settings.json: removed the hook")
+            target.unlink()
+        changes.append(f"{relative}: removed the block")
+    for relative in (SHARED_SETTINGS, LOCAL_SETTINGS):
+        _remove_hook(root / _inside(root, relative), relative, changes)
+    found = _git(root, "rev-parse", "--git-path", "info/exclude")
+    if found is not None:
+        exclude = root / found.strip()
+        text = _read(exclude)
+        if EXCLUDE_START in text:
+            exclude.write_text(_remove_exclude_block(text), encoding="utf-8")
+            changes.append(".git/info/exclude: removed our lines")
     return {"changes": changes, "enabled": False}
 
 
@@ -677,7 +764,8 @@ def status(root: Path) -> dict[str, Any]:
                 "for": "outline, symbol and callers; current with every edit",
                 "licence": "built in",
                 "enabled_for": sorted(
-                    n for n, (f, _) in CLIENTS.items() if BLOCK_START in _read(root / f)
+                    {n for n, (f, _) in CLIENTS.items() if BLOCK_START in _read(root / f)}
+                    | ({"claude-code"} if BLOCK_START in _read(root / LOCAL_CLAUDE) else set())
                 ),
             },
             "serena": {

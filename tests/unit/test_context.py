@@ -14,6 +14,7 @@ import pytest
 from ananke.plexus.context import (
     BLOCK_START,
     CLIENTS,
+    PROJECT_BLOCK,
     ROUTES,
     SESSION_HOOK,
     ContextError,
@@ -71,6 +72,9 @@ def fake_tool(folder: Path, name: str, script: str) -> None:
 def test_the_map_shows_what_matters_within_its_budget(tmp_path: Path) -> None:
     copy = tmp_path / "shop"
     shutil.copytree(SHOP, copy)
+    # old pins on purpose, kept out of the repository as manifests so no scanner mistakes them for ours
+    for pinned in copy.rglob("*.pins"):
+        pinned.rename(pinned.with_suffix(""))
     result = repo_map(copy, budget=600)
     text = result["map"]
     assert result["tokens_estimate"] <= 660  # a small allowance for the closing lines
@@ -360,7 +364,7 @@ def test_enabling_writes_where_each_assistant_looks(shop: Path, client: str) -> 
     text = (shop / relative).read_text()
     assert text.startswith(header) and "ananke context outline" in text
     assert result["clients"] == [client]
-    assert (shop / ".claude" / "settings.json").exists() == (client == "claude-code")
+    assert not (shop / ".claude" / "settings.json").exists()
 
 
 def test_enabling_detects_the_assistants_this_project_uses(shop: Path) -> None:
@@ -380,7 +384,7 @@ def test_an_unknown_client_is_refused_and_writes_nothing(shop: Path) -> None:
 
 
 def test_a_dry_run_changes_nothing(shop: Path) -> None:
-    result = enable(shop, clients=["all"], dry_run=True)
+    result = enable(shop, clients=["all"], session_map=True, dry_run=True)
     assert len(result["changes"]) == len(CLIENTS) + 1
     assert not any((shop / relative).exists() for relative, _ in CLIENTS.values())
     assert not (shop / ".claude").exists()
@@ -400,7 +404,7 @@ def test_disabling_keeps_what_was_there_and_removes_what_we_added(shop: Path) ->
     (shop / ".claude" / "settings.json").write_text(
         json.dumps({"model": "x", "hooks": {"SessionStart": [other_hook]}})
     )
-    enable(shop, clients=["all"])
+    enable(shop, clients=["all"], session_map=True)
     assert BLOCK_START in (shop / "CLAUDE.md").read_text()
     assert SESSION_HOOK in str(json.loads((shop / ".claude" / "settings.json").read_text()))
 
@@ -413,7 +417,7 @@ def test_disabling_keeps_what_was_there_and_removes_what_we_added(shop: Path) ->
 
 
 def test_disabling_removes_a_settings_file_it_created(shop: Path) -> None:
-    enable(shop, clients=["claude-code"])
+    enable(shop, clients=["claude-code"], session_map=True)
     disable(shop)
     assert not (shop / ".claude" / "settings.json").exists()
     assert not (shop / "CLAUDE.md").exists()
@@ -431,7 +435,7 @@ def test_broken_settings_are_refused_rather_than_overwritten(shop: Path) -> None
     (shop / ".claude").mkdir()
     (shop / ".claude" / "settings.json").write_text("{not json")
     with pytest.raises(ContextError):
-        enable(shop, clients=["claude-code"])
+        enable(shop, clients=["claude-code"], session_map=True)
     assert (shop / ".claude" / "settings.json").read_text() == "{not json"
 
 
@@ -504,7 +508,7 @@ def test_enabling_wont_follow_a_link_out_of_the_repository(
     (shop / relative).parent.mkdir(exist_ok=True)
     (shop / relative).symlink_to(precious)
     with pytest.raises(ContextError, match="outside the repository"):
-        enable(shop, clients=["claude-code"])
+        enable(shop, clients=["claude-code"], session_map=True)
     with pytest.raises(ContextError, match="outside the repository"):
         disable(shop)
     assert precious.read_text() == "{}\n"
@@ -535,3 +539,99 @@ def test_an_upgrade_doesnt_keep_answers_from_the_old_code(
     monkeypatch.setattr(context, "build_graph", lambda root: calls.append(root) or real(root))
     symbol(shop, "tax")
     assert calls
+
+
+def _git_state(root: Path) -> str:
+    return subprocess.run(
+        ["git", "-C", str(root), "status", "--short"], check=True, capture_output=True, text=True
+    ).stdout
+
+
+def test_enabling_adds_no_hook_unless_asked(shop: Path) -> None:
+    enable(shop, clients=["claude-code"])
+    assert not (shop / ".claude").exists()
+
+
+def test_the_instructions_stay_small() -> None:
+    assert estimate_tokens(PROJECT_BLOCK) < 90
+
+
+def test_local_enabling_shows_up_nowhere_in_git(shop: Path) -> None:
+    subprocess.run(["git", "-C", str(shop), "add", "-A"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(shop),
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.com",
+            "commit",
+            "-qm",
+            "c",
+        ],
+        check=True,
+    )
+    before = _git_state(shop)
+    result = enable(shop, clients=["all"], session_map=True, local=True)
+    assert result["local"] is True
+    assert BLOCK_START in (shop / "CLAUDE.local.md").read_text()
+    assert not (shop / "CLAUDE.md").exists()
+    assert SESSION_HOOK in str(json.loads((shop / ".claude" / "settings.local.json").read_text()))
+    assert not (shop / ".claude" / "settings.json").exists()
+    assert _git_state(shop) == before
+
+
+def test_local_enabling_leaves_a_tracked_file_alone_and_says_so(shop: Path) -> None:
+    (shop / "AGENTS.md").write_text("# Team rules\n")
+    subprocess.run(["git", "-C", str(shop), "add", "AGENTS.md"], check=True)
+    result = enable(shop, clients=["codex"], local=True)
+    assert (shop / "AGENTS.md").read_text() == "# Team rules\n"
+    assert result["changes"] == [] and "AGENTS.md" in result["skipped"][0]
+
+
+def test_local_enabling_needs_git(tmp_path: Path) -> None:
+    with pytest.raises(ContextError, match="Git repository"):
+        enable(tmp_path, clients=["codex"], local=True)
+    assert not (tmp_path / "AGENTS.md").exists()
+
+
+def test_disabling_local_restores_the_exclude_file(shop: Path) -> None:
+    exclude = shop / ".git" / "info" / "exclude"
+    original = "# mine\n*.tmp\n"
+    exclude.write_text(original)
+    enable(shop, clients=["claude-code", "kiro"], session_map=True, local=True)
+    assert "/CLAUDE.local.md" in exclude.read_text() and "*.tmp" in exclude.read_text()
+    enable(shop, clients=["cursor"], local=True)
+    assert (
+        "/CLAUDE.local.md" in exclude.read_text()
+        and "/.cursor/rules/ananke-context.mdc" in exclude.read_text()
+    )
+    disable(shop)
+    assert exclude.read_text() == original
+    assert not (shop / "CLAUDE.local.md").exists()
+    assert not (shop / ".claude" / "settings.local.json").exists()
+
+
+def test_status_counts_local_enabling(shop: Path) -> None:
+    enable(shop, clients=["claude-code"], local=True)
+    assert status(shop)["tools"]["graph"]["enabled_for"] == ["claude-code"]
+
+
+def test_nothing_here_reaches_for_the_network(shop: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import socket
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("tried to use the network")
+
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+    repo_map(shop, refresh=True)
+    outline(shop, "pkg/cart.py")
+    symbol(shop, "tax")
+    callers(shop, "tax")
+    status(shop)
+    enable(shop, clients=["all"], local=True)
+    disable(shop)

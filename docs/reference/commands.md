@@ -328,7 +328,7 @@ GitHub Pages deploy workflow: `.github/workflows/docs.yml` — uses uv, copies `
 - `ananke context outline PATH [--signatures] [--json]`: what's in a file, without reading it.
 - `ananke context symbol NAME [--path FILE] [--json]`: one function, method or class with its source.
 - `ananke context callers NAME [--path FILE] [--json]`: what calls or inherits from a symbol, and text matches the graph couldn't resolve.
-- `ananke context enable [--client NAME] [--no-session-map] [--dry-run]`: make a project use these by default. Clients are `claude-code`, `codex`, `copilot`, `kiro`, `cursor`, `amazon-q` or `all`. Without `--client`, it detects them.
+- `ananke context enable [--client NAME] [--local] [--session-map] [--dry-run]`: make a project use these by default. `--local` keeps it out of commits. Clients are `claude-code`, `codex`, `copilot`, `kiro`, `cursor`, `amazon-q` or `all`. Without `--client`, it detects them.
 - `ananke context disable`: remove exactly what `enable` added.
 - `ananke context pack --include GLOB [--no-compress] [--output FILE]`: pack chosen files with repomix.
 - `ananke context benchmark`: what a first look costs here.
