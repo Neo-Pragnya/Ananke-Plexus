@@ -1,4 +1,0 @@
-# The golden repo pins old packages on purpose, so the CVE lookup has known answers to test against. It isn't shipped.
-scan:
-  skip-dirs:
-    - tests/fixtures/repo-mapping

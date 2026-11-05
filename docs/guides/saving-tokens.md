@@ -120,40 +120,56 @@ Because the check runs when you ask, an answer can't be out of date, and nothing
 ## Use it by default
 
 ```bash
-ananke context enable --dry-run     # see what would change
-ananke context enable               # do it
+ananke context enable --local --dry-run   # see what would change
+ananke context enable --local             # just for you
+ananke context enable                     # for everyone who works on this project
 ```
 
-`enable` writes a short block where each assistant looks for project instructions, telling it to use these commands before
-reading files. The block is about 130 tokens. It works out which assistants you use, and you can name them instead:
+`enable` adds a short note where each assistant looks for project instructions, telling it to use these commands before reading files. It works out which assistants you use, and you can name them with `--client`:
 
 ```bash
 ananke context enable --client kiro --client copilot
 ananke context enable --client all
 ```
 
-| Assistant | `--client` | Where the instructions go | At the start of a session |
+| Assistant | `--client` | Where the note goes | With `--local` |
 | --- | --- | --- | --- |
-| Claude Code | `claude-code` | `CLAUDE.md` | The map is loaded for it, through a hook |
-| OpenAI Codex | `codex` | `AGENTS.md` | Told to run the map |
-| GitHub Copilot | `copilot` | `.github/copilot-instructions.md` | Told to run the map |
-| Kiro | `kiro` | `.kiro/steering/ananke-context.md` | Told to run the map |
-| Cursor | `cursor` | `.cursor/rules/ananke-context.mdc` | Told to run the map |
-| Amazon Q | `amazon-q` | `.amazonq/rules/ananke-context.md` | Told to run the map |
+| Claude Code | `claude-code` | `CLAUDE.md` | `CLAUDE.local.md`, which Claude Code also reads |
+| OpenAI Codex | `codex` | `AGENTS.md` | `AGENTS.md`, unless Git tracks it |
+| GitHub Copilot | `copilot` | `.github/copilot-instructions.md` | The same file, unless Git tracks it |
+| Kiro | `kiro` | `.kiro/steering/ananke-context.md` | The same file |
+| Cursor | `cursor` | `.cursor/rules/ananke-context.mdc` | The same file |
+| Amazon Q | `amazon-q` | `.amazonq/rules/ananke-context.md` | The same file |
 
 Many other tools read `AGENTS.md`, so `--client codex` often covers them too.
 
-Your own text in those files is left alone. Running `enable` again changes nothing, and `ananke context status` shows who is enabled.
-To undo it:
+### Sharing it, or keeping it to yourself
+
+Without `--local`, these are ordinary project files: they show up in `git status`, and once committed, everyone who works on the repository gets them. That suits a team that has agreed to use this, but it needs Ananke installed for everyone.
+
+With `--local`, nothing reaches a commit. Each file is listed in `.git/info/exclude`, which works like `.gitignore` but never leaves your checkout. If Git already tracks a file, such as a team's `AGENTS.md`, it's left alone, and the result names it under `skipped`.
+
+Running `enable` again changes nothing, and `ananke context status` shows who's enabled. To undo either kind:
 
 ```bash
 ananke context disable
 ```
 
-That removes only what was added, including the hook, and leaves your other hooks and text as they were. If `.claude/settings.json`
-isn't valid JSON, `enable` stops and says so rather than overwriting it. `--no-session-map` skips the hook.
+That removes only what was added, and leaves your own text, hooks and exclude lines as they were.
 
-These are instructions, so an assistant usually follows them but isn't forced to. Nothing blocks it from reading a file, which is sometimes the right thing to do.
+### What it costs
+
+| What | Tokens | When |
+| --- | ---: | --- |
+| The note | about 80 | Every chat |
+| Each lookup | 60 to 1,600 | Only when used |
+| The map | about 1,200 here | Only when used |
+| The map with `--session-map` | about 1,200 here | Every Claude Code chat, needed or not |
+| Serena connected, for comparison | about 1,100 | Every chat, used or not |
+
+So the cheapest setup is the default: the note, with the map run only when it helps. One avoided read of a large file pays for about 100 chats' worth of the note. `--session-map` is worth adding only if nearly every chat starts by exploring.
+
+The note is an instruction, so an assistant usually follows it but isn't forced to. Nothing stops it reading a file, which is sometimes the right thing to do.
 
 ### The skill for your assistant
 
@@ -166,6 +182,10 @@ dex install neo-pragnya/repo-context --target copilot
 ```
 
 Use `enable` for a project you want set up for everyone who works on it, and the skill for your own habits across all of them.
+
+## It all runs offline
+
+The map, `outline`, `symbol`, `callers`, `enable` and `disable` make no network connection, and a test checks that. They need no account, key or licence, and your code stays on your machine until an assistant sends what it reads to its own provider.
 
 ## How it compares with Serena
 

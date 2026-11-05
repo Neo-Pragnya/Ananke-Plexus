@@ -79,7 +79,7 @@ Feature: A small map of a repository that can't go stale
     When I run "ananke context enable --client all --dry-run"
     Then it succeeds
     And the output contains ".kiro/steering/ananke-context.md"
-    When I run "ananke context enable --client all"
+    When I run "ananke context enable --client all --session-map"
     Then it succeeds
     And the output contains each of:
       """
@@ -90,7 +90,7 @@ Feature: A small map of a repository that can't go stale
       .amazonq/rules/ananke-context.md
       .claude/settings.json
       """
-    When I run "ananke context enable --client all"
+    When I run "ananke context enable --client all --session-map"
     Then it succeeds
     And the JSON output at "enabled" equals true
     And the output does not contain "CLAUDE.md"
@@ -111,4 +111,25 @@ Feature: A small map of a repository that can't go stale
     When I run "ananke context enable --client notepad"
     Then the exit code is 2
     And the output contains "unknown client"
+
+  @cap_context
+  Scenario: Enabling locally shares nothing, and can be undone
+    Given the file "AGENTS.md" with content:
+      """
+      # Team rules
+      """
+    And I have run "git add -A && git -c user.name=t -c user.email=t@example.com commit -qm rules"
+    When I run "ananke context enable --local --client claude-code --client codex --client kiro"
+    Then it succeeds
+    And the output contains "CLAUDE.local.md"
+    And the output contains "Git tracks it"
+    And the file "AGENTS.md" does not contain "ananke context"
+    When I run "git status --short"
+    Then it succeeds
+    And the output does not contain "CLAUDE.local.md"
+    And the output does not contain "kiro"
+    When I run "ananke context disable"
+    Then it succeeds
+    And the output contains "CLAUDE.local.md: removed the block"
+    And the output contains ".git/info/exclude: removed our lines"
 

@@ -1,0 +1,31 @@
+name: fuzz
+
+# The JavaScript reader parses files from repositories nobody has vetted, so it gets fuzzed weekly.
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "fuzz/**"
+      - "src/ananke/plexus/graph/javascript.py"
+      - ".github/workflows/fuzz.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+      - name: Install
+        run: |
+          uv venv --python 3.11
+          uv pip install atheris .
+      - name: Fuzz for two minutes
+        run: .venv/bin/python fuzz/fuzz_javascript.py -max_total_time=120 -timeout=20
