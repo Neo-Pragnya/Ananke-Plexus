@@ -162,8 +162,8 @@ that's in `License-Expression`.
 which this guide had listed as "reported" and accepted:
 - a vendored, minified `mermaid.min.js` (3.5 MB) for the offline docs. GuardDog calls it `threat-runtime-obfuscation`,
   and it held code under licences the package didn't declare. It's gone: the offline docs show diagrams as source.
-- `security find-generic-password … -w` to read a keychain secret, the same command infostealers use. Secrets are now
-  read through `keyring`.
+- the macOS keychain command that prints a stored password, used to read a keychain secret: infostealers run the same
+  command. Secrets are now read through `keyring`.
 
 What's still accepted, with reasons, is in `.scan-dist.toml`: the governance evaluator's deny-list containing `rm -rf /`,
 `read_source` refusing `.env`, and Ananke's own 0700 credentials file.
