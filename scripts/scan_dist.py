@@ -6,8 +6,32 @@ reasons. This script checks each one against the exact files in ``dist/``:
 
   secrets      gitleaks over every unpacked wheel and sdist                          BLOCK on any finding
   vulns        pip-audit over the dependency tree the wheel resolves to              BLOCK on any finding
-  heuristics   GuardDog (malicious-package rules) and Bandit HIGH on the shipped code   reported
+  bundled      minified or third-party code, and whether the declared licence covers it  BLOCK unless accepted
+  signatures   what infostealers and droppers do: keychain dumps, browser stores,      BLOCK unless accepted
+               SSH and cloud keys, pipe-to-shell, encoded PowerShell, exec of decoded
+               data, chat webhooks, tunnels, hidden Unicode in code
+  heuristics   GuardDog rules compared with a reviewed baseline; Bandit HIGH         BLOCK on anything new
   inventory    what a heuristic scanner sees: scripts, minified JS, binaries, licences  reported
+
+Anything accepted goes in ``.scan-dist.toml`` with a reason, and a bundled file's licence must be in the package's
+License-Expression::
+
+  [heuristics]
+  capability-process-spawn = "runs git, with a fixed argv"
+
+  [[bundled]]
+  path = "pkg/static/vendor.min.js"
+  licence = "MIT"
+  reason = "..."
+
+  [[signature]]
+  rule = "pipe-to-shell"
+  path = "pkg/docs/install.md"
+  reason = "..."
+
+A quarantine has always come from something in this list that was only reported: a vendored minified bundle with
+undeclared licences, credential-shaped placeholders, a keychain command. So these block, and accepting one is a
+written decision.
 
 Usage: python scripts/scan_dist.py [--dist dist] [--out scan-report] [--extras a,b] [--require-all]
 
@@ -19,8 +43,10 @@ Keep this file byte-identical across repos (Ananke-Plexus is the source of truth
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -29,6 +55,11 @@ import tempfile
 import zipfile
 from collections import Counter
 from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    tomllib = None  # type: ignore[assignment]
 
 SCRIPT_SUFFIXES = {".sh", ".bash", ".ps1", ".bat", ".cmd", ".js", ".mjs", ".cjs", ".ts"}
 BINARY_SUFFIXES = {
@@ -45,6 +76,146 @@ BINARY_SUFFIXES = {
     ".whl",
 }
 MINIFIED_BYTES = 200_000
+MINIFIED_LINE = 1_000  # a hand-written file rarely has a line this long; a bundle usually does
+CODE_SUFFIXES = {
+    ".py",
+    ".pyi",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".sh",
+    ".bash",
+    ".ps1",
+    ".bat",
+    ".cmd",
+}
+# Another party's code announces itself: a licence banner, or a bundler's own markers.
+THIRD_PARTY = re.compile(
+    r"@license\b|/\*![\s\S]{0,200}?(?:license|copyright)|SPDX-License-Identifier|Released under the [\w.\- ]+ licen[cs]e"
+    r"|__esbuild_esm_|webpackBootstrap|__webpack_require__|sourceMappingURL=",
+    re.IGNORECASE,
+)
+# Each of these is what malware does, not what a library usually needs. Specific on purpose: a broad pattern teaches
+# people to accept findings without reading them.
+SIGNATURES = {
+    "keychain-dump": r"find-generic-password|find-internet-password|dump-keychain",
+    "browser-credential-store": r"Login Data[\"' ]|Cookies\.sqlite|logins\.json|key4\.db|Local State[\"' ].{0,80}encrypted_key",
+    "ssh-private-key-read": r"\.ssh/id_(?:rsa|ed25519|ecdsa|dsa)\b",
+    "cloud-credentials-read": r"\.aws/credentials|\.config/gcloud/(?:credentials|application_default)|\.azure/accessTokens",
+    "pipe-to-shell": r"(?:curl|wget)\b[^\n|]{0,160}\|\s*(?:sudo\s+)?(?:ba|z)?sh\b|iwr\b[^\n|]{0,160}\|\s*iex\b",
+    "encoded-powershell": r"-(?:EncodedCommand|enc)\s+[A-Za-z0-9+/=]{24,}",
+    "exec-decoded": r"(?:exec|eval)\s*\(\s*(?:base64|codecs|zlib|marshal|bytes\.fromhex|__import__\(['\"]base64)",
+    "chat-webhook": r"discord(?:app)?\.com/api/webhooks|api\.telegram\.org/bot|hooks\.slack\.com/services",
+    "tunnel-or-paste-host": r"\bngrok\.(?:io|app)|pastebin\.com/raw|transfer\.sh/|\.trycloudflare\.com",
+}
+HIDDEN_UNICODE = re.compile("[\u202a-\u202e\u2066-\u2069\u200b-\u200d\u2060]")
+
+
+def load_accepted(path: Path) -> dict:
+    """What a person has reviewed and accepted, with reasons. A missing reason is no acceptance."""
+    if not path.is_file() or tomllib is None:
+        return {"heuristics": {}, "bundled": [], "signature": []}
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    for kind in ("bundled", "signature"):
+        for entry in data.get(kind, []):
+            if not str(entry.get("reason", "")).strip():
+                raise SystemExit(f"{path}: every [[{kind}]] needs a reason: {entry}")
+    for rule, why in data.get("heuristics", {}).items():
+        reason = why.get("reason", "") if isinstance(why, dict) else why
+        if not str(reason).strip():
+            raise SystemExit(f"{path}: heuristics.{rule} needs a reason")
+    return {
+        "heuristics": data.get("heuristics", {}),
+        "bundled": data.get("bundled", []),
+        "signature": data.get("signature", []),
+    }
+
+
+def _inside(path: str) -> str:
+    """A path inside an artifact, without the sdist's own top folder, so one entry fits the wheel and the sdist."""
+    first, _, rest = path.partition("/")
+    return rest if rest and re.fullmatch(r"[\w.\-]+-\d[\w.\-]*", first) else path
+
+
+def _declared(tree: Path) -> str:
+    meta = next(iter(tree.glob("*.dist-info/METADATA")), None) or next(
+        iter(tree.glob("*/PKG-INFO")), None
+    )
+    if not meta:
+        return ""
+    for line in meta.read_text(errors="replace").splitlines():
+        if line.startswith(("License-Expression:", "License:")):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+
+def check_bundled(trees: list[Path], accepted: list[dict]) -> dict:
+    """Minified or third-party code must be accepted by name, with a licence the package declares."""
+    findings, notes = [], []
+    for tree in trees:
+        declared = _declared(tree)
+        for file in sorted(
+            p
+            for p in tree.rglob("*")
+            if p.is_file() and p.suffix.lower() in {".js", ".mjs", ".cjs", ".css"}
+        ):
+            rel = _inside(str(file.relative_to(tree)))
+            text = file.read_text(encoding="utf-8", errors="replace")
+            longest = max((len(line) for line in text.splitlines()), default=0)
+            why = [
+                w
+                for w, hit in (
+                    ("minified", file.stat().st_size > MINIFIED_BYTES or longest > MINIFIED_LINE),
+                    ("another party's licence or bundler marks", bool(THIRD_PARTY.search(text))),
+                )
+                if hit
+            ]
+            if not why:
+                continue
+            entry = next((e for e in accepted if fnmatch.fnmatch(rel, e.get("path", ""))), None)
+            if entry is None:
+                findings.append(
+                    f"{tree.name}/{rel}: {', '.join(why)}. Remove it, or accept it in .scan-dist.toml with its licence"
+                )
+            elif str(entry.get("licence", "")) not in declared:
+                findings.append(
+                    f"{tree.name}/{rel}: its licence {entry.get('licence')!r} isn't in License-Expression {declared!r}"
+                )
+            else:
+                notes.append(f"{tree.name}/{rel}: accepted ({entry['reason']})")
+    return {"status": "block" if findings else "pass", "findings": findings, "accepted": notes}
+
+
+def check_signatures(trees: list[Path], accepted: list[dict]) -> dict:
+    """What malware does. Docs count too: a firewall reads every file, and an example can look like an instruction."""
+    findings, notes = [], []
+    for tree in trees:
+        for file in sorted(
+            p for p in tree.rglob("*") if p.is_file() and p.stat().st_size < 5_000_000
+        ):
+            data = file.read_bytes()
+            if b"\0" in data[:4096]:
+                continue
+            text = data.decode("utf-8", errors="replace")
+            rel = _inside(str(file.relative_to(tree)))
+            hits = [rule for rule, rx in SIGNATURES.items() if re.search(rx, text, re.IGNORECASE)]
+            if file.suffix.lower() in CODE_SUFFIXES and HIDDEN_UNICODE.search(text):
+                hits.append("hidden-unicode-in-code")
+            for rule in hits:
+                ok = next(
+                    (
+                        e
+                        for e in accepted
+                        if e.get("rule") == rule and fnmatch.fnmatch(rel, e.get("path", ""))
+                    ),
+                    None,
+                )
+                if ok:
+                    notes.append(f"{tree.name}/{rel}: {rule} accepted ({ok['reason']})")
+                else:
+                    findings.append(f"{tree.name}/{rel}: {rule}")
+    return {"status": "block" if findings else "pass", "findings": findings, "accepted": notes}
 
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
@@ -156,8 +327,11 @@ def check_vulns(wheels: list[Path], extras: str, work: Path) -> dict:
     return {"status": "block" if findings else "pass", "resolved": resolved, "findings": findings}
 
 
-def check_heuristics(artifacts: list[Path], trees: list[Path]) -> dict:
-    out: dict = {"status": "report", "guarddog": {}, "bandit_high": []}
+def check_heuristics(
+    artifacts: list[Path], trees: list[Path], accepted: dict | None = None
+) -> dict:
+    out: dict = {"status": "pass", "guarddog": {}, "bandit_high": [], "findings": []}
+    accepted = accepted or {}
     guarddog = tool("guarddog")
     if guarddog:
         for art in artifacts:
@@ -188,7 +362,35 @@ def check_heuristics(artifacts: list[Path], trees: list[Path]) -> dict:
             ]
     else:
         out["bandit_high"] = "skipped: install bandit"
+    # Anything a heuristic matched that nobody has reviewed blocks, so a new kind of hit is seen the day it appears.
+    if isinstance(out["guarddog"], dict):
+        out["findings"] += _unreviewed(out["guarddog"], accepted)
+    else:
+        out["status"] = "skipped"
+    if isinstance(out["bandit_high"], list):
+        out["findings"] += [f"Bandit HIGH {h}" for h in out["bandit_high"]]
+    if out["findings"]:
+        out["status"] = "block"
     return out
+
+
+def _unreviewed(guarddog: dict, accepted: dict) -> list[str]:
+    """GuardDog hits nobody has accepted. A rule accepted with ``paths`` counts only at those paths."""
+    findings = []
+    for art, rules in guarddog.items():
+        for rule, where in rules.items():
+            entry = accepted.get(rule)
+            if isinstance(entry, dict) and entry.get("paths"):
+                files = [_inside(w.split(":", 1)[0]) for w in where]
+                if not all(any(fnmatch.fnmatch(f, g) for g in entry["paths"]) for f in files):
+                    findings.append(
+                        f"{art}: GuardDog {rule} outside its accepted paths, at {', '.join(where[:3])}"
+                    )
+            elif entry is None:
+                findings.append(
+                    f"{art}: GuardDog {rule} at {', '.join(where[:3])}. Fix it, or accept it in .scan-dist.toml with a reason"
+                )
+    return findings
 
 
 def inventory(trees: list[Path]) -> dict:
@@ -231,18 +433,24 @@ def summary_md(result: dict) -> str:
         "| Check | Status | Detail |",
         "| --- | --- | --- |",
     ]
-    for name in ("secrets", "vulns"):
+    for name in ("secrets", "vulns", "bundled", "signatures", "heuristics"):
         c = result[name]
         detail = c.get("detail") or f"{len(c.get('findings', []))} finding(s)"
         if "resolved" in c:
             detail += f" in {c['resolved']} resolved dependencies"
-        lines.append(f"| {name} | {icon[c['status']]} {c['status']} | {detail} |")
-    lines.append(
-        "| heuristics | 🔎 report | GuardDog rules and Bandit HIGH below: review each, don't ignore |"
-    )
-    for name in ("secrets", "vulns"):
+        if c.get("accepted"):
+            detail += f", {len(c['accepted'])} accepted"
+        lines.append(f"| {name} | {icon.get(c['status'], '')} {c['status']} | {detail} |")
+    for name in ("secrets", "vulns", "bundled", "signatures", "heuristics"):
         if result[name].get("findings"):
             lines += ["", f"## {name}", "", *[f"- {f}" for f in result[name]["findings"]]]
+        if result[name].get("accepted"):
+            lines += [
+                "",
+                f"### {name}: accepted",
+                "",
+                *[f"- {f}" for f in result[name]["accepted"]],
+            ]
     lines += ["", "## Heuristics (what a malicious-package scanner flags)", ""]
     gd = result["heuristics"]["guarddog"]
     if isinstance(gd, str):
@@ -279,6 +487,12 @@ def main() -> int:
     )
     ap.add_argument("--gitleaks-config", type=Path, default=Path(".gitleaks.toml"))
     ap.add_argument(
+        "--accepted",
+        type=Path,
+        default=Path(".scan-dist.toml"),
+        help="reviewed findings, with reasons",
+    )
+    ap.add_argument(
         "--require-all", action="store_true", help="fail when a scanner is not installed"
     )
     args = ap.parse_args()
@@ -292,14 +506,19 @@ def main() -> int:
         work = Path(tmp)
         trees = [unpack(a, work / "unpacked") for a in artifacts]
         config = args.gitleaks_config if args.gitleaks_config.is_file() else None
+        accepted = load_accepted(args.accepted)
         result = {
             "artifacts": [a.name for a in artifacts],
             "secrets": check_secrets(trees, config),
             "vulns": check_vulns([a for a in artifacts if a.suffix == ".whl"], args.extras, work),
-            "heuristics": check_heuristics(artifacts, trees),
+            "bundled": check_bundled(trees, accepted["bundled"]),
+            "signatures": check_signatures(trees, accepted["signature"]),
+            "heuristics": check_heuristics(artifacts, trees, accepted["heuristics"]),
             "inventory": inventory(trees),
         }
-    statuses = {result["secrets"]["status"], result["vulns"]["status"]}
+    statuses = {
+        result[k]["status"] for k in ("secrets", "vulns", "bundled", "signatures", "heuristics")
+    }
     if statuses & {"block", "error"} or ("skipped" in statuses and args.require_all):
         result["verdict"] = "BLOCK"
     elif "skipped" in statuses:

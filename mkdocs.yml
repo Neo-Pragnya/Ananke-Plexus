@@ -39,23 +39,14 @@ theme:
 plugins:
   - search
 
-# Material lazy-loads Mermaid from https://unpkg.com/mermaid on first use (only if
-# `window.mermaid` isn't already defined) — fine for the hosted site, but it means diagrams
-# silently fail to render with no network access, which is exactly the situation
-# `ananke docs build/serve` promises to support. Vendoring it here (docs/assets/javascripts/
-# mermaid.min.js, pinned to the same major version Material itself would otherwise fetch)
-# makes Material skip that fetch entirely, on the hosted site and offline alike.
-extra_javascript:
-  - assets/javascripts/mermaid.min.js
+# No third-party script ships with these docs. Material fetches Mermaid from a CDN for any fence with the `mermaid`
+# class, so there's no such fence here: offline, a diagram shows as its Mermaid source, which reads well enough. The
+# website draws them. A vendored Mermaid made package firewalls flag the wheel (minified code, undeclared licences).
 
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite

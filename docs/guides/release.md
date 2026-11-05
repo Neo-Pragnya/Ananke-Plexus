@@ -146,20 +146,30 @@ and sdist the release will publish, using free tools at pinned versions:
 | --- | --- | --- |
 | Secrets in the wheel and sdist | gitleaks | blocks publish |
 | Vulnerable dependencies in the tree the wheel resolves to (`all,mcp,dex` extras) | pip-audit | blocks publish |
-| Malicious-package heuristics | GuardDog | reported |
-| High-severity code issues in the shipped code | Bandit | reported |
+| Minified or third-party code, and whether `License-Expression` covers it | built in | blocks publish unless accepted |
+| Malware-shaped code, docs included: keychain dumps, browser password stores, SSH and cloud keys, pipe-to-shell, encoded PowerShell, running decoded data, chat webhooks, tunnels, hidden Unicode | built in | blocks publish unless accepted |
+| Malicious-package heuristics | GuardDog | blocks on any rule not in the reviewed baseline |
+| High-severity code issues in the shipped code | Bandit | blocks publish |
 | Inventory: scripts, binaries, minified JS, declared licence | built in | reported |
 
 Run it locally with `make scan` (it needs `gitleaks` and `uv`; the Python tools come through `uvx`).
 
-**Reviewed heuristic hits (0.3.11):**
-- GuardDog's obfuscation, network and process rules match the vendored `mermaid.min.js` (MIT, 11.17.2, no known
-  advisories). It ships so `ananke docs` renders diagrams offline.
-- `threat-filesystem-destruction` matches the `rm -rf /` string in the governance evaluator's *deny* list.
-- `threat-filesystem-read` matches `adapters.env`, Ananke's own git-ignored credentials file.
+**Reviewed findings live in `.scan-dist.toml`,** each with a reason, and a rule can be accepted only in the files it was
+reviewed in, so the same rule matching anywhere else stops the release. A bundled file is accepted only with a licence
+that's in `License-Expression`.
 
-If your organisation's firewall quarantines a release, ask for the policy violation names and compare them with
-this report. Packages only days old are often held by maturity rules regardless of content.
+**Why these block now (0.3.29).** Releases up to 0.3.28 were quarantined, and every one scanned showed the same causes,
+which this guide had listed as "reported" and accepted:
+- a vendored, minified `mermaid.min.js` (3.5 MB) for the offline docs. GuardDog calls it `threat-runtime-obfuscation`,
+  and it held code under licences the package didn't declare. It's gone: the offline docs show diagrams as source.
+- `security find-generic-password … -w` to read a keychain secret, the same command infostealers use. Secrets are now
+  read through `keyring`.
+
+What's still accepted, with reasons, is in `.scan-dist.toml`: the governance evaluator's deny-list containing `rm -rf /`,
+`read_source` refusing `.env`, and Ananke's own 0700 credentials file.
+
+If your organisation's firewall quarantines a release, ask for the policy violation names and compare them with this
+report. Packages only days old are often held by maturity rules too, whatever their content.
 
 Additionally the weekly `security.yml` workflow runs:
 - Trivy filesystem scan (SARIF + blocking)

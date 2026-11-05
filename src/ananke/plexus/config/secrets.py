@@ -7,6 +7,10 @@ Supported reference forms (TOML syntax):
   token = { env = "ANANKE_JIRA_TOKEN" }
   token = { cmd = "op read op://vault/item/field" }
   token = { keychain = "ananke-jira-token" }
+  token = { keychain = "ananke-jira-token", account = "me@example.com" }
+
+The keychain is read through the ``keyring`` library (``pip install 'ananke-plexus[keychain]'``): the macOS Keychain,
+Windows Credential Manager or the Secret Service on Linux. Only the entry named is read.
 """
 
 from __future__ import annotations
@@ -39,7 +43,8 @@ def resolve_secret(reference: Any) -> str | None:
     if "cmd" in reference:
         return _from_cmd(str(reference["cmd"]))
     if "keychain" in reference:
-        return _from_keychain(str(reference["keychain"]))
+        account = reference.get("account")
+        return _from_keychain(str(reference["keychain"]), str(account) if account else None)
 
     raise SecretResolutionError(f"unknown secret reference keys: {list(reference.keys())}")
 
@@ -78,38 +83,26 @@ def _from_cmd(command: str) -> str | None:
     return value or None
 
 
-def _from_keychain(service: str) -> str | None:
-    if shutil.which("security"):
-        return _from_macos_keychain(service)
-    if shutil.which("secret-tool"):
-        return _from_secrettool(service)
-    raise SecretResolutionError(
-        f"no keychain tool found for secret '{service}' (tried: security, secret-tool)"
-    )
-
-
-def _from_macos_keychain(service: str) -> str | None:
-    result = subprocess.run(  # noqa: S603
-        ["security", "find-generic-password", "-s", service, "-w"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip() or None
-
-
-def _from_secrettool(service: str) -> str | None:
-    result = subprocess.run(  # noqa: S603
-        ["secret-tool", "lookup", "service", service],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip() or None
+def _from_keychain(service: str, account: str | None = None) -> str | None:
+    """The one entry named, from the OS keychain, through ``keyring``: the standard way, on every platform."""
+    try:
+        import keyring
+        from keyring.errors import KeyringError
+    except ImportError as exc:
+        raise SecretResolutionError(
+            "reading the OS keychain needs the keyring package: pip install 'ananke-plexus[keychain]'"
+        ) from exc
+    try:
+        if account:
+            value = keyring.get_password(service, account)
+        else:
+            credential = keyring.get_credential(service, None)
+            value = credential.password if credential else None
+    except KeyringError as exc:
+        raise SecretResolutionError(
+            f"the keychain entry '{service}' couldn't be read: {exc}"
+        ) from exc
+    return (value or "").strip() or None
 
 
 def redact(value: str | None, *, visible_chars: int = 4) -> str:

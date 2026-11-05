@@ -10,6 +10,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.29] — 2026-11-05
+
+Package firewalls quarantined Ananke and, through it, Dev Guru. Every version scanned showed the same causes, so it wasn't new code.
+
+### Fixed
+
+- **The wheel carried a 3.5 MB minified Mermaid bundle** for the offline docs, with code under other licences (DOMPurify and others) that the package didn't declare. GuardDog flags it as `threat-runtime-obfuscation`. It's gone, and the package ships no third-party script. Offline, `ananke docs build` shows a diagram as its Mermaid source, and the website still draws it.
+- **Keychain secrets were read by running `security find-generic-password … -w`**, the same command infostealers use. `{ keychain = "name" }` now reads that one entry through `keyring`: the macOS Keychain, Windows Credential Manager (new) or the Secret Service. It needs `pip install 'ananke-plexus[keychain]'`, and says so if it's missing. `account = "..."` picks an entry when a service has several.
+- The docs no longer suggest that command as a `--*-token-cmd` example.
+
+### Added
+
+- **A release gate that blocks what got the package quarantined.** `scripts/scan_dist.py` now stops a release for:
+  - minified or third-party code whose licence isn't in `License-Expression`;
+  - malware-shaped code anywhere in the wheel or sdist, docs included: keychain dumps, browser password stores, SSH and cloud key reads, pipe-to-shell, encoded PowerShell, running decoded data, chat webhooks, tunnels, and hidden Unicode in code;
+  - any GuardDog rule nobody has reviewed.
+
+  A reviewed finding goes in `.scan-dist.toml` with a reason, and can be limited to the files it was reviewed in. On the published 0.3.28, the gate stops it for exactly these causes.
+
+---
+
 ## [0.3.28] — 2026-11-05
 
 ### Added
