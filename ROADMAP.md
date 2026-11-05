@@ -20,6 +20,8 @@ Dev Guru is the current priority, and Ananke does the computing for it. This tab
 All of it is one analysis (`ananke app run repo.analyze`), described in
 [Repo intelligence](docs/reference/repo-intelligence.md).
 
+**Saving tokens** shipped in 0.3.21: `ananke context` gives a small map that rebuilds when the code changes, and routes questions to Serena, repomix or Graphify.
+
 ## Next
 
 - A real agent backend tested end to end for workflow runs, which are tested only with the fake backend today.

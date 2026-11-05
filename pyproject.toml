@@ -55,6 +55,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = ["mcp>=2,<3"]
+context = ["repomix>=0.5,<0.6"]
 telemetry = [
   "opentelemetry-api>=1.30",
   "opentelemetry-sdk>=1.30",

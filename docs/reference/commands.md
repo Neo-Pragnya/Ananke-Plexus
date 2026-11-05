@@ -320,3 +320,12 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 ## Docs Hosting
 
 GitHub Pages deploy workflow: `.github/workflows/docs.yml` — uses uv, copies `assets/` into `docs/`, then runs `mkdocs gh-deploy --force`.
+
+## Context
+
+- `ananke context map [--budget N] [--refresh] [--json]`: a small picture of the repository, rebuilt only when its sources change.
+- `ananke context status`: which of Serena, repomix and Graphify are ready, and how to get the others.
+- `ananke context pack --include GLOB [--no-compress] [--output FILE]`: pack chosen files with repomix.
+- `ananke context benchmark`: what a first look costs here.
+
+See [Saving tokens](../guides/saving-tokens.md).

@@ -10,6 +10,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.21] — 2026-11-04
+
+### Added
+
+- **`ananke context`: spend far fewer tokens on a repository.** `map` gives a small picture, about 900 tokens on Ananke against about
+  790,000 for its source, and rebuilds when the sources change. `status` says which of Serena, repomix and Graphify are ready.
+  `pack` runs repomix, scoped. `benchmark` measures a first look. Guide: [Saving tokens](docs/guides/saving-tokens.md).
+- A `context` extra for repomix. Serena is GPL-3.0-or-later, so it's never a dependency: it runs as a separate process.
+
+### Fixed
+
+- The Graphify adapter imported `graphifyy`, which doesn't exist: the module and command are `graphify`. It could never have worked
+  with the real package, and silently returned an empty graph. It now refreshes and reads Graphify's real output.
+
+---
+
 ## [0.3.20] — 2026-11-04
 
 ### Added

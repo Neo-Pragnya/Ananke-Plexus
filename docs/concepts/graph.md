@@ -152,7 +152,7 @@ AST-based Python analysis. Always available, no dependencies.
 When `graphifyy` is installed, provides broad knowledge-graph enrichment and multi-source relationships. Falls back to native when unavailable.
 
 ```bash
-pip install graphifyy  # optional
+pip install graphifyy  # optional; the command it installs is graphify
 ```
 
 ### code-review-graph adapter

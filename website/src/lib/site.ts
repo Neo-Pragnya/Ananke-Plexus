@@ -95,6 +95,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
       "guides/learning-candidates",
       "guides/workflow-assembly",
       "guides/code-graph",
+      "guides/saving-tokens",
       "guides/workflows",
       "guides/release",
       "guides/implementation-log"
@@ -141,6 +142,7 @@ export const DOC_TITLES: Record<string, string> = {
   "guides/learning-candidates": "Learning Candidates",
   "guides/workflow-assembly": "Workflow Assembly",
   "guides/code-graph": "Code Graph",
+  "guides/saving-tokens": "Saving Tokens",
   "reference/app-facade": "App Facade",
   "reference/repo-intelligence": "Repo Intelligence",
   "guides/workflows": "Workflows",
