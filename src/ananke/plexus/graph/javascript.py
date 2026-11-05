@@ -769,7 +769,44 @@ class _Parser:
             return value
         return i + 1
 
+    def unwrap_immediate_functions(self) -> None:
+        """``(function () { … })();`` wraps a whole file in much browser code, so what's inside counts as top level."""
+        i = 0
+        while i < self.size:
+            if self.depth[i] != 0 or self.tokens[i].kind != "punct":
+                i += 1
+                continue
+            start = i + 1 if self.punct(i, "(") else i + 1 if self.punct(i, "!") else -1
+            span = self.function_value(start) if start > 0 else None
+            if span is None or not self.punct(span[1] - 1, "}"):
+                i += 1
+                continue
+            opener = self.match[span[1] - 1]
+            if opener < 0:
+                i += 1
+                continue
+            called = (
+                self.punct(span[1], "(")  # (function () { … }()) or !function () { … }()
+                or (
+                    self.punct(span[1], ")") and self.punct(span[1] + 1, "(")
+                )  # (function () { … })()
+            )
+            if called:
+                base = self.depth[opener] + 1
+                for k in range(opener + 1, span[1] - 1):
+                    self.depth[k] -= base
+                i = opener + 1  # one inside another unwraps too
+                continue
+            i += 1
+
+    def assigned_function(self, i: int) -> tuple[int, int] | None:
+        """``views.map = () => { … }``: functions kept on an object, as a browser script without modules does."""
+        if self.punct(i + 1, ".") and self.is_word(i + 2) and self.punct(i + 3, "="):
+            return self.function_value(i + 4)
+        return None
+
     def read_declarations(self) -> None:
+        self.unwrap_immediate_functions()
         i = 0
         while i < self.size:
             token = self.tokens[i]
@@ -787,6 +824,8 @@ class _Parser:
                 i = self.read_default_export(i)
             elif word in {"module", "exports"}:
                 i = self.read_commonjs(i)
+            elif (assigned := self.assigned_function(i)) is not None:
+                i = self.declare_function(f"{word}.{self.text(i + 2)}", i, assigned)
             else:
                 i += 1
 

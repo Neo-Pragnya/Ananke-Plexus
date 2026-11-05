@@ -25,6 +25,7 @@ from typing import Any
 
 from ananke.plexus.graph.models import GraphNode, GraphSnapshot
 from ananke.plexus.graph.service import build_graph
+from ananke.plexus.version import __version__
 
 SERENA_SPEC = "serena-agent==2.1.0"
 REPOMIX_SPEC = "repomix==0.5.0"
@@ -195,7 +196,9 @@ def _render_map(root: Path, report: dict[str, Any], budget: int, state: str) -> 
         f"{k} {v}"
         for k, v in sorted(overview.get("languages", {}).items(), key=lambda x: -x[1])[:5]
     )
-    lines.append(f"{overview.get('files', 0)} files, {overview.get('loc', 0)} lines. {languages}.")
+    lines.append(
+        f"{_count(overview.get('files', 0), 'file')}, {_count(overview.get('loc', 0), 'line')}. {languages}."
+    )
     if overview.get("source_roots"):
         lines.append("Source roots: " + ", ".join(overview["source_roots"][:6]) + ".")
     # each part gets a share, so one large section can't push the others out
@@ -205,7 +208,7 @@ def _render_map(root: Path, report: dict[str, Any], budget: int, state: str) -> 
         (
             "## Components",
             [
-                f"- {c['name']} ({c['kind']}, {c.get('language') or 'mixed'}): {c['path']}, {c.get('files', 0)} files"
+                f"- {c['name']} ({c['kind']}, {c.get('language') or 'mixed'}): {c['path']}, {_count(c.get('files', 0), 'file')}"
                 for c in overview.get("components", [])
             ],
         )
@@ -260,6 +263,10 @@ def _render_map(root: Path, report: dict[str, Any], budget: int, state: str) -> 
     return "\n".join(lines) + "\n"
 
 
+def _count(number: int, noun: str) -> str:
+    return f"{number} {noun}" if number == 1 else f"{number} {noun}s"
+
+
 def _cache_file(root: Path, name: str) -> str | None:
     """Where a cache file goes, or None if a link would take it elsewhere.
 
@@ -279,12 +286,14 @@ def _read_cache(root: Path, name: str) -> Any:
         return None
     try:
         with open(target, encoding="utf-8") as handle:
-            return json.load(handle)
+            saved = json.load(handle)
     except (OSError, ValueError):
         return None
+    # another version may read the code differently, so what it saved is no answer here
+    return saved if isinstance(saved, dict) and saved.get("written_by") == __version__ else None
 
 
-def _write_cache(root: Path, name: str, data: object) -> None:
+def _write_cache(root: Path, name: str, data: dict[str, Any]) -> None:
     """Save a cache file, in a folder that keeps itself out of Git. A read-only checkout simply goes without."""
     target, marker = _cache_file(root, name), _cache_file(root, ".gitignore")
     if target is None or marker is None:
@@ -295,7 +304,7 @@ def _write_cache(root: Path, name: str, data: object) -> None:
             with open(marker, "w", encoding="utf-8") as handle:
                 handle.write("*\n")
         with open(target, "w", encoding="utf-8") as handle:
-            json.dump(data, handle)
+            json.dump({**data, "written_by": __version__}, handle)
     except OSError:
         pass
 

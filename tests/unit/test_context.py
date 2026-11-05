@@ -518,3 +518,20 @@ def test_a_link_inside_the_repository_gets_one_block(shop: Path) -> None:
     assert (shop / "CLAUDE.md").is_symlink()
     disable(shop)
     assert (shop / "AGENTS.md").read_text() == "# Rules\n"
+
+
+def test_an_upgrade_doesnt_keep_answers_from_the_old_code(
+    shop: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ananke.plexus.context as context
+
+    assert repo_map(shop)["cached"] is False
+    assert repo_map(shop)["cached"] is True
+    symbol(shop, "tax")
+    monkeypatch.setattr(context, "__version__", "99.0.0")
+    assert repo_map(shop)["cached"] is False
+    calls = []
+    real = context.build_graph
+    monkeypatch.setattr(context, "build_graph", lambda root: calls.append(root) or real(root))
+    symbol(shop, "tax")
+    assert calls

@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.23] — 2026-11-04
+
+### Fixed
+
+- **JavaScript inside a wrapper is now read.** A file wrapped in `(function () { … })();`, as much browser code is, showed no symbols, so `ananke context outline` and the code graph saw nothing in it. Functions kept on an object, such as `views.map = () => { … }`, are read too.
+- The repository map says "1 file" rather than "1 files".
+- Upgrading Ananke no longer keeps answers from the old version. The saved map and graph were reused until the code changed, so a fix to how code is read didn't show up.
+
+---
+
 ## [0.3.22] — 2026-11-04
 
 ### Added
