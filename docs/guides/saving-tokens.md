@@ -183,6 +183,15 @@ dex install neo-pragnya/repo-context --target copilot
 
 Use `enable` for a project you want set up for everyone who works on it, and the skill for your own habits across all of them.
 
+## Notebooks
+
+A folder of notebooks works too. A file a notebook writes with `%%writefile` counts as a file at that path, even before anyone runs the notebook, so you can look inside it:
+
+```bash
+ananke context outline Week-1/app/service.py
+ananke context symbol load_orders
+```
+
 ## It all runs offline
 
 The map, `outline`, `symbol`, `callers`, `enable` and `disable` make no network connection, and a test checks that. They need no account, key or licence, and your code stays on your machine until an assistant sends what it reads to its own provider.

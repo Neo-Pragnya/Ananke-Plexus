@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from ananke.plexus.graph.models import GraphSnapshot
+from ananke.plexus.graph.notebook_files import WrittenFiles, find_written
 from ananke.plexus.graph.service import build_graph
 
 SKIP_DIRS = {
@@ -62,6 +63,9 @@ class RepoContext:
     graph: GraphSnapshot
     check_vulnerabilities: bool = False
     sections: dict[str, Any] = field(default_factory=dict)
+    written: WrittenFiles = field(
+        default_factory=WrittenFiles
+    )  # what notebooks write with %%writefile
 
     @classmethod
     def open(cls, root: Path, *, check_vulnerabilities: bool = False) -> RepoContext:
@@ -69,10 +73,14 @@ class RepoContext:
         listed = _git_files(root)
         files = sorted(p for p in (listed if listed is not None else _walk_files(root)) if _keep(p))
         files = [p for p in files if (root / p).is_file()]
-        return cls(root, files, build_graph(root), check_vulnerabilities)
+        written = find_written(root, [root / p for p in files if p.endswith(".ipynb")])
+        files = sorted({*files, *(p for p in written.files if _keep(p))})
+        return cls(root, files, build_graph(root, written), check_vulnerabilities, written=written)
 
     def text(self, path: str) -> str | None:
         """A file's text, or ``None`` when it's too big to be source or can't be read."""
+        if path in self.written.files:
+            return self.written.files[path].text
         target = self.root / path
         try:
             if target.stat().st_size > MAX_TEXT_BYTES:

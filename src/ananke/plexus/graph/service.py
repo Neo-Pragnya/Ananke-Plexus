@@ -11,6 +11,7 @@ from pathlib import Path
 
 from ananke.plexus.graph.javascript import JS_SKIP_DIRS, JS_SUFFIXES, build_javascript
 from ananke.plexus.graph.models import GraphEdge, GraphNode, GraphSnapshot, ImpactReport
+from ananke.plexus.graph.notebook_files import WrittenFiles, find_written
 from ananke.plexus.graph.python_imports import (
     ROOT_MARKERS,
     FileImports,
@@ -259,7 +260,7 @@ def _module_index(repository_root: Path, python_files: list[Path]) -> ModuleInde
     return ModuleIndex(rel_paths, declared)
 
 
-def build_graph(repository_root: Path) -> GraphSnapshot:
+def build_graph(repository_root: Path, generated: WrittenFiles | None = None) -> GraphSnapshot:
     """Python files and notebooks, their functions and classes, methods, imports, calls, bases and data files.
 
     Node ids are stable: ``file:<path>``, ``function:<path>:<name>``, ``class:<path>:<name>`` and
@@ -276,7 +277,13 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
     naming a data file with a literal path; computed paths, URLs and paths outside the repository aren't included.
 
     JavaScript and TypeScript files take the same id forms; see ``graph.javascript``.
+
+    A file a notebook writes with ``%%writefile`` counts as a file at that path, with ``written_by`` and
+    ``written_cell`` in its metadata and a ``generates`` edge from the notebook. See ``graph.notebook_files``.
     """
+    repository_root = repository_root.resolve()
+    if generated is None:
+        generated = find_written(repository_root, _iter_project_files(repository_root, (".ipynb",)))
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
     parsed: dict[str, ast.Module] = {}
@@ -289,7 +296,10 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
         cell, in_cell = cells[line - 1] if 0 < line <= len(cells) else (0, line)
         return f"{rel}#cell={cell}:{in_cell}"
 
-    python_files = _iter_python_files(repository_root)
+    virtual = {repository_root / rel: item for rel, item in generated.files.items()}
+    python_files = sorted(
+        {*_iter_python_files(repository_root), *(p for p in virtual if p.suffix == ".py")}
+    )
     index = _module_index(repository_root, python_files)
     source_roots = set(index.source_roots())
 
@@ -300,9 +310,14 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
         if index.root_of(rel_path) in source_roots:
             file_meta["source_root"] = index.root_of(rel_path)
         try:
-            if path.stat().st_size > _MAX_SOURCE_BYTES:
-                raise ValueError("source file too large")
-            source = path.read_text(encoding="utf-8")
+            if path in virtual:
+                file_meta["written_by"] = virtual[path].notebook
+                file_meta["written_cell"] = virtual[path].cell
+                source = virtual[path].text
+            else:
+                if path.stat().st_size > _MAX_SOURCE_BYTES:
+                    raise ValueError("source file too large")
+                source = path.read_text(encoding="utf-8")
             tree = ast.parse(source)
         except (*_PARSE_FAILURES, OSError):
             file_meta["parse_error"] = True
@@ -512,12 +527,31 @@ def build_graph(repository_root: Path) -> GraphSnapshot:
                         )
                     add(caller, data_id, access, getattr(call_node, "lineno", 0))
 
-    script_paths = _iter_project_files(repository_root, JS_SUFFIXES, JS_SKIP_DIRS)
-    script_nodes, script_edges = build_javascript(repository_root, script_paths)
+    script_paths = sorted(
+        {
+            *_iter_project_files(repository_root, JS_SUFFIXES, JS_SKIP_DIRS),
+            *(p for p in virtual if p.name.endswith(JS_SUFFIXES)),
+        }
+    )
+    script_nodes, script_edges = build_javascript(
+        repository_root,
+        script_paths,
+        {p: item for p, item in virtual.items() if p.name.endswith(JS_SUFFIXES)},
+    )
     nodes += script_nodes
     edges += script_edges
 
     nodes += [data_nodes[k] for k in sorted(data_nodes)]
+    for rel, made in sorted(generated.files.items()):
+        if rel.endswith((".py", *JS_SUFFIXES)):
+            edges.append(
+                GraphEdge(
+                    source=f"file:{made.notebook}",
+                    target=f"file:{rel}",
+                    kind="generates",
+                    origin="extracted",
+                )
+            )
     for node in nodes:
         cells = cell_maps.get(node.path)
         line = node.metadata.get("line")

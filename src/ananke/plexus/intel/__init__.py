@@ -21,6 +21,7 @@ from ananke.plexus.intel import (
     data_model,
     dependencies,
     flows,
+    notebooks,
     overview,
     quality,
 )
@@ -37,6 +38,7 @@ SECTIONS = (
     ("quality", quality.analyze),
     ("coverage", coverage.analyze),
     ("dependencies", dependencies.analyze),
+    ("notebooks", notebooks.analyze),
 )
 
 
