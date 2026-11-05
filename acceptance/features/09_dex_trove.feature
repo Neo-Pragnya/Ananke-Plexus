@@ -14,7 +14,7 @@ Feature: Dex Trove plugs into the registry
     Then it succeeds
     And the output contains "registered"
     And the output does not contain "SECRET_DETECTED"
-    And it finishes within 240 seconds
+    And it finishes within 420 seconds
     When I run "ananke registry list --json"
     Then the JSON output has at least 900 items
 

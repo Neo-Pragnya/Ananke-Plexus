@@ -28,6 +28,27 @@ def _feature_dir(repository_root: Path, args: dict[str, object]) -> Path | dict[
     return path
 
 
+def _context_tool(root: Path, name: str, args: dict[str, object]) -> dict[str, object]:
+    from ananke.plexus.context import ContextError, callers, outline, repo_map, symbol
+
+    path = str(args["path"]) if args.get("path") else None
+    try:
+        if name == "map":
+            budget = args.get("budget")
+            text = str(repo_map(root, budget=budget if isinstance(budget, int) else 1500)["map"])
+        elif name == "outline":
+            text = str(outline(root, str(args.get("path", "")))["text"])
+        elif name == "symbol":
+            text = str(symbol(root, str(args.get("name", "")), path=path)["text"])
+        elif name == "callers":
+            text = str(callers(root, str(args.get("name", "")), path=path)["text"])
+        else:
+            return {"ok": False, "summary": f"unknown context tool {name}", "details": {}}
+    except ContextError as exc:
+        return {"ok": False, "summary": exc.message, "details": {"code": exc.code}}
+    return {"ok": True, "summary": "context", "details": {"text": text}}
+
+
 def call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -> dict[str, object]:
     try:
         return _call_tool(repository_root, tool_name, args)
@@ -79,6 +100,9 @@ def _call_tool(repository_root: Path, tool_name: str, args: dict[str, object]) -
             "summary": "BMAD contract",
             "details": {"bmad": contract.read_text(encoding="utf-8")},
         }
+
+    if tool_name.startswith("ananke.context."):
+        return _context_tool(repository_root, tool_name.removeprefix("ananke.context."), args)
 
     if tool_name == "ananke.graph.query":
         text = str(args.get("text", ""))

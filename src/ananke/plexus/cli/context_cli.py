@@ -37,6 +37,108 @@ def map_(
     typer.echo(json.dumps(result, indent=1) if as_json else result["map"])
 
 
+def _text(result: dict[str, object], as_json: bool) -> None:
+    typer.echo(json.dumps(result, indent=1) if as_json else result["text"], nl=as_json)
+
+
+_JSON = typer.Option(False, "--json")
+
+
+@context_app.command("outline")
+def outline(
+    path: str,
+    project: Path = _PROJECT,
+    signatures: bool = typer.Option(False, "--signatures", help="Add each function's signature"),
+    as_json: bool = _JSON,
+) -> None:
+    """What's in a file, for a fraction of the cost of reading it. Always current."""
+    from ananke.plexus.context import ContextError
+    from ananke.plexus.context import outline as run
+
+    try:
+        _text(run(project, path, signatures=signatures), as_json)
+    except ContextError as exc:
+        raise _fail(exc) from exc
+
+
+@context_app.command("symbol")
+def symbol(
+    name: str,
+    project: Path = _PROJECT,
+    path: str | None = typer.Option(None, "--path", help="Only in this file"),
+    as_json: bool = _JSON,
+) -> None:
+    """One function, method or class with its source. Always current."""
+    from ananke.plexus.context import ContextError
+    from ananke.plexus.context import symbol as run
+
+    try:
+        _text(run(project, name, path=path), as_json)
+    except ContextError as exc:
+        raise _fail(exc) from exc
+
+
+@context_app.command("callers")
+def callers(
+    name: str,
+    project: Path = _PROJECT,
+    path: str | None = typer.Option(None, "--path", help="Only the symbol in this file"),
+    as_json: bool = _JSON,
+) -> None:
+    """What calls or inherits from a symbol, and text matches the graph couldn't resolve. Always current."""
+    from ananke.plexus.context import ContextError
+    from ananke.plexus.context import callers as run
+
+    try:
+        _text(run(project, name, path=path), as_json)
+    except ContextError as exc:
+        raise _fail(exc) from exc
+
+
+@context_app.command("enable")
+def enable(
+    project: Path = _PROJECT,
+    client: list[str] = typer.Option(
+        [],
+        "--client",
+        help="claude-code, codex, copilot, kiro, cursor, amazon-q or all (repeat). Default: detect",
+    ),
+    session_map: bool = typer.Option(
+        True,
+        "--session-map/--no-session-map",
+        help="Claude Code: load the map at the start of each session",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Say what would change, and change nothing"
+    ),
+) -> None:
+    """Make this project use the graph by default, for the assistants you use."""
+    from ananke.plexus.context import ContextError
+    from ananke.plexus.context import enable as run
+
+    try:
+        typer.echo(
+            json.dumps(
+                run(project, clients=list(client), session_map=session_map, dry_run=dry_run),
+                indent=1,
+            )
+        )
+    except ContextError as exc:
+        raise _fail(exc) from exc
+
+
+@context_app.command("disable")
+def disable(project: Path = _PROJECT) -> None:
+    """Remove exactly what enable added, for every assistant."""
+    from ananke.plexus.context import ContextError
+    from ananke.plexus.context import disable as run
+
+    try:
+        typer.echo(json.dumps(run(project), indent=1))
+    except ContextError as exc:
+        raise _fail(exc) from exc
+
+
 @context_app.command("status")
 def status(project: Path = _PROJECT) -> None:
     """Which tools are ready, what each is for, and how to get the missing ones."""

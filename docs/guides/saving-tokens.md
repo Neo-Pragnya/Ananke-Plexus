@@ -1,62 +1,215 @@
 ---
 title: Saving tokens
-description: Spend far fewer tokens understanding a repository. A small map that can't go stale, then Serena, repomix or Graphify, whichever measured best for the question.
+description: Spend far fewer tokens understanding a repository. A small map and symbol lookups from Ananke's own graph, always current with your edits, and used by default in Claude Code, Codex, Copilot, Kiro, Cursor and Amazon Q.
 ---
 
 # Saving tokens
 
-Reading a repository costs an AI assistant tokens. Most of that is avoidable, because most questions need a small part of it.
-Ananke gives you a small map first, then points you at the cheapest tool for each question.
+Reading a repository costs an AI assistant tokens, and most of that is avoidable because most questions need a small part of it.
+Ananke answers those questions from its own graph of your code, with nothing else to install.
 
 ```bash
-ananke context map                # a small picture of this repository
-ananke context status             # which tools are ready, and how to get the others
-ananke context pack --include 'src/**/*.py'
-ananke context benchmark          # what a first look costs here
+ananke context enable                       # this project now uses all of this by default
+ananke context map                          # a small picture of the repository
+ananke context outline src/shop/orders.py   # what's in a file, without reading it
+ananke context symbol place_order           # one function with its source
+ananke context callers place_order          # what calls it
 ```
 
-## The map
+## What it saves
 
-A map of a repository usually costs under 2,000 tokens: languages, components, routes, tables, largest files and most complex
-functions. On Ananke itself that's about 900 tokens, against about 790,000 for reading its source.
+Measured on Ananke itself, about 790,000 tokens of source, counted with `tiktoken`:
 
-**It can't silently go stale.** It records a fingerprint of the current commit and the content of any changed files. If they differ,
-it rebuilds. If not, it returns the saved copy in about half a second.
-
-`--budget` sets the most tokens it may use, and a map that had to cut something says how much.
-
-## Which tool for which question
-
-Measured on Ananke (about 790,000 tokens of source, counted with `tiktoken`):
-
-| Question | Use | Reading it instead | With the tool |
+| Question | Command | Reading instead | With the command |
 | --- | --- | ---: | ---: |
-| Where do I start? | `ananke context map` | 790,000 | 900 |
-| What's in this big file? | Serena `get_symbols_overview` | 8,138 | 277 |
-| One function from a big file | Serena `find_symbol` | 8,138 | 4,427 |
-| Who calls this? | `grep`, not Serena | 167 by `grep` | 1,730 |
-| What's in this small file? | Read it | 980 | 1,191 with Serena |
-| All the source at once | `ananke context pack` | 288,740 | 92,766 |
-| How does it hang together? | Graphify's report | n/a | 20,881 |
+| Where do I start? | `ananke context map` | 790,000 | 1,162 |
+| What's in this big file? | `ananke context outline` | 8,480 | 462 |
+| The same, with signatures | `ananke context outline --signatures` | 8,480 | 1,150 |
+| A short function from a big file | `ananke context symbol` | 8,480 | 115 |
+| The longest function in it | `ananke context symbol` | 8,480 | 1,625 |
+| What's in a small file? | `ananke context outline` | 980 | 61 |
+| Who calls this? | `ananke context callers` | 167 by `grep` | 191 |
 
-Some of that is surprising. Serena's references cost ten times what `grep` does when you only need locations. On a small file, its
-overhead costs more than the file.
+Your numbers will differ, so measure your own repository with `ananke context benchmark`.
 
-## The tools
+## Using it
 
-All three are optional, and Ananke works without them.
-
-| Tool | Best at | Stays current? | Licence |
-| --- | --- | --- | --- |
-| [Serena](https://github.com/oraios/serena) | Symbols in big files, through a language server | Yes, it reads the code each time | GPL-3.0-or-later |
-| [repomix](https://github.com/AndersonBY/python-repomix) | Many files at once, compressed | Yes, packed when you ask | MIT |
-| [Graphify](https://github.com/Graphify-Labs/graphify) | Structure across one repository or several | Only after `graphify update` | Apache-2.0 |
-
-**Serena runs apart from Ananke.** Because it's GPL, Ananke never imports or bundles it. It's a separate MCP server you connect to
-your assistant. `ananke context status` prints the command, pinned to a tested version:
+### Start with the map
 
 ```bash
-claude mcp add --scope user serena -- uvx --python 3.12 --from serena-agent==2.1.0 serena start-mcp-server \
+ananke context map
+```
+
+You get the languages, components, routes, tables, largest files and most complex functions, usually in under 2,000 tokens.
+`--budget` sets roughly how many it may use, and a map that had to cut something says how much:
+
+```bash
+ananke context map --budget 500
+```
+
+### Look inside a file before reading it
+
+```console
+$ ananke context outline src/ananke/plexus/execution/scheduler.py --signatures
+src/ananke/plexus/execution/scheduler.py (about 1077 tokens to read)
+24-25 function def _noop_handler(step: ExecutionStep, repository_root: Path) -> dict[str, object]
+28-31 function def _no_executor(step: ExecutionStep, repository_root: Path) -> dict[str, object]
+34-82 function def run_plan(repository_root: Path, plan: ExecutionPlan, *, handlers: dict[...
+85-116 function def _execute_step(step: ExecutionStep, repository_root: Path, handlers: dict[...
+```
+
+Each line starts with line numbers, so if you do need the code you can read just those lines. Leave off `--signatures` for
+names only, which is cheaper. A file with nothing to list, such as Markdown, tells you to read it directly and what that costs.
+
+### Get one function
+
+```console
+$ ananke context symbol context_map
+src/ananke/plexus/app.py:679-686 method AppFacade.context_map
+    def context_map(self, *, budget: int = 1500, refresh: bool = False) -> dict[str, Any]:
+        """A small picture of the repository, rebuilt only when its sources change."""
+        ...
+```
+
+A method can be named with its class, as in `Cart.total`. If several things share a name you get up to three, and `--path` picks one:
+
+```bash
+ananke context symbol total --path src/shop/cart.py
+ananke context symbol Cart.total
+```
+
+### See what calls it
+
+```console
+$ ananke context callers run_plan
+5 resolved, from the code graph:
+src/ananke/plexus/workflow_run.py:206 execute (calls)
+tests/unit/test_assembly.py:250 test_compiled_plan_runs_on_the_existing_scheduler (calls)
+...
+7 other mentions of run_plan, not resolved (text only):
+CHANGELOG.md:707
+docs/reference/three-repository-audit.md:96
+```
+
+The two groups are kept apart on purpose. The first is what the graph worked out. The second is every other place the word
+appears, so a call made through a variable or from documentation isn't lost, and you can judge it for yourself.
+
+### From a script or an assistant's tools
+
+Add `--json` for structured output. If your assistant prefers MCP tools, `ananke.context.map`, `outline`, `symbol` and `callers` give
+the same answers and are read-only. Plain commands cost nothing until they're used, whereas each tool's description is sent with every chat, so use commands where you can.
+
+## It stays current by itself
+
+You don't run an update step, and no background process watches your files.
+
+Every question first works out the state of your sources: the current commit, plus a hash of every changed or new file that Git
+sees. If that matches the saved graph, the answer takes about half a second. If it doesn't, the graph is rebuilt, which took
+about two and a half seconds on Ananke, and then answered.
+
+| You did this | The next question sees it |
+| --- | --- |
+| Edited a file and didn't commit | Yes |
+| Added a file, even in a new folder | Yes |
+| Deleted a file | Yes |
+| Switched branch or pulled | Yes |
+| Changed a file Git ignores | No, ignored files aren't part of the graph |
+
+Because the check runs when you ask, an answer can't be out of date, and nothing runs while you aren't asking.
+
+## Use it by default
+
+```bash
+ananke context enable --dry-run     # see what would change
+ananke context enable               # do it
+```
+
+`enable` writes a short block where each assistant looks for project instructions, telling it to use these commands before
+reading files. The block is about 130 tokens. It works out which assistants you use, and you can name them instead:
+
+```bash
+ananke context enable --client kiro --client copilot
+ananke context enable --client all
+```
+
+| Assistant | `--client` | Where the instructions go | At the start of a session |
+| --- | --- | --- | --- |
+| Claude Code | `claude-code` | `CLAUDE.md` | The map is loaded for it, through a hook |
+| OpenAI Codex | `codex` | `AGENTS.md` | Told to run the map |
+| GitHub Copilot | `copilot` | `.github/copilot-instructions.md` | Told to run the map |
+| Kiro | `kiro` | `.kiro/steering/ananke-context.md` | Told to run the map |
+| Cursor | `cursor` | `.cursor/rules/ananke-context.mdc` | Told to run the map |
+| Amazon Q | `amazon-q` | `.amazonq/rules/ananke-context.md` | Told to run the map |
+
+Many other tools read `AGENTS.md`, so `--client codex` often covers them too.
+
+Your own text in those files is left alone. Running `enable` again changes nothing, and `ananke context status` shows who is enabled.
+To undo it:
+
+```bash
+ananke context disable
+```
+
+That removes only what was added, including the hook, and leaves your other hooks and text as they were. If `.claude/settings.json`
+isn't valid JSON, `enable` stops and says so rather than overwriting it. `--no-session-map` skips the hook.
+
+These are instructions, so an assistant usually follows them but isn't forced to. Nothing blocks it from reading a file, which is sometimes the right thing to do.
+
+### The skill for your assistant
+
+The `repo-context` skill teaches an assistant the same routing, for every repository and not just the ones you've enabled. It's in
+[Dex Trove](https://github.com/Neo-Pragnya/Dex-Trove):
+
+```bash
+dex install neo-pragnya/repo-context --target claude
+dex install neo-pragnya/repo-context --target copilot
+```
+
+Use `enable` for a project you want set up for everyone who works on it, and the skill for your own habits across all of them.
+
+## How it compares with Serena
+
+[Serena](https://github.com/oraios/serena) is a very good tool, built on language servers, and the comparison is worth being straight about.
+Same machine, same repository, same questions:
+
+| Question | Serena | Ananke | |
+| --- | ---: | ---: | --- |
+| Names in a big file | 277 | 462 | Serena, though Ananke's include line numbers |
+| The longest function in a big file | 4,427 | 1,625 | Ananke |
+| A small file | 1,191 | 403 | Ananke; reading it costs 980 |
+| Who calls this? | 1,730 | 130 | Ananke; `grep` costs 167 |
+
+Serena returns more around each answer, which is why it costs more. On a small file its overhead costs more than the file.
+Connecting it also costs about 1,100 tokens per chat in its default mode, or about 8,000 with `--agent-interface tools`. Ananke's commands cost nothing until used.
+
+Here's what each does:
+
+| | Ananke | Serena |
+| --- | --- | --- |
+| Outline a file, find a symbol | Yes | Yes |
+| Find what calls a symbol | Yes, inferred from names and imports, plus text matches | Yes, following types |
+| Stay current with edits | Yes | Yes |
+| Whole-repository map, routes, tables, components | Yes | No |
+| Works with no language server or download | Yes | No |
+| Languages | Python, JavaScript, TypeScript | Many, through language servers |
+| Rename a symbol across a project | No | Yes |
+| Edit by symbol: replace a body, insert before or after | No | Yes |
+| Compiler diagnostics | No | Yes |
+| Memory across chats | No, use your notes or `CLAUDE.md` | Yes |
+| Licence | Apache-2.0 | GPL-3.0-or-later |
+
+So Ananke is the better default for reading and saves more on most questions. If you work in another language, need references
+that follow types through a large refactor, or want symbol-level editing, Serena does things Ananke doesn't. Those gaps are on the
+[roadmap](https://github.com/Neo-Pragnya/Ananke-Plexus/blob/main/ROADMAP.md).
+
+### Adding Serena if you want it
+
+Ananke never imports or bundles Serena, because of its licence. It's a separate program that you connect to your assistant yourself.
+`ananke context status` prints this, pinned to a version we tested, with its dashboard and its usage ping off:
+
+```bash
+claude mcp add --scope user serena --env SERENA_USAGE_REPORTING=false -- \
+  uvx --python 3.12 --from serena-agent==2.1.0 serena start-mcp-server \
   --context claude-code --project-from-cwd --enable-web-dashboard false --open-web-dashboard false
 ```
 
@@ -66,17 +219,30 @@ Each repository then needs a project file, or lookups quietly find nothing:
 uvx --python 3.12 --from serena-agent==2.1.0 serena project create . --language python
 ```
 
-Connecting Serena costs about 1,100 tokens in its default mode, with 2 tools. `--agent-interface tools` exposes 22 tools for
-about 8,000 tokens, so leave it on the default unless your client loads tools lazily.
+Your code stays on your machine either way. Left on, Serena's ping sends its version, your operating system and its settings, but
+no code, to its authors. Its language servers may be downloaded the first time.
 
-**Scope repomix.** `--include` is required. On a whole repository, documentation can dominate, and compression saved as little as
-5%. On source alone, it saved 68%.
+## Other tools for other jobs
 
-**Keep Graphify away from generated files.** On Ananke, its top communities were a minified file until those were ignored. Put
-`**/*.min.js` and similar in `.graphifyignore`. Never read `graph.json` directly: it's hundreds of thousands of tokens or more. Read
-`GRAPH_REPORT.md`, or use `graphify query` and `graphify explain`.
+Both are optional.
+
+**[repomix](https://github.com/AndersonBY/python-repomix): many files at once.** For when you need to read a lot of source together.
+It's an optional extra, `pip install "ananke-plexus[context]"`:
+
+```bash
+ananke context pack --include 'src/**/*.py'
+```
+
+`--include` is required. On a whole repository, documentation can dominate and compression saved as little as 5%, while on source alone
+it saved 68%: 288,740 tokens down to 92,766. repomix's secret check can leave out files, which once silently cost us `app.py`, so the
+result now says what was dropped. repomix has no way to stay current on its own: you pack when you ask.
+
+**[Graphify](https://github.com/Graphify-Labs/graphify): structure across repositories.** For how things hang together across a large
+repository or several. It needs `graphify update` to stay current, and `ananke context status` tells you when it's behind.
+Put `**/*.min.js` and similar in `.graphifyignore`. Don't read `graph.json` directly, because it can be hundreds of thousands of tokens.
+Read `GRAPH_REPORT.md`, or use `graphify query` and `graphify explain`.
 
 ## Your assistant's chat
 
-Most of the cost of a long chat is the chat itself: everything said so far is sent with each turn. Start a new chat for a new task,
-and let the map and your notes carry what matters across.
+Most of the cost of a long chat is the chat itself, because everything said so far is sent with each turn. Start a new chat for a new
+task, and let the map and your notes carry what matters across.

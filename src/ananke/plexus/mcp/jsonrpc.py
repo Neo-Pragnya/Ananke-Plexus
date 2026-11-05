@@ -64,6 +64,22 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
             ["requirement_id", "title"],
         ),
     ),
+    "ananke.context.map": (
+        "A small picture of the repository, current with every edit.",
+        _obj({"budget": {"type": "integer"}}),
+    ),
+    "ananke.context.outline": (
+        "What's in a file, far cheaper than reading it.",
+        _obj({"path": _S}, ["path"]),
+    ),
+    "ananke.context.symbol": (
+        "One function, method or class with its source.",
+        _obj({"name": _S, "path": _S}, ["name"]),
+    ),
+    "ananke.context.callers": (
+        "What calls a symbol, and text matches not resolved.",
+        _obj({"name": _S, "path": _S}, ["name"]),
+    ),
     "ananke.graph.query": ("Find code-graph nodes by name or path.", _obj({"text": _S}, ["text"])),
     "ananke.graph.impact": (
         "Symbols and files impacted by changed files (blast radius).",

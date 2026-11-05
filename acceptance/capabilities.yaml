@@ -178,6 +178,11 @@ surface:
   - ananke context status
   - ananke context pack
   - ananke context benchmark
+  - ananke context outline
+  - ananke context symbol
+  - ananke context callers
+  - ananke context enable
+  - ananke context disable
   - apm list
   - apm search
   - apm install

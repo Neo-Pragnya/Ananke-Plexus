@@ -11,8 +11,8 @@ def test_native_provider_available():
     assert p.provider_id == "native"
 
 
-def test_graphifyy_adapter_unavailable():
-    # In test env, graphifyy is not installed
+def test_graphifyy_adapter_unavailable(monkeypatch):
+    monkeypatch.setattr("shutil.which", lambda _name: None)
     a = GraphifyyAdapter()
     assert a.available() is False
 
@@ -24,7 +24,8 @@ def test_graphifyy_adapter_build_returns_empty_snapshot(tmp_path):
     assert snap.nodes == []
 
 
-def test_graphifyy_adapter_impact_unavailable(tmp_path):
+def test_graphifyy_adapter_impact_unavailable(tmp_path, monkeypatch):
+    monkeypatch.setattr("shutil.which", lambda _name: None)
     a = GraphifyyAdapter()
     report = a.impact(tmp_path, ["src/main.py"])
     assert "unavailable" in report.summary.lower()

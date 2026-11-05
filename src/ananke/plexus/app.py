@@ -157,6 +157,7 @@ class AppFacade:
             "ananke": __version__,
             "operations": [
                 "context_map",
+                "context_lookup",
                 "context_status",
                 "resolve_capabilities",
                 "prepare_run",
@@ -683,6 +684,21 @@ class AppFacade:
             return repo_map(self.workspace, budget=budget, refresh=refresh)
         except ContextError as exc:
             raise AppError(exc.code, exc.message) from exc
+
+    def context_lookup(self, what: str, target: str, path: str | None = None) -> dict[str, Any]:
+        """``outline`` of a file, or the ``symbol`` or ``callers`` of a name. Always reflects the current code."""
+        from ananke.plexus.context import ContextError, callers, outline, symbol
+
+        try:
+            if what == "outline":
+                return outline(self.workspace, target)
+            if what == "symbol":
+                return symbol(self.workspace, target, path=path)
+            if what == "callers":
+                return callers(self.workspace, target, path=path)
+        except ContextError as exc:
+            raise AppError(exc.code, exc.message) from exc
+        raise AppError("INVALID_REQUEST", f"what must be outline, symbol or callers, not {what!r}")
 
     def context_status(self) -> dict[str, Any]:
         """Which tools for saving tokens are ready, what each is for, and how to get the others. Runs none of them."""

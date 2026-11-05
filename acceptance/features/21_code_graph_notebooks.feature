@@ -2,9 +2,7 @@ Feature: The code graph covers notebooks and data, and products read it within a
   Background:
     Given a fresh project
     And I have run "ananke init"
-    And the file "pkg/__init__.py" with content:
-      """
-      """
+    And the empty file "pkg/__init__.py"
     And the file "pkg/core.py" with content:
       """
       import pandas as pd
