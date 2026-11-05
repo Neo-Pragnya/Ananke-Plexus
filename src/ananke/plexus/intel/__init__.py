@@ -20,6 +20,7 @@ from ananke.plexus.intel import (
     coverage,
     data_model,
     dependencies,
+    findings,
     flows,
     notebooks,
     overview,
@@ -39,6 +40,7 @@ SECTIONS = (
     ("coverage", coverage.analyze),
     ("dependencies", dependencies.analyze),
     ("notebooks", notebooks.analyze),
+    ("findings", findings.analyze),
 )
 
 

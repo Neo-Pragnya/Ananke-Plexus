@@ -195,6 +195,10 @@ The `notebooks` section explains each one from its own text and code:
 | `groups` | Notebooks by folder, in natural order: Week-2 before Week-10 |
 | `links` | One notebook importing a file another writes, or reading data another writes |
 
+## Findings
+
+The `findings` section reads reports already in the repository, and runs nothing. A `*.sarif` file gives `findings`: tool, rule, severity, message, path, line and how to fix it, worst first. A `junit*.xml`, `test-results*.xml`, `pytest*.xml` or `TEST-*.xml` file gives `tests`: totals, and what failed with its message. With no report, `status` is `not_found`, because that's unknown rather than zero. A report may be older than the code, and the section says so.
+
 ## Rules every section follows
 
 - **Evidence.** Each table, field, route, usage and step cites `path:line`.
