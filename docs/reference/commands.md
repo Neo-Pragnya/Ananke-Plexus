@@ -321,6 +321,13 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 
 GitHub Pages deploy workflow: `.github/workflows/docs.yml` — uses uv, copies `assets/` into `docs/`, then runs `mkdocs gh-deploy --force`.
 
+## Process
+
+- `ananke process extract DOCUMENT [--bpmn FILE]`: the process a Markdown document states. Exit 1 if it doesn't hold together.
+- `ananke process check FILE [--against DOCUMENT]`: check BPMN XML, and that it still says what a document says.
+
+See [Business processes](../guides/business-processes.md).
+
 ## Context
 
 - `ananke context map [--budget N] [--refresh] [--json]`: a small picture of the repository, rebuilt only when its sources change.

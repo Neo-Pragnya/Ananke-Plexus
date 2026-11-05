@@ -149,3 +149,39 @@ Feature: A small map of a repository that can't go stale
     Then it succeeds
     And the output does not contain "app"
 
+  @cap_context
+  Scenario: A process comes from reviewed text, and its BPMN round-trips
+    Given the file "process.md" with content:
+      """
+      # Orders
+
+      1. Sales: Receive the order
+      2. Finance: Is the credit good?
+         - Yes: go to step 3
+         - No: end
+      3. Warehouse: Ship it
+      """
+    When I run "ananke process extract process.md --bpmn process.bpmn"
+    Then it succeeds
+    And the output contains "Warehouse"
+    When I run "ananke process check process.bpmn --against process.md"
+    Then it succeeds
+    And the JSON output at "ok" equals true
+
+  @cap_context @adversarial
+  Scenario: A process that doesn't hold together is reported, and XML that could attack the parser is refused
+    Given the file "broken.md" with content:
+      """
+      1. Sales: Do it. Go to step 9
+      """
+    When I run "ananke process extract broken.md"
+    Then the exit code is 1
+    And the output contains "doesn't exist"
+    Given the file "evil.bpmn" with content:
+      """
+      <!DOCTYPE x [<!ENTITY a "b">]><definitions/>
+      """
+    When I run "ananke process check evil.bpmn"
+    Then the exit code is 2
+    And the output contains "DOCTYPE"
+
