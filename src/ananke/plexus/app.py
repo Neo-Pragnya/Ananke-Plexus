@@ -156,6 +156,8 @@ class AppFacade:
             "protocol": PROTOCOL,
             "ananke": __version__,
             "operations": [
+                "context_map",
+                "context_status",
                 "resolve_capabilities",
                 "prepare_run",
                 "submit_run",
@@ -672,6 +674,21 @@ class AppFacade:
                 "external_imports": external,
             },
         }
+
+    def context_map(self, *, budget: int = 1500, refresh: bool = False) -> dict[str, Any]:
+        """A small picture of the repository, rebuilt only when its sources change."""
+        from ananke.plexus.context import ContextError, repo_map
+
+        try:
+            return repo_map(self.workspace, budget=budget, refresh=refresh)
+        except ContextError as exc:
+            raise AppError(exc.code, exc.message) from exc
+
+    def context_status(self) -> dict[str, Any]:
+        """Which tools for saving tokens are ready, what each is for, and how to get the others. Runs none of them."""
+        from ananke.plexus.context import status
+
+        return status(self.workspace)
 
     def read_source(self, path: str, *, start: int = 1, end: int | None = None) -> dict[str, Any]:
         """Lines of one source file, read-only, inside the workspace. Evidence for a claim, with its digest."""

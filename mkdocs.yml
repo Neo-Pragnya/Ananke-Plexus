@@ -96,6 +96,7 @@ nav:
       - Learning Candidates: guides/learning-candidates.md
       - Workflow Assembly: guides/workflow-assembly.md
       - Code Graph: guides/code-graph.md
+      - Saving Tokens: guides/saving-tokens.md
       - Workflows: guides/workflows.md
       - Release Guide: guides/release.md
       - Implementation Log: guides/implementation-log.md
