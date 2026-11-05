@@ -220,7 +220,7 @@ class TestMermaidRendersOffline:
                 page.as_uri(),
             ],
             capture_output=True,
-            timeout=30,
+            timeout=120,  # Chrome starts slowly on a busy machine, which isn't what this test is about
             check=True,
         )
         assert shot.is_file() and shot.stat().st_size > 10_000
