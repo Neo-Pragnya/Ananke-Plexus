@@ -10,6 +10,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.22] — 2026-11-04
+
+### Added
+
+- **`ananke context outline`, `symbol` and `callers`.** Answer "what's in this file", "show me this function" and "who calls this" from Ananke's own graph, in Python, JavaScript and TypeScript, with no extra tool. Each one notices edits, new files and deletions by itself and rebuilds only when something changed. On Ananke's largest file, an outline costs 462 tokens against 8,480 to read it. `callers` keeps calls it resolved apart from text matches it didn't.
+- **`ananke context enable` and `disable`.** A project uses these by default once enabled, for Claude Code, Codex, GitHub Copilot, Kiro, Cursor and Amazon Q. `enable` writes a short block where each assistant reads project instructions, detects which you use, can be repeated, and has `--dry-run`. Claude Code also gets the map at the start of each session, through a hook. `disable` removes exactly what was added.
+- MCP tools `ananke.context.map`, `outline`, `symbol` and `callers`, read-only, for assistants that prefer tools to commands.
+- `context_lookup` on the application facade, so Dev Guru can ask the same questions.
+
+### Changed
+
+- The default route for symbol questions is now Ananke's own graph. Serena stays optional and external: never a dependency, pinned to a version, and now started with its usage ping turned off as well as its dashboard. repomix stays an optional extra.
+- The saving tokens guide is rewritten, with examples for each question, a comparison with Serena including what Ananke doesn't do, and setup for each assistant.
+
+### Fixed
+
+- `ananke context pack` no longer hides files repomix dropped. repomix's secret check silently left out `app.py` on a false positive here. The result now gives `excluded`, `complete` and a warning.
+- `ananke context map` missed files in a new, untracked folder when deciding whether anything had changed.
+- The cache folder keeps itself out of Git, so a project's `.gitignore` doesn't need changing.
+
+---
+
 ## [0.3.21] — 2026-11-04
 
 ### Added

@@ -20,10 +20,13 @@ Dev Guru is the current priority, and Ananke does the computing for it. This tab
 All of it is one analysis (`ananke app run repo.analyze`), described in
 [Repo intelligence](docs/reference/repo-intelligence.md).
 
-**Saving tokens** shipped in 0.3.21: `ananke context` gives a small map that rebuilds when the code changes, and routes questions to Serena, repomix or Graphify.
+**Saving tokens**: `ananke context` gives a small map, `outline`, `symbol` and `callers` from Ananke's own graph, all current with every edit, and `enable` makes a project use them by default in Claude Code, Codex, Copilot, Kiro, Cursor and Amazon Q.
 
 ## Next
 
+- Closing the gaps with a language server, so you don't need Serena for them: references that follow types rather than names, more languages than Python, JavaScript and TypeScript, and diagnostics.
+- Editing by symbol: rename, replace a body, insert before or after. Today, assistants edit with their own tools.
+- A Dex Trove connector for optional tools such as Serena, so it can be added with a pinned version and its ping off.
 - A real agent backend tested end to end for workflow runs, which are tested only with the fake backend today.
 - Enforcing permissions on real agents, rather than only checking what they declare.
 - Running tool capabilities in a sandbox. Today, only instruction capabilities run.

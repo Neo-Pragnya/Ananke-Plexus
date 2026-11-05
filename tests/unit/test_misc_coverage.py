@@ -64,7 +64,8 @@ def test_get_prompt_unknown():
 # ---------- graph providers registry fallback ----------
 
 
-def test_resolve_graphifyy_falls_back_to_native():
+def test_resolve_graphifyy_falls_back_to_native(monkeypatch):
+    monkeypatch.setattr("shutil.which", lambda _name: None)
     from ananke.plexus.graph.providers.native import NativeGraphProvider
     from ananke.plexus.graph.providers.registry import resolve_graph_provider
 

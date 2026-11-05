@@ -247,6 +247,14 @@ def copy_fixture(sandbox: Sandbox, name: str, dest: str) -> None:
         shutil.copy2(src, target)
 
 
+@given(parsers.parse('the empty file "{path}"'))
+def write_empty_file(sandbox: Sandbox, path: str) -> None:
+    # A Gherkin docstring with nothing in it arrives as no docstring at all, so this needs its own step.
+    target = sandbox.project / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("", encoding="utf-8")
+
+
 @given(parsers.parse('the file "{path}" with content:'))
 def write_file(sandbox: Sandbox, path: str, docstring: str) -> None:
     target = sandbox.project / path

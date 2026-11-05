@@ -12,15 +12,23 @@ from pathlib import Path
 import pytest
 
 from ananke.plexus.context import (
+    BLOCK_START,
+    CLIENTS,
     ROUTES,
+    SESSION_HOOK,
     ContextError,
     benchmark,
+    callers,
+    disable,
+    enable,
     estimate_tokens,
+    outline,
     pack,
     repo_map,
     serena_setup,
     source_state,
     status,
+    symbol,
 )
 from ananke.plexus.graph.providers.graphifyy import GraphifyyAdapter
 
@@ -236,3 +244,229 @@ def test_the_graphify_adapter_reads_what_the_real_tool_writes(
     snapshot = adapter.build(repo)
     assert snapshot.nodes[0].name == "a()" and snapshot.nodes[0].path == "pkg/core.py"
     assert snapshot.edges[0].kind == "calls" and snapshot.edges[0].origin == "inferred"
+
+
+CODE = """\
+class Cart:
+    def total(self, rate):
+        return tax(self.price, rate)
+
+
+def tax(price, rate):
+    return price * rate
+"""
+
+
+@pytest.fixture
+def shop(repo: Path) -> Path:
+    (repo / "pkg" / "cart.py").write_text(CODE)
+    (repo / "pkg" / "note.md").write_text("tax is explained here\n")
+    return repo
+
+
+def test_an_outline_lists_symbols_for_less_than_reading_the_file(shop: Path) -> None:
+    result = outline(shop, "pkg/cart.py")
+    assert result["symbols"] == 3
+    assert all(name in result["text"] for name in ("Cart", "total", "tax"))
+    assert "1-3" in result["text"] and "function" in result["text"]
+    assert "def tax(price, rate)" in outline(shop, "pkg/cart.py", signatures=True)["text"]
+
+
+def test_an_outline_says_when_there_is_nothing_to_list(shop: Path) -> None:
+    with pytest.raises(ContextError, match="read it directly"):
+        outline(shop, "pkg/note.md")
+
+
+@pytest.mark.parametrize("path", ["../../etc/passwd", "/etc/passwd"])
+def test_an_outline_stays_inside_the_repository(shop: Path, path: str) -> None:
+    with pytest.raises(ContextError):
+        outline(shop, path)
+
+
+def test_a_link_cant_lead_an_outline_out_of_the_repository(shop: Path, tmp_path: Path) -> None:
+    (tmp_path / "secret.py").write_text("def secret():\n    return 1\n")
+    (shop / "pkg" / "out.py").symlink_to(tmp_path / "secret.py")
+    with pytest.raises(ContextError):
+        outline(shop, "pkg/out.py")
+
+
+def test_a_symbol_comes_with_its_source_and_can_be_narrowed(shop: Path) -> None:
+    (shop / "pkg" / "other.py").write_text("def tax():\n    return 'other'\n")
+    both = symbol(shop, "tax")["text"]
+    assert "price * rate" in both and "'other'" in both
+    narrowed = symbol(shop, "tax", path="pkg/other.py")["text"]
+    assert "'other'" in narrowed and "price * rate" not in narrowed
+
+
+def test_a_method_can_be_named_with_its_class(shop: Path) -> None:
+    assert "return tax" in symbol(shop, "Cart.total")["text"]
+
+
+@pytest.mark.parametrize("name", ["", "../../x", "a b", "$(touch pwned)", "-rf"])
+def test_a_name_that_isnt_a_symbol_is_refused(shop: Path, name: str) -> None:
+    for lookup in (symbol, callers):
+        with pytest.raises(ContextError):
+            lookup(shop, name)
+    assert not (shop / "pwned").exists()
+
+
+def test_callers_keep_resolved_calls_apart_from_text_matches(shop: Path) -> None:
+    text = callers(shop, "tax")["text"]
+    resolved, _, mentions = text.partition("other mentions")
+    assert "pkg/cart.py" in resolved and "total" in resolved
+    assert "pkg/note.md" in mentions
+
+
+def test_every_lookup_sees_an_edit_without_being_told(shop: Path) -> None:
+    assert symbol(shop, "tax")["text"]
+    (shop / "pkg" / "cart.py").write_text(CODE.replace("price * rate", "price * rate * 2"))
+    assert "rate * 2" in symbol(shop, "tax")["text"]
+
+
+def test_every_lookup_sees_a_new_file_and_a_deleted_one(shop: Path) -> None:
+    (shop / "pkg" / "brand_new.py").write_text("def fresh():\n    return 1\n")
+    assert "return 1" in symbol(shop, "fresh")["text"]
+    (shop / "pkg" / "brand_new.py").unlink()
+    with pytest.raises(ContextError, match="no symbol named fresh"):
+        symbol(shop, "fresh")
+
+
+def test_a_file_in_a_new_folder_counts_as_a_change(shop: Path) -> None:
+    before = source_state(shop)
+    (shop / "fresh" / "deep").mkdir(parents=True)
+    (shop / "fresh" / "deep" / "x.py").write_text("x = 1\n")
+    assert source_state(shop) != before
+
+
+def test_a_hostile_file_cant_run_during_a_lookup(shop: Path) -> None:
+    (shop / "pkg" / "evil.py").write_text("open('pwned', 'w').close()\ndef evil(:\n")
+    outline(shop, "pkg/cart.py")
+    symbol(shop, "tax")
+    assert not (shop / "pwned").exists()
+
+
+def test_the_graph_cache_keeps_itself_out_of_git(shop: Path) -> None:
+    symbol(shop, "tax")
+    state = subprocess.run(
+        ["git", "-C", str(shop), "status", "--short"], check=True, capture_output=True, text=True
+    ).stdout
+    assert ".ananke" not in state
+
+
+@pytest.mark.parametrize("client", sorted(CLIENTS))
+def test_enabling_writes_where_each_assistant_looks(shop: Path, client: str) -> None:
+    result = enable(shop, clients=[client])
+    relative, header = CLIENTS[client]
+    text = (shop / relative).read_text()
+    assert text.startswith(header) and "ananke context outline" in text
+    assert result["clients"] == [client]
+    assert (shop / ".claude" / "settings.json").exists() == (client == "claude-code")
+
+
+def test_enabling_detects_the_assistants_this_project_uses(shop: Path) -> None:
+    (shop / ".kiro").mkdir()
+    (shop / ".cursor").mkdir()
+    assert enable(shop, dry_run=True)["clients"] == ["cursor", "kiro"]
+
+
+def test_with_no_signs_it_covers_claude_code_and_agents_md(shop: Path) -> None:
+    assert enable(shop, dry_run=True)["clients"] == ["claude-code", "codex"]
+
+
+def test_an_unknown_client_is_refused_and_writes_nothing(shop: Path) -> None:
+    with pytest.raises(ContextError, match="unknown client"):
+        enable(shop, clients=["kiro", "notepad"])
+    assert not (shop / ".kiro").exists()
+
+
+def test_a_dry_run_changes_nothing(shop: Path) -> None:
+    result = enable(shop, clients=["all"], dry_run=True)
+    assert len(result["changes"]) == len(CLIENTS) + 1
+    assert not any((shop / relative).exists() for relative, _ in CLIENTS.values())
+    assert not (shop / ".claude").exists()
+
+
+def test_enabling_twice_changes_nothing_the_second_time(shop: Path) -> None:
+    enable(shop, clients=["all"])
+    before = (shop / "CLAUDE.md").read_text()
+    assert enable(shop, clients=["all"])["changes"] == []
+    assert (shop / "CLAUDE.md").read_text() == before
+
+
+def test_disabling_keeps_what_was_there_and_removes_what_we_added(shop: Path) -> None:
+    (shop / "CLAUDE.md").write_text("# House rules\n\nBe kind.\n")
+    other_hook = {"hooks": [{"type": "command", "command": "echo mine"}]}
+    (shop / ".claude").mkdir()
+    (shop / ".claude" / "settings.json").write_text(
+        json.dumps({"model": "x", "hooks": {"SessionStart": [other_hook]}})
+    )
+    enable(shop, clients=["all"])
+    assert BLOCK_START in (shop / "CLAUDE.md").read_text()
+    assert SESSION_HOOK in str(json.loads((shop / ".claude" / "settings.json").read_text()))
+
+    disable(shop)
+    assert (shop / "CLAUDE.md").read_text() == "# House rules\n\nBe kind.\n"
+    settings = json.loads((shop / ".claude" / "settings.json").read_text())
+    assert settings == {"model": "x", "hooks": {"SessionStart": [other_hook]}}
+    assert not (shop / "AGENTS.md").exists()
+    assert not (shop / ".kiro" / "steering" / "ananke-context.md").exists()
+
+
+def test_disabling_removes_a_settings_file_it_created(shop: Path) -> None:
+    enable(shop, clients=["claude-code"])
+    disable(shop)
+    assert not (shop / ".claude" / "settings.json").exists()
+    assert not (shop / "CLAUDE.md").exists()
+
+
+def test_disabling_keeps_text_written_after_the_block(shop: Path) -> None:
+    enable(shop, clients=["codex"])
+    with (shop / "AGENTS.md").open("a") as handle:
+        handle.write("\n## Mine\n")
+    disable(shop)
+    assert (shop / "AGENTS.md").read_text() == "## Mine\n"
+
+
+def test_broken_settings_are_refused_rather_than_overwritten(shop: Path) -> None:
+    (shop / ".claude").mkdir()
+    (shop / ".claude" / "settings.json").write_text("{not json")
+    with pytest.raises(ContextError):
+        enable(shop, clients=["claude-code"])
+    assert (shop / ".claude" / "settings.json").read_text() == "{not json"
+
+
+def test_status_says_which_assistants_are_enabled(shop: Path) -> None:
+    enable(shop, clients=["kiro", "copilot"])
+    assert status(shop)["tools"]["graph"]["enabled_for"] == ["copilot", "kiro"]
+
+
+def test_a_pack_reports_files_it_left_out(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tools = tmp_path / "tools"
+    fake_tool(
+        tools,
+        "repomix",
+        'echo "Detected 2 suspicious files and excluded them"\n'
+        'for a in "$@"; do [ "$prev" = "--output" ] || [ "$prev" = "-o" ] && echo packed > "$a"; prev="$a"; done\n',
+    )
+    monkeypatch.setenv("PATH", f"{tools}{os.pathsep}{os.environ['PATH']}")
+    result = pack(repo, include="pkg/**")
+    assert result["complete"] is False and result["excluded"] == 2
+    assert "2" in result["warning"]
+
+
+def test_the_mcp_tools_answer_and_only_read(shop: Path) -> None:
+    from ananke.plexus.mcp.auth import DEFAULT_PERMISSION_MAP
+    from ananke.plexus.mcp.tools import call_tool
+
+    assert "price * rate" in str(
+        call_tool(shop, "ananke.context.symbol", {"name": "tax"})["details"]
+    )
+    assert "tax" in str(
+        call_tool(shop, "ananke.context.outline", {"path": "pkg/cart.py"})["details"]
+    )
+    assert call_tool(shop, "ananke.context.map", {})["ok"] is True
+    refused = call_tool(shop, "ananke.context.symbol", {"name": "a b"})
+    assert refused["ok"] is False
+    assert "ananke.context.callers" in DEFAULT_PERMISSION_MAP.read_only_tools

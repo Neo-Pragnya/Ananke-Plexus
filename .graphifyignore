@@ -1,0 +1,6 @@
+**/*.min.js
+**/*.lock
+**/package-lock.json
+dist/
+site/
+website/dist/

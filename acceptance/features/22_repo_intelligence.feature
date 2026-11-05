@@ -2,9 +2,7 @@ Feature: One analysis answers what a repository holds and how it connects
   Background:
     Given a fresh project
     And I have run "ananke init"
-    And the file "backend/app/__init__.py" with content:
-      """
-      """
+    And the empty file "backend/app/__init__.py"
     And the file "backend/app/db.py" with content:
       """
       def connect():
