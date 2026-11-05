@@ -30,6 +30,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 - `ananke context map` missed files in a new, untracked folder when deciding whether anything had changed.
 - The cache folder keeps itself out of Git, so a project's `.gitignore` doesn't need changing.
 
+### Security
+
+- A repository could commit `.ananke/context/map-1500.json` as a link to a file of yours, and `ananke context map` in 0.3.21 would overwrite that file with its output. Cache files now refuse links. `enable` and `disable` refuse a link that leads outside the repository too.
+
 ---
 
 ## [0.3.21] — 2026-11-04

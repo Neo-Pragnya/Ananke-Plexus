@@ -260,12 +260,44 @@ def _render_map(root: Path, report: dict[str, Any], budget: int, state: str) -> 
     return "\n".join(lines) + "\n"
 
 
-def _prepare_cache(folder: Path) -> None:
-    """A folder that keeps itself out of Git, so nobody's .gitignore has to change."""
-    folder.mkdir(parents=True, exist_ok=True)
-    marker = folder / ".gitignore"
-    if not marker.exists():
-        marker.write_text("*\n", encoding="utf-8")
+def _cache_file(root: Path, name: str) -> str | None:
+    """Where a cache file goes, or None if a link would take it elsewhere.
+
+    A repository can commit links, so one here could make a cache write overwrite any file you can write to.
+    """
+    base = os.path.realpath(root)
+    expected = os.path.join(base, ".ananke", "context", name)
+    target = os.path.realpath(expected)
+    if target != expected or not target.startswith(base + os.sep):
+        return None
+    return target
+
+
+def _read_cache(root: Path, name: str) -> Any:
+    target = _cache_file(root, name)
+    if target is None:
+        return None
+    try:
+        with open(target, encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return None
+
+
+def _write_cache(root: Path, name: str, data: object) -> None:
+    """Save a cache file, in a folder that keeps itself out of Git. A read-only checkout simply goes without."""
+    target, marker = _cache_file(root, name), _cache_file(root, ".gitignore")
+    if target is None or marker is None:
+        return
+    try:
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        if not os.path.exists(marker):
+            with open(marker, "w", encoding="utf-8") as handle:
+                handle.write("*\n")
+        with open(target, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+    except OSError:
+        pass
 
 
 def repo_map(root: Path, *, budget: int = DEFAULT_BUDGET, refresh: bool = False) -> dict[str, Any]:
@@ -274,14 +306,11 @@ def repo_map(root: Path, *, budget: int = DEFAULT_BUDGET, refresh: bool = False)
         raise ContextError("INVALID_REQUEST", f"budget must be 200 to {MAX_BUDGET}, not {budget}")
     root = root.resolve()
     state = source_state(root)
-    cache = root / ".ananke" / "context" / f"map-{budget}.json"
-    if not refresh and cache.is_file():
-        try:
-            saved = json.loads(cache.read_text(encoding="utf-8"))
-            if saved.get("source_state") == state:
-                return {**saved, "cached": True}
-        except ValueError:
-            pass
+    name = f"map-{budget}.json"
+    if not refresh:
+        saved = _read_cache(root, name)
+        if isinstance(saved, dict) and saved.get("source_state") == state:
+            return {**saved, "cached": True}
     from ananke.plexus.intel import analyze
 
     text = _render_map(root, analyze(root), budget, state)
@@ -291,11 +320,7 @@ def repo_map(root: Path, *, budget: int = DEFAULT_BUDGET, refresh: bool = False)
         "tokens_estimate": estimate_tokens(text),
         "map": text,
     }
-    try:
-        _prepare_cache(cache.parent)
-        cache.write_text(json.dumps(result), encoding="utf-8")
-    except OSError:
-        pass  # a read-only checkout still gets its map
+    _write_cache(root, name, result)
     return {**result, "cached": False}
 
 
@@ -303,23 +328,16 @@ def fresh_graph(root: Path) -> GraphSnapshot:
     """The code graph for the repository as it is now, rebuilt only if its fingerprint changed."""
     root = root.resolve()
     state = source_state(root)
-    cache = root / ".ananke" / "context" / "graph.json"
-    if cache.is_file():
+    saved = _read_cache(root, "graph.json")
+    if isinstance(saved, dict) and saved.get("source_state") == state:
         try:
-            saved = json.loads(cache.read_text(encoding="utf-8"))
-            if saved.get("source_state") == state:
-                return GraphSnapshot.model_validate(saved["graph"])
+            return GraphSnapshot.model_validate(saved["graph"])
         except (ValueError, KeyError):
             pass  # a damaged cache is only a slower answer
     graph = build_graph(root)
-    try:
-        _prepare_cache(cache.parent)
-        cache.write_text(
-            json.dumps({"source_state": state, "graph": graph.model_dump(mode="json")}),
-            encoding="utf-8",
-        )
-    except OSError:
-        pass  # a read-only checkout still gets its answer
+    _write_cache(
+        root, "graph.json", {"source_state": state, "graph": graph.model_dump(mode="json")}
+    )
     return graph
 
 
@@ -530,7 +548,7 @@ def enable(
     changes = []
     for name in chosen:
         relative, header = CLIENTS[name]
-        target = root / relative
+        target = root / _inside(root, relative)
         current = _read(target)
         if BLOCK_START in current:
             continue
@@ -543,7 +561,7 @@ def enable(
         else:
             target.write_text(header + PROJECT_BLOCK, encoding="utf-8")
     if session_map and "claude-code" in chosen:
-        settings_path = root / ".claude" / "settings.json"
+        settings_path = root / _inside(root, ".claude/settings.json")
         settings = _load_settings(settings_path)
         if not any(_is_our_hook(entry) for entry in _hook_entries(settings)):
             changes.append(
@@ -563,7 +581,7 @@ def disable(root: Path) -> dict[str, Any]:
     root = root.resolve()
     changes = []
     for relative, header in {v[0]: v[1] for v in CLIENTS.values()}.items():
-        target = root / relative
+        target = root / _inside(root, relative)
         current = _read(target)
         start, end = current.find(BLOCK_START), current.find(BLOCK_END)
         if start == -1 or end == -1:
@@ -576,7 +594,7 @@ def disable(root: Path) -> dict[str, Any]:
         else:
             target.unlink()
         changes.append(f"{relative}: removed the block")
-    settings_path = root / ".claude" / "settings.json"
+    settings_path = root / _inside(root, ".claude/settings.json")
     settings = _load_settings(settings_path)
     entries = _hook_entries(settings)
     kept_entries = []

@@ -470,3 +470,51 @@ def test_the_mcp_tools_answer_and_only_read(shop: Path) -> None:
     refused = call_tool(shop, "ananke.context.symbol", {"name": "a b"})
     assert refused["ok"] is False
     assert "ananke.context.callers" in DEFAULT_PERMISSION_MAP.read_only_tools
+
+
+@pytest.mark.parametrize("name", ["map-1500.json", "graph.json", ".gitignore"])
+def test_a_committed_link_cant_make_a_cache_overwrite_a_file(
+    shop: Path, tmp_path: Path, name: str
+) -> None:
+    precious = tmp_path / "bashrc"
+    precious.write_text("mine\n")
+    (shop / ".ananke" / "context").mkdir(parents=True)
+    (shop / ".ananke" / "context" / name).symlink_to(precious)
+    repo_map(shop)
+    assert "price * rate" in symbol(shop, "tax")["text"]
+    assert precious.read_text() == "mine\n"
+
+
+def test_a_linked_cache_folder_is_left_alone(shop: Path, tmp_path: Path) -> None:
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (shop / ".ananke").mkdir()
+    (shop / ".ananke" / "context").symlink_to(elsewhere)
+    repo_map(shop)
+    assert "price * rate" in symbol(shop, "tax")["text"]
+    assert list(elsewhere.iterdir()) == []
+
+
+@pytest.mark.parametrize("relative", ["CLAUDE.md", ".claude/settings.json"])
+def test_enabling_wont_follow_a_link_out_of_the_repository(
+    shop: Path, tmp_path: Path, relative: str
+) -> None:
+    precious = tmp_path / "precious"
+    precious.write_text("{}\n")
+    (shop / relative).parent.mkdir(exist_ok=True)
+    (shop / relative).symlink_to(precious)
+    with pytest.raises(ContextError, match="outside the repository"):
+        enable(shop, clients=["claude-code"])
+    with pytest.raises(ContextError, match="outside the repository"):
+        disable(shop)
+    assert precious.read_text() == "{}\n"
+
+
+def test_a_link_inside_the_repository_gets_one_block(shop: Path) -> None:
+    (shop / "AGENTS.md").write_text("# Rules\n")
+    (shop / "CLAUDE.md").symlink_to("AGENTS.md")
+    enable(shop, clients=["claude-code", "codex"])
+    assert (shop / "AGENTS.md").read_text().count(BLOCK_START) == 1
+    assert (shop / "CLAUDE.md").is_symlink()
+    disable(shop)
+    assert (shop / "AGENTS.md").read_text() == "# Rules\n"
