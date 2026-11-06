@@ -43,7 +43,10 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "pydantic>=2.11,<3",
+  # TRIAL (0.3.33): stay on pydantic releases from before 2026-11-05 09:17 UTC. Every release after
+  # pydantic 2.14.3 / pydantic-core 2.50.4 was quarantined, every one before was not. Revert to <3 if
+  # quarantines continue, or once 2.14.3 is two weeks old (2026-11-19). See CHANGELOG 0.3.33.
+  "pydantic>=2.11,<2.14.3",
   "typer>=0.16,<1",
   "rich>=14,<16",
   "httpx>=0.28,<1",
