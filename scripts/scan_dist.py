@@ -40,6 +40,11 @@ License-Expression::
   licence = "MIT"
   reason = "..."
 
+  [[bandit]]
+  test = "B324"
+  path = "pkg/ids.py"
+  reason = "MD5 for a colour hue, not for security"
+
   [[signature]]
   rule = "pipe-to-shell"
   path = "pkg/docs/install.md"
@@ -154,9 +159,16 @@ HIDDEN_UNICODE = re.compile("[\u202a-\u202e\u2066-\u2069\u200b-\u200d\u2060]")
 def load_accepted(path: Path) -> dict:
     """What a person has reviewed and accepted, with reasons. A missing reason is no acceptance."""
     if not path.is_file() or tomllib is None:
-        return {"heuristics": {}, "bundled": [], "signature": [], "licence": [], "mention": []}
+        return {
+            "heuristics": {},
+            "bundled": [],
+            "signature": [],
+            "licence": [],
+            "mention": [],
+            "bandit": [],
+        }
     data = tomllib.loads(path.read_text(encoding="utf-8"))
-    for kind in ("bundled", "signature", "licence", "mention"):
+    for kind in ("bundled", "signature", "licence", "mention", "bandit"):
         for entry in data.get(kind, []):
             if not str(entry.get("reason", "")).strip():
                 raise SystemExit(f"{path}: every [[{kind}]] needs a reason: {entry}")
@@ -170,6 +182,7 @@ def load_accepted(path: Path) -> dict:
         "signature": data.get("signature", []),
         "licence": data.get("licence", []),
         "mention": data.get("mention", []),
+        "bandit": data.get("bandit", []),
     }
 
 
@@ -415,10 +428,20 @@ def _second_opinions(venv: Path, req_file: Path, work: Path) -> list[str]:
 
 
 def check_heuristics(
-    artifacts: list[Path], trees: list[Path], accepted: dict | None = None
+    artifacts: list[Path],
+    trees: list[Path],
+    accepted: dict | None = None,
+    bandit_accepted: list[dict] | None = None,
 ) -> dict:
-    out: dict = {"status": "pass", "guarddog": {}, "bandit_high": [], "findings": []}
+    out: dict = {
+        "status": "pass",
+        "guarddog": {},
+        "bandit_high": [],
+        "findings": [],
+        "accepted": [],
+    }
     accepted = accepted or {}
+    bandit_accepted = bandit_accepted or []
     guarddog = tool("guarddog")
     if guarddog:
         for art in artifacts:
@@ -455,7 +478,22 @@ def check_heuristics(
     else:
         out["status"] = "skipped"
     if isinstance(out["bandit_high"], list):
-        out["findings"] += [f"Bandit HIGH {h}" for h in out["bandit_high"]]
+        # a reviewed hit is accepted by its test id and file, so the same test in any other file still blocks
+        for hit in out["bandit_high"]:
+            test = hit.split(" ", 1)[0]
+            where = hit.rsplit(": ", 1)[-1].rsplit(":", 1)[0]
+            ok = next(
+                (
+                    e
+                    for e in bandit_accepted
+                    if e.get("test") == test and fnmatch.fnmatch(where, e.get("path", ""))
+                ),
+                None,
+            )
+            if ok:
+                out["accepted"].append(f"Bandit {hit}: accepted ({ok['reason']})")
+            else:
+                out["findings"].append(f"Bandit HIGH {hit}")
     if out["findings"]:
         out["status"] = "block"
     return out
@@ -483,6 +521,8 @@ def check_maturity(wheels: list[Path], work: Path, days: int = MATURE_DAYS) -> d
             name, version = line.split("==", 1)
             url = f"https://pypi.org/pypi/{name}/{version.strip()}/json"
             try:
+                # always https://pypi.org; the name and version come from the resolved environment
+                # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                 with urllib.request.urlopen(url, timeout=15) as response:
                     files = json.load(response).get("urls", [])
             except (OSError, ValueError):
@@ -856,7 +896,9 @@ def main() -> int:
             "vulns": check_vulns([a for a in artifacts if a.suffix == ".whl"], args.extras, work),
             "bundled": check_bundled(trees, accepted["bundled"]),
             "signatures": check_signatures(trees, accepted["signature"]),
-            "heuristics": check_heuristics(artifacts, trees, accepted["heuristics"]),
+            "heuristics": check_heuristics(
+                artifacts, trees, accepted["heuristics"], accepted["bandit"]
+            ),
             "metadata": check_metadata(trees),
             "bounds": check_bounds([a for a in artifacts if a.suffix == ".whl"], work),
             "licences": check_licences(
