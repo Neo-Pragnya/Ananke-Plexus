@@ -165,3 +165,62 @@ jobs:
             --severity CRITICAL \
             --exit-code 1 \
             .
+
+  dist-scan:
+    name: build + distribution scan (what package firewalls check)
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+        with:
+          version: "latest"
+          enable-cache: false
+
+      - name: Install pinned scanners
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+          GRYPE_VERSION: "0.121.0"
+          GRYPE_SHA256: "64e07133d3486115de647a66581461dccf5c732748a0a3119077395565f15519"
+          SYFT_VERSION: "1.55.0"
+          SYFT_SHA256: "bb65249542db5fedeeb4d3f9b018b75e7264dbfbbb10486f044581a92f90490d"
+          OSV_SCANNER_VERSION: "2.7.0"
+          OSV_SCANNER_SHA256: "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"
+        run: |
+          curl -sSLo gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin" && tar -xzf gitleaks.tgz -C "$HOME/.local/bin" gitleaks && rm gitleaks.tgz
+          # second-opinion CVE databases and the SBOM writer: without them the scan is degraded, and --require-all fails it
+          curl -sSLo grype.tgz "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz"
+          echo "${GRYPE_SHA256}  grype.tgz" | sha256sum -c -
+          tar -xzf grype.tgz -C "$HOME/.local/bin" grype && rm grype.tgz
+          curl -sSLo syft.tgz "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          echo "${SYFT_SHA256}  syft.tgz" | sha256sum -c -
+          tar -xzf syft.tgz -C "$HOME/.local/bin" syft && rm syft.tgz
+          curl -sSLo "$HOME/.local/bin/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  $HOME/.local/bin/osv-scanner" | sha256sum -c -
+          chmod +x "$HOME/.local/bin/osv-scanner"
+          uv tool install --python 3.12 guarddog==3.2.0
+          uv tool install --python 3.12 pip-audit==2.10.1
+          uv tool install --python 3.12 bandit==1.9.4
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Build wheel and sdist
+        run: uv build
+
+      - name: Scan the wheel and sdist (secrets and vulnerable dependencies block)
+        run: python3 scripts/scan_dist.py --dist dist --out scan-report --require-all --extras all,mcp,dex
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: dist-scan
+          path: scan-report/
+          if-no-files-found: warn

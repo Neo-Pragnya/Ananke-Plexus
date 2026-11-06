@@ -1,0 +1,7 @@
+# The release gate's reviewed exceptions, the gate itself and the workflows that run it need the owner's review
+# (Security-Remediation-Plan.md, section 6.6).
+/.scan-dist.toml @abhikanap
+/scripts/scan_dist.py @abhikanap
+/scripts/prepush_scan.py @abhikanap
+/.github/workflows/ @abhikanap
+/.github/CODEOWNERS @abhikanap

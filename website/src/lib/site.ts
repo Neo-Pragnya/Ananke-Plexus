@@ -99,6 +99,7 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
       "guides/business-processes",
       "guides/workflows",
       "guides/release",
+      "guides/security-findings",
       "guides/implementation-log"
     ],
     "shapes": "diamond>star4",
@@ -149,6 +150,7 @@ export const DOC_TITLES: Record<string, string> = {
   "reference/repo-intelligence": "Repo Intelligence",
   "guides/workflows": "Workflows",
   "guides/release": "Release Guide",
+  "guides/security-findings": "Security findings",
   "guides/implementation-log": "Implementation Log",
   "reference/commands": "CLI Commands",
   "reference/configuration": "Configuration",

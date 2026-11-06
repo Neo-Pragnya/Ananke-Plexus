@@ -91,6 +91,7 @@ nav:
       - Business Processes: guides/business-processes.md
       - Workflows: guides/workflows.md
       - Release Guide: guides/release.md
+      - Security findings: guides/security-findings.md
       - Implementation Log: guides/implementation-log.md
   - Reference:
       - CLI Commands: reference/commands.md

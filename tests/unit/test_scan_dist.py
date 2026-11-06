@@ -182,3 +182,37 @@ def test_a_reviewed_bandit_hit_is_accepted_only_in_its_own_file(
     out = gate.check_heuristics([], [tree], {}, accepted)
     assert out["findings"] == ["Bandit HIGH B324 hashlib: pkg/other.py:9"]
     assert out["accepted"] == ["Bandit B324 hashlib: pkg/ids.py:3: accepted (a colour hue)"]
+
+
+# ---- exceptions: each accepted finding has an owner and a review date, and an expired one blocks
+def test_an_exception_without_an_owner_or_date_blocks(gate, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    path = tmp_path / ".scan-dist.toml"
+    path.write_text('[[licence]]\npackage = "certifi"\nreason = "MPL-2.0, unmodified"\n')
+    out = gate.check_exceptions(path)
+    assert out["status"] == "block" and "needs an owner" in out["findings"][0]
+
+
+def test_an_expired_exception_blocks_and_one_due_soon_is_listed(gate, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    import datetime
+
+    soon = (datetime.date.today() + datetime.timedelta(days=10)).isoformat()
+    path = tmp_path / ".scan-dist.toml"
+    path.write_text(
+        '[review]\nowner = "maintainers"\nreview_by = "2099-01-01"\n\n'
+        '[[licence]]\npackage = "old"\nreason = "r"\nreview_by = "2001-01-01"\n\n'
+        f'[[licence]]\npackage = "soon"\nreason = "r"\nreview_by = "{soon}"\n\n'
+        '[[licence]]\npackage = "fine"\nreason = "r"\n'
+    )
+    out = gate.check_exceptions(path)
+    assert out["status"] == "block"
+    assert len(out["findings"]) == 1 and "old" in out["findings"][0]
+    assert len(out["due"]) == 1 and "soon" in out["due"][0]
+
+
+def test_every_finding_becomes_a_record(gate) -> None:  # type: ignore[no-untyped-def]
+    result = {name: {"status": "pass", "findings": [], "accepted": []} for name in gate.GATES}
+    result["vulns"]["findings"] = ["jinja2 3.1.0: PYSEC-1 (fixed in 3.1.6)"]
+    result["licences"]["accepted"] = ["certifi (MPL-2.0): accepted (unmodified)"]
+    records = gate.findings_register(result, Path("/nonexistent"))
+    assert {r["category"] for r in records} == {"vulnerability advisory", "licence policy"}
+    assert all(r["owner"] for r in records)
