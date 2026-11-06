@@ -141,8 +141,12 @@ COPYLEFT = re.compile(
     r"|\bSSPL\b|Server Side Public License|Commons Clause|Business Source License|\bBUSL\b|CC-BY-NC|CC-BY-SA|Elastic License"
 )
 PERMISSIVE = re.compile(
-    r"^(?:MIT|BSD|Apache|ISC|PSF|Python Software Foundation|Unlicense|0BSD|Zlib|CC0|Public Domain)",
+    r"\b(?:MIT|BSD|Apache|ISC|PSF|Python Software Foundation|Unlicense|0BSD|Zlib|CC0|Public Domain|HPND|Unicode)\b",
     re.IGNORECASE,
+)
+# weak copyleft: allowed by most policies, but only with a person's review
+WEAK_COPYLEFT = re.compile(
+    r"\b(?:MPL|Mozilla Public License|EPL|Eclipse Public License|CDDL)\b", re.IGNORECASE
 )
 HIDDEN_UNICODE = re.compile("[\u202a-\u202e\u2066-\u2069\u200b-\u200d\u2060]")
 
@@ -633,7 +637,12 @@ def check_licences(wheels: list[Path], work: Path, accepted: list[dict]) -> dict
             lic = d["licence"]
             via = ", ".join(sorted(pulled.get(canon(d["name"]), set()))) or "top level"
             table.append(f"{d['name']} {d['version']}: {lic} (pulled in by {via})")
-            if lic != "UNKNOWN" and not COPYLEFT.search(lic) and PERMISSIVE.search(lic):
+            if (
+                lic != "UNKNOWN"
+                and not COPYLEFT.search(lic)
+                and not WEAK_COPYLEFT.search(lic)
+                and PERMISSIVE.search(lic)
+            ):
                 continue
             ok = next(
                 (e for e in accepted if canon(e.get("package", "")) == canon(d["name"])), None

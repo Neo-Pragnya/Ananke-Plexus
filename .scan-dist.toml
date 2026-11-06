@@ -51,3 +51,20 @@ reason = "the same note about Serena's licence, in the documentation"
 [[mention]]
 path = "*docs/concepts/policy-security.md"
 reason = "documents the licence policy Ananke enforces: no GPL in production dependencies"
+
+# ---- licences in the optional extras' trees (all, docs, eval-enterprise, test-python), scanned at release
+[[licence]]
+package = "huey"
+reason = "MIT (LICENSE at github.com/coleifer/huey); its PyPI metadata declares none. Pulled in by mlflow in the eval extras only"
+
+[[licence]]
+package = "skops"
+reason = "MIT (LICENSE at github.com/skops-dev/skops); its metadata says only OSI Approved. Pulled in by mlflow in the eval extras only"
+
+[[licence]]
+package = "pathspec"
+reason = "MPL-2.0, pulled in by mkdocs in the docs extra only; file-level copyleft on its own files, used unmodified"
+
+[[licence]]
+package = "pytest-metadata"
+reason = "MPL-2.0, pulled in by pytest-json-report in the test extras only; file-level copyleft on its own files, used unmodified"

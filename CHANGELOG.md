@@ -10,6 +10,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.32] — 2026-11-05
+
+Everything in 0.3.31, which never reached PyPI. Its new licence check, run at release with every extra installed (167 dependencies), stopped it on five packages from the optional extras.
+
+### Fixed
+
+- **The licence check matched permissive names only at the start**, so it read "3-Clause BSD License" (protobuf) as unknown. It now finds a permissive licence anywhere in the name, and names weak copyleft (MPL, EPL, CDDL) for review.
+
+### Changed
+
+- **Reviewed in `.scan-dist.toml`:**
+  - huey and skops, MIT according to their own LICENSE files, though their PyPI metadata doesn't say so;
+  - pathspec and pytest-metadata, MPL-2.0.
+
+  All four come only with optional extras.
+
+---
+
 ## [0.3.31] — 2026-11-05
 
 ### Fixed
