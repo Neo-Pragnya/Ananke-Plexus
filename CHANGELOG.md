@@ -8,6 +8,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+---
+
+## [0.3.33] — 2026-11-06
+
+### Changed
+
+- **Trial: `pydantic>=2.11,<2.14.3`.** Every Ananke and Dev Guru release published after pydantic 2.14.3 and pydantic-core 2.50.4 (5 November, 09:17 UTC) was quarantined; none before was. Neither version has an advisory or is yanked, so the likely rule is a new or unrecognised component. This release stays on pydantic 2.14.2 (29 October) to test that. If quarantines continue, the cap is reverted; if not, it is lifted once those versions are two weeks old (19 November).
+
 ### Added
 
 - **The release gate writes a finding record:** `findings.json` (check, category, where, whether it ships, disposition, owner, review date), provenance (commit, each artifact's sha256, scan time, every tool's version) and a CycloneDX SBOM.
