@@ -159,6 +159,9 @@ and sdist the release will publish, using free tools at pinned versions:
 
 Run it locally with `make scan` (it needs `gitleaks` and `uv`; the Python tools come through `uvx`).
 
+Before a push, `scripts/prepush_scan.py` runs osv-scanner on the lock files and Semgrep's security-audit and secrets
+rules on the source, in about a minute. Opt in with `pre-commit install --hook-type pre-push`.
+
 **Reviewed findings live in `.scan-dist.toml`,** each with a reason, and a rule can be accepted only in the files it was
 reviewed in, so the same rule matching anywhere else stops the release. A bundled file is accepted only with a licence
 that's in `License-Expression`.

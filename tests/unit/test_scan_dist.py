@@ -148,3 +148,37 @@ def test_a_licence_name_in_a_shipped_file_blocks_until_it_is_explained(
 def test_permissive_words_in_code_are_not_licence_names(gate, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     tree = _wheel_tree(tmp_path, {"pkg/mod.py": "# Released under the Apache licence\nGPLOT = 1\n"})
     assert gate.check_mentions([tree], [])["status"] == "pass"
+
+
+def test_a_reviewed_bandit_hit_is_accepted_only_in_its_own_file(
+    gate, monkeypatch, tmp_path: Path
+) -> None:  # type: ignore[no-untyped-def]
+    tree = _wheel_tree(tmp_path, {"pkg/ids.py": "x = 1\n"})
+    hits = {
+        "results": [
+            {
+                "test_id": "B324",
+                "test_name": "hashlib",
+                "filename": str(tree / "pkg/ids.py"),
+                "line_number": 3,
+            },
+            {
+                "test_id": "B324",
+                "test_name": "hashlib",
+                "filename": str(tree / "pkg/other.py"),
+                "line_number": 9,
+            },
+        ]
+    }
+
+    class Done:
+        returncode = 0
+        stdout = __import__("json").dumps(hits)
+        stderr = ""
+
+    monkeypatch.setattr(gate, "tool", lambda name: ["bandit"] if name == "bandit" else None)
+    monkeypatch.setattr(gate, "run", lambda cmd: Done())
+    accepted = [{"test": "B324", "path": "pkg/ids.py", "reason": "a colour hue"}]
+    out = gate.check_heuristics([], [tree], {}, accepted)
+    assert out["findings"] == ["Bandit HIGH B324 hashlib: pkg/other.py:9"]
+    assert out["accepted"] == ["Bandit B324 hashlib: pkg/ids.py:3: accepted (a colour hue)"]

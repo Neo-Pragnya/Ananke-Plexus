@@ -8,6 +8,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **A pre-push hook**, opted into with `pre-commit install --hook-type pre-push`: osv-scanner on the lock files and Semgrep's security rules on the source.
+- **The release gate accepts a reviewed Bandit HIGH finding** by its test id and file, with a reason. The same test anywhere else still blocks.
+
 ---
 
 ## [0.3.32] — 2026-11-05

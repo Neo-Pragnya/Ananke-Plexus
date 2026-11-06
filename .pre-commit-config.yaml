@@ -11,3 +11,14 @@ repos:
       - id: trailing-whitespace
       - id: check-merge-conflict
       - id: check-yaml
+  # Before a push: osv-scanner on the lock files and Semgrep's security rules. Opt in with:
+  #   pre-commit install --hook-type pre-push
+  - repo: local
+    hooks:
+      - id: supply-chain
+        name: supply-chain checks (osv-scanner, semgrep)
+        entry: python3 scripts/prepush_scan.py
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
