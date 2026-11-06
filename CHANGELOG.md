@@ -10,6 +10,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.31] — 2026-11-05
+
+### Fixed
+
+- **Metadata a scanner may not read.** Wheels and sdists were built with Metadata-Version 2.5, which older SCA parsers reject, so they can't identify the package. Ananke now writes 2.4, as widely used packages do.
+- **`jinja2>=3.1` allowed releases with known CVEs.** 3.1.0 to 3.1.5 have five. It now needs 3.1.6 or later.
+
+### Added
+
+- **The release gate checks what Black Duck and similar tools check.**
+  - **metadata:** the version, a licence classifier and a licence file.
+  - **bounds:** audits the oldest version every declared range allows.
+  - **licences:** lists every resolved dependency's licence and what pulls it in.
+  - **mentions:** copyleft licence names in shipped files.
+
+  Accepted findings go in `.scan-dist.toml` with reasons, and `triage.md` gives the reason to give Black Duck for each licence match.
+- **A maturity report.** It lists dependency versions under 14 days old, which firewalls with a maturity rule block, with the `uv pip install --exclude-newer-package` command that avoids them. On release day this was pydantic, pydantic-core, platformdirs, typing-inspection, anyio and certifi.
+- **Installing behind a package firewall,** in Getting started.
+
+### Changed
+
+- Five XML imports Semgrep reports are marked as reviewed. Three only build XML. The other two parse it only through the existing guard, which refuses DOCTYPE and entities.
+
+---
+
 ## [0.3.30] — 2026-11-05
 
 Everything in 0.3.29, which never reached PyPI: its own new release gate stopped it, because the release guide quoted the keychain command it was explaining. The guide now describes it instead.

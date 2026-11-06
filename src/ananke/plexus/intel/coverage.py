@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any

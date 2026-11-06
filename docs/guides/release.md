@@ -150,6 +150,11 @@ and sdist the release will publish, using free tools at pinned versions:
 | Malware-shaped code, docs included: keychain dumps, browser password stores, SSH and cloud keys, pipe-to-shell, encoded PowerShell, running decoded data, chat webhooks, tunnels, hidden Unicode | built in | blocks publish unless accepted |
 | Malicious-package heuristics | GuardDog | blocks on any rule not in the reviewed baseline |
 | High-severity code issues in the shipped code | Bandit | blocks publish |
+| Metadata: version 2.4 or older, a licence classifier and a licence file, so SCA parsers can read them | built in | blocks publish |
+| The oldest version each declared range allows, audited, so a range can't admit a vulnerable release | uv, pip-audit | blocks publish |
+| Every resolved dependency's licence, and what pulls it in | built in (pip-licenses and pipdeptree's view) | blocks on copyleft or unknown unless accepted |
+| Copyleft licence names inside shipped files, which licence search reads as a declaration | built in | blocks unless accepted; written to `triage.md` |
+| Dependency versions under 14 days old, which maturity rules block | PyPI | reported, with the install command that avoids them |
 | Inventory: scripts, binaries, minified JS, declared licence | built in | reported |
 
 Run it locally with `make scan` (it needs `gitleaks` and `uv`; the Python tools come through `uvx`).
@@ -167,6 +172,9 @@ which this guide had listed as "reported" and accepted:
 
 What's still accepted, with reasons, is in `.scan-dist.toml`: the governance evaluator's deny-list containing `rm -rf /`,
 `read_source` refusing `.env`, and Ananke's own 0700 credentials file.
+
+`triage.md` lists each file that names a licence Ananke isn't under (its licence-detection tables, and the note about
+Serena's licence), with the reason to give Black Duck or a similar tool when it reports a licence match.
 
 If your organisation's firewall quarantines a release, ask for the policy violation names and compare them with this
 report. Packages only days old are often held by maturity rules too, whatever their content.

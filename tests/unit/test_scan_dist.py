@@ -106,3 +106,45 @@ def test_a_reason_is_required(gate, tmp_path: Path) -> None:  # type: ignore[no-
     path.write_text('[[signature]]\nrule = "pipe-to-shell"\npath = "x"\nreason = ""\n')
     with pytest.raises(SystemExit):
         gate.load_accepted(path)
+
+
+# ---- what Black Duck and other SCA tools read: metadata, licences and licence names
+def test_metadata_newer_than_parsers_read_blocks(gate, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    tree = _wheel_tree(tmp_path, {"pkg/mod.py": "x = 1\n"})
+    meta = next(tree.glob("*.dist-info/METADATA"))
+    meta.write_text(
+        "Metadata-Version: 2.5\nName: pkg\nLicense-Expression: Apache-2.0\nLicense-File: LICENSE\n"
+    )
+    found = gate.check_metadata([tree])["findings"]
+    assert any("Metadata-Version 2.5" in f for f in found)
+    assert any("no licence classifier" in f for f in found)
+
+
+def test_complete_metadata_passes(gate, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    tree = _wheel_tree(tmp_path, {"pkg/mod.py": "x = 1\n"})
+    next(tree.glob("*.dist-info/METADATA")).write_text(
+        "Metadata-Version: 2.4\nName: pkg\nLicense-Expression: Apache-2.0\nLicense-File: LICENSE\n"
+        "Classifier: License :: OSI Approved :: Apache Software License\n"
+    )
+    assert gate.check_metadata([tree])["status"] == "pass"
+
+
+def test_a_licence_name_in_a_shipped_file_blocks_until_it_is_explained(
+    gate, tmp_path: Path
+) -> None:  # type: ignore[no-untyped-def]
+    tree = _wheel_tree(
+        tmp_path,
+        {"pkg/licences.py": 'KNOWN = {"GNU Affero General Public License v3": "AGPL-3.0-only"}\n'},
+    )
+    assert gate.check_mentions([tree], [])["status"] == "block"
+    accepted = [{"path": "pkg/licences.py", "reason": "a detection table"}]
+    found = gate.check_mentions([tree], accepted)
+    assert found["status"] == "pass"
+    assert found["triage"] == [
+        "| `pkg/licences.py` | AGPL-3.0-only, GNU Affero General Public License | a detection table |"
+    ]
+
+
+def test_permissive_words_in_code_are_not_licence_names(gate, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    tree = _wheel_tree(tmp_path, {"pkg/mod.py": "# Released under the Apache licence\nGPLOT = 1\n"})
+    assert gate.check_mentions([tree], [])["status"] == "pass"
