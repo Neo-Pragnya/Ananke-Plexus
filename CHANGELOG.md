@@ -10,6 +10,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ### Added
 
+- **The release gate writes a finding record:** `findings.json` (check, category, where, whether it ships, disposition, owner, review date), provenance (commit, each artifact's sha256, scan time, every tool's version) and a CycloneDX SBOM.
+- **Exceptions expire.** Every accepted finding needs an owner and a `review_by` date. An expired one blocks a release, and one due within 30 days is listed.
+- **A degraded scan fails in CI.** That means a missing second CVE scanner or SBOM writer, or a Grype database over 5 days old. CI installs Grype, Syft and osv-scanner, pinned and sha256-checked.
+- **The full gate runs on every pull request,** not only at release.
+- **CODEOWNERS** covers the gate's exceptions, the gate script and the workflows.
+- **Guide: [Security findings](docs/guides/security-findings.md):** triage by the rule that fired, exceptions, and what to ask a Black Duck administrator.
+
+### Added
+
 - **A pre-push hook**, opted into with `pre-commit install --hook-type pre-push`: osv-scanner on the lock files and Semgrep's security rules on the source.
 - **The release gate accepts a reviewed Bandit HIGH finding** by its test id and file, with a reason. The same test anywhere else still blocks.
 

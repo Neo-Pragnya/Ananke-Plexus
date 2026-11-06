@@ -27,7 +27,14 @@ reasons. This script checks each one against the exact files in ``dist/``:
                a maturity rule block: when one is, installing this package fails even
                though nothing here changed. The report gives the --exclude-newer date
                that avoids them
+  exceptions   every accepted finding needs an owner and a review_by date ([review]     BLOCK when expired
+               sets defaults); one due within 30 days is listed
   inventory    what a heuristic scanner sees: scripts, minified JS, binaries, licences  reported
+
+It also writes findings.json (one record per finding: check, category, where, disposition, owner, review date),
+provenance (commit, each artifact's sha256, scan time, every tool's version) and, with syft, a CycloneDX SBOM of
+each wheel's resolved environment. A missing second CVE scanner, a Grype database over 5 days old or a missing SBOM
+tool makes the scan degraded: INCOMPLETE locally, BLOCK with --require-all, never a quiet pass.
 
 Anything accepted goes in ``.scan-dist.toml`` with a reason, and a bundled file's licence must be in the package's
 License-Expression::
@@ -140,6 +147,7 @@ GATES = (
     "bounds",
     "licences",
     "mentions",
+    "exceptions",
 )
 COPYLEFT = re.compile(
     r"\b(?:A|L)?GPL(?:v?[23])?(?:-[0-9.]+(?:-only|-or-later)?)?\b|GNU (?:Affero |Lesser )?General Public License"
@@ -381,12 +389,180 @@ def check_vulns(wheels: list[Path], extras: str, work: Path) -> dict:
                 findings.append(f"{dep['name']} {dep['version']}: {v['id']} (fixed in {fixed})")
         findings += _second_opinions(venv, req_file, work)
     tools = ["pip-audit", *(t for t in ("grype", "osv-scanner") if shutil.which(t))]
+    # a missing second opinion is a weaker check, never a quiet pass
+    degraded = [t for t in ("grype", "osv-scanner") if t not in tools]
+    if "grype" in tools and (age := _grype_db_age_days()) is not None and age > 5:
+        degraded.append(f"grype database is {age} days old")
+    status = "block" if findings else ("degraded" if degraded else "pass")
     return {
-        "status": "block" if findings else "pass",
+        "status": status,
         "resolved": resolved,
         "findings": sorted(set(findings)),
         "tools": tools,
+        "degraded": degraded,
     }
+
+
+def _grype_db_age_days() -> int | None:
+    """How old Grype's vulnerability database is, so a stale one is reported, not trusted."""
+    import datetime
+
+    res = run(["grype", "db", "status", "-o", "json"])
+    try:
+        built = json.loads(res.stdout).get("built", "")
+        moment = datetime.datetime.fromisoformat(built.replace("Z", "+00:00"))
+    except (json.JSONDecodeError, ValueError, AttributeError):
+        return None
+    return (datetime.datetime.now(datetime.UTC) - moment).days
+
+
+def provenance(artifacts: list[Path]) -> dict:
+    """What a finding record needs: the revision, each artifact's digest, when, and with which tool versions."""
+    import datetime
+    import hashlib
+
+    head = run(["git", "rev-parse", "HEAD"])
+    versions = {}
+    for name, args in (
+        ("gitleaks", ["version"]),
+        ("pip-audit", ["--version"]),
+        ("guarddog", ["--version"]),
+        ("bandit", ["--version"]),
+        ("grype", ["version"]),
+        ("syft", ["version"]),
+        ("osv-scanner", ["--version"]),
+        ("uv", ["--version"]),
+    ):
+        cmd = tool(name)
+        if cmd:
+            out = run([*cmd, *args])
+            text = (out.stdout or out.stderr).strip().splitlines()
+            versions[name] = next(
+                (line for line in text if any(c.isdigit() for c in line)), "unknown"
+            )[:80]
+        else:
+            versions[name] = "not installed"
+    return {
+        "commit": head.stdout.strip() if head.returncode == 0 else "not a git checkout",
+        "scanned_at": datetime.datetime.now(datetime.UTC).replace(microsecond=0).isoformat(),
+        "artifacts": {
+            a.name: "sha256:" + hashlib.sha256(a.read_bytes()).hexdigest() for a in artifacts
+        },
+        "tools": versions,
+    }
+
+
+def check_exceptions(path: Path) -> dict:
+    """Every accepted finding is an exception: it needs an owner and a review date, and an expired one blocks."""
+    import datetime
+
+    if not path.is_file() or tomllib is None:
+        return {"status": "pass", "findings": [], "due": []}
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    defaults = data.get("review", {})
+    today = datetime.date.today()
+    findings, due, entries = [], [], []
+    for kind in ("bundled", "signature", "licence", "mention", "bandit"):
+        entries += [(kind, e) for e in data.get(kind, [])]
+    entries += [
+        ("heuristics", {"rule": rule, **(v if isinstance(v, dict) else {"reason": v})})
+        for rule, v in data.get("heuristics", {}).items()
+    ]
+    for kind, entry in entries:
+        label = entry.get("path") or entry.get("package") or entry.get("rule") or entry.get("test")
+        owner = entry.get("owner") or defaults.get("owner")
+        review_by = entry.get("review_by") or defaults.get("review_by")
+        if not owner or not review_by:
+            findings.append(
+                f"[{kind}] {label}: needs an owner and a review_by date ([review] sets defaults)"
+            )
+            continue
+        try:
+            when = datetime.date.fromisoformat(str(review_by))
+        except ValueError:
+            findings.append(f"[{kind}] {label}: review_by {review_by!r} isn't a YYYY-MM-DD date")
+            continue
+        if when < today:
+            findings.append(
+                f"[{kind}] {label}: its review was due {when}; review it again, or remove it"
+            )
+        elif (when - today).days <= 30:
+            due.append(f"[{kind}] {label}: review due {when} ({owner})")
+    return {
+        "status": "block" if findings else "pass",
+        "findings": findings,
+        "due": due,
+        "count": len(entries),
+    }
+
+
+def write_sbom(wheels: list[Path], work: Path, out: Path) -> dict:
+    """A CycloneDX SBOM of what each wheel resolves to, for Black Duck or another SCA tool to import and compare."""
+    if not shutil.which("syft"):
+        return {"status": "degraded", "detail": "install syft to write an SBOM"}
+    written = []
+    for wheel in wheels:
+        venv = work / f"venv-{wheel.stem}"
+        if not venv.is_dir():
+            continue
+        target = out / f"sbom-{wheel.stem}.cdx.json"
+        res = run(["syft", "-q", f"dir:{venv}", "-o", f"cyclonedx-json={target}"])
+        if res.returncode == 0 and target.is_file():
+            written.append(target.name)
+    return {"status": "report", "detail": ", ".join(written) or "none written", "files": written}
+
+
+def findings_register(result: dict, accepted_path: Path) -> list[dict]:
+    """One record per finding, with what the remediation plan asks for: what, where, why, who and until when."""
+    defaults = {}
+    if accepted_path.is_file() and tomllib is not None:
+        defaults = tomllib.loads(accepted_path.read_text(encoding="utf-8")).get("review", {})
+    records = []
+    for check in (*GATES, "maturity"):
+        part = result.get(check, {})
+        for text in part.get("findings", []):
+            shipped = (
+                "sdist only" if ".tar.gz" in text and ".whl" not in text else "shipped in the wheel"
+            )
+            records.append(
+                {
+                    "check": check,
+                    "finding": text,
+                    "category": CATEGORY.get(check, "other policy"),
+                    "shipped": shipped,
+                    "disposition": "report"
+                    if check == "maturity"
+                    else "blocked: fix, or accept with a reason",
+                    "owner": defaults.get("owner", "unassigned"),
+                }
+            )
+        for text in part.get("accepted", []):
+            records.append(
+                {
+                    "check": check,
+                    "finding": text,
+                    "category": CATEGORY.get(check, "other policy"),
+                    "disposition": "accepted exception (.scan-dist.toml)",
+                    "owner": defaults.get("owner", "unassigned"),
+                    "review_by": defaults.get("review_by", "unset"),
+                }
+            )
+    return records
+
+
+CATEGORY = {
+    "secrets": "provenance: credential-shaped content",
+    "vulns": "vulnerability advisory",
+    "bounds": "vulnerability advisory (declared range)",
+    "bundled": "licence and provenance: third-party or minified code",
+    "signatures": "malware-shaped behaviour",
+    "heuristics": "malware-shaped behaviour",
+    "metadata": "identification: metadata a scanner reads",
+    "licences": "licence policy",
+    "mentions": "licence policy: possible false identification",
+    "exceptions": "exception review",
+    "maturity": "other policy: package age",
+}
 
 
 def _second_opinions(venv: Path, req_file: Path, work: Path) -> list[str]:
@@ -807,7 +983,7 @@ def inventory(trees: list[Path]) -> dict:
 
 
 def summary_md(result: dict) -> str:
-    icon = {"pass": "✅", "block": "❌", "skipped": "⏭️", "error": "⚠️"}
+    icon = {"pass": "✅", "block": "❌", "skipped": "⏭️", "error": "⚠️", "degraded": "⚠️"}
     lines = [
         f"# Distribution scan: {result['verdict']}",
         "",
@@ -833,6 +1009,25 @@ def summary_md(result: dict) -> str:
                 *[f"- {f}" for f in result[name]["accepted"]],
             ]
     maturity = result.get("maturity", {})
+    if result["vulns"].get("degraded"):
+        lines += ["", "## Degraded", "", *[f"- {d}" for d in result["vulns"]["degraded"]]]
+    if result["exceptions"].get("due"):
+        lines += [
+            "",
+            "## Exceptions due for review",
+            "",
+            *[f"- {d}" for d in result["exceptions"]["due"]],
+        ]
+    prov = result.get("provenance", {})
+    lines += [
+        "",
+        "## Provenance",
+        "",
+        f"- commit {prov.get('commit')}, scanned {prov.get('scanned_at')}",
+    ]
+    lines += [f"- {name} {digest}" for name, digest in prov.get("artifacts", {}).items()]
+    lines += [f"- {name}: {ver}" for name, ver in prov.get("tools", {}).items()]
+    lines += [f"- SBOM: {result.get('sbom', {}).get('detail', '')}"]
     lines += ["", "## Maturity (reported)", "", maturity.get("detail", "")]
     lines += [f"- {f}" for f in maturity.get("findings", [])]
     lines += ["", "## Heuristics (what a malicious-package scanner flags)", ""]
@@ -907,16 +1102,27 @@ def main() -> int:
             ),
             "mentions": check_mentions(trees, accepted["mention"]),
             "maturity": check_maturity([a for a in artifacts if a.suffix == ".whl"], work),
+            "exceptions": check_exceptions(args.accepted),
             "inventory": inventory(trees),
+            "provenance": provenance(artifacts),
         }
+        result["sbom"] = write_sbom([a for a in artifacts if a.suffix == ".whl"], work, args.out)
     statuses = {result[k]["status"] for k in GATES}
-    if statuses & {"block", "error"} or ("skipped" in statuses and args.require_all):
+    # a missing scanner or a stale database is a degraded check; CI (--require-all) treats it as a failure
+    weak = {"skipped", "degraded"} | (
+        {"degraded"} if result["sbom"]["status"] == "degraded" else set()
+    )
+    if statuses & {"block", "error"} or (statuses & weak and args.require_all):
         result["verdict"] = "BLOCK"
-    elif "skipped" in statuses:
+    elif statuses & weak:
         result["verdict"] = "INCOMPLETE"
     else:
         result["verdict"] = "PASS"
     (args.out / "scan.json").write_text(json.dumps(result, indent=2) + "\n")
+    register = findings_register(result, args.accepted)
+    (args.out / "findings.json").write_text(
+        json.dumps({"provenance": result["provenance"], "findings": register}, indent=2) + "\n"
+    )
     md = summary_md(result)
     (args.out / "summary.md").write_text(md)
     (args.out / "triage.md").write_text(triage_md(result))

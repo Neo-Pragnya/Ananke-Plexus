@@ -1,3 +1,9 @@
+# Every accepted finding below is an exception: it has an owner, a reason and a date by which someone must look at it
+# again. scripts/scan_dist.py blocks a release when a review date has passed, and lists any due within 30 days.
+[review]
+owner = "Neo-Pragnya maintainers"
+review_by = "2027-02-05"
+
 # Findings a person has reviewed, read by scripts/scan_dist.py at every release. Each needs a reason. A rule accepted
 # with `paths` is accepted only there: the same rule matching anywhere else blocks the release.
 
