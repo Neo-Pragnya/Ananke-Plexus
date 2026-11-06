@@ -290,11 +290,11 @@ def unpack(artifact: Path, dest: Path) -> Path:
     out.mkdir(parents=True)
     if artifact.suffix == ".whl":
         with zipfile.ZipFile(artifact) as z:
-            z.extractall(out)  # noqa: S202 - zipfile strips absolute and ../ member paths
+            # zipfile strips absolute and ../ member paths, and never creates links
+            z.extractall(out)  # noqa: S202  # nosec B202
     else:
         with tarfile.open(artifact) as t:
-            # the data filter refuses links, devices and members outside out
-            t.extractall(out, filter="data")  # nosec B202
+            t.extractall(out, filter="data")
     return out
 
 
