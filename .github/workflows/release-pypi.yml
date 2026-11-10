@@ -77,7 +77,7 @@ jobs:
           enable-cache: false # release job: never restore a cache that a PR could have poisoned
 
       - name: Download exact dist artifacts from build step
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: pypi-dist-${{ github.ref_name }}
           path: dist/
@@ -140,7 +140,7 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Download exact dist artifacts from build step
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: pypi-dist-${{ github.ref_name }}
           path: dist/
@@ -222,7 +222,7 @@ jobs:
       attestations: write
     steps:
       - name: Download dist
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: pypi-dist-${{ github.ref_name }}
           path: dist/
@@ -243,7 +243,7 @@ jobs:
       contents: write
     steps:
       - name: Download exact dist artifacts from build step
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: pypi-dist-${{ github.ref_name }}
           path: dist/
