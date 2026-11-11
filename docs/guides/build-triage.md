@@ -117,3 +117,16 @@ The tests only run when you ask, and only against a service on this machine (`12
 results are kept as JUnit XML, and the report marks each case **executed** (passed or failed) or **suggested**. A
 generated test never counts as a passing one. Exit `1` if an executed case failed.
 
+## Several repositories as one system
+
+```bash
+ananke triage topology --project ../orders --project ../web --pin   # remember them, pinned at their HEAD
+ananke triage topology                                              # later: what moved, and what it reaches
+```
+
+`--pin` records the repositories in `.ananke/workspace.json` with the Git revision each is at. The report then shows,
+per repository, its package names, the services it declares and the routes it serves, and whether it has moved since
+its pin. It matches each HTTP call in one repository to a route another serves (method and path), marks the routes
+whose files changed since the pin so you see which callers they reach, lists calls that no repository serves, and
+names external systems (`api.stripe.com`) as boundary nodes. Only files and Git are read.
+

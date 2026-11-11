@@ -227,3 +227,50 @@ def api_tests(
             typer.echo(f"  {m['operation']} documents no {', '.join(m['missing'])}")
     if executed is not None and any(r["status"] == "executed: failed" for r in rep["cases"]):
         raise typer.Exit(1)
+
+
+@triage_app.command("topology")
+def topology(
+    project: list[Path] = typer.Option(
+        [], "--project", help="A repository (repeat); default: the workspace's"
+    ),
+    pin_them: bool = typer.Option(
+        False, "--pin", help="Add these repositories to the workspace, pinned at HEAD"
+    ),
+    home: Path = typer.Option(
+        Path("."), "--home", help="Where the workspace file (.ananke/workspace.json) lives"
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable report"),
+) -> None:
+    """Several repositories as one system: packages, services and routes per repository, calls from one to another's
+    routes, routes changed since each repository's pin and what calls them, calls no repository serves, and external
+    systems. Reads files and Git only."""
+    from ananke.plexus.intel.topology import build, load_workspace, pin, to_markdown
+
+    try:
+        if pin_them:
+            pin(home, project)
+        ws = load_workspace(home)
+    except ValueError as exc:
+        typer.echo(f"error: {exc} (INVALID_INPUT)", err=True)
+        raise typer.Exit(2) from exc
+    pinned = {r["path"]: r for r in ws["roots"]}
+    roots = (
+        [
+            pinned.get(
+                str(p.resolve()), {"path": str(p.resolve()), "name": p.resolve().name, "pin": None}
+            )
+            for p in project
+        ]
+        if project
+        else ws["roots"]
+    )
+    missing = [r["path"] for r in roots if not Path(r["path"]).is_dir()]
+    if not roots or missing:
+        typer.echo(
+            f"error: {'not a folder: ' + ', '.join(missing) if missing else 'no repositories: pass --project, or --pin some'} (INVALID_INPUT)",
+            err=True,
+        )
+        raise typer.Exit(2)
+    t = build(roots)
+    typer.echo(json.dumps(t, indent=2) if as_json else to_markdown(t), nl=not as_json)
