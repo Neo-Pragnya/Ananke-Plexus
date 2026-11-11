@@ -262,6 +262,10 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 - `ananke app workflow-run DRAFT --backend B --plan-hash H --key K [--approve STEP]… [--input NODE.PORT=VALUE]…`: run a previewed workflow through an agent backend.
 - `ananke app code [--path P] [--kind K]… [--query Q] [--budget N] [--collapse none|file|directory] [--depth N]`, `source PATH [--start N] [--end N]`, `architecture`, `evidence`: read-only views of the code graph, source, declared architecture and runs.
 
+## ananke connector
+
+[Connectors](../guides/connectors.md): `list`, `run NAME SOURCE [-o FILE]`, `register [--project P] [--approve]`. Each runs in its own process; only output that passes its port's check is written.
+
 ## ananke learning
 
 [Learning candidates](../guides/learning-candidates.md): reusable lessons that need evaluation and review.

@@ -34,6 +34,7 @@ capabilities:
   - { id: repo-intel, title: "Repo intelligence: folders connect, tables found, unknown stays unknown, nothing runs", dimension: integration, blocker: true }
   - { id: context, title: "Saving tokens: a small map that rebuilds when the code changes", dimension: integration, blocker: true }
   - { id: assembly, title: "Workflow assembly: typed ports, policy from the registry, stable plan hash, no effects", dimension: integration, blocker: true }
+  - { id: connectors, title: "Typed connectors (graph, JUnit to SARIF, OpenAPI routes, log triage) run in their own process; only verified output is written; registered with typed ports", dimension: automation, blocker: true }
   - { id: registry-ops, title: "Registry operations: export/import, backup/restore, reports, docs, diff, gc", dimension: registry, blocker: false }
   - { id: signing, title: "Supply chain: signing keys, signatures that verify", dimension: safety, blocker: false }
   - { id: lifecycle, title: "Lifecycle helpers: branches, worktrees, evidence events, adapter auth", dimension: automation, blocker: false }
@@ -158,6 +159,9 @@ surface:
   - ananke app workflow-compile
   - ananke app workflow-gaps
   - ananke app workflow-proposal
+  - ananke connector list
+  - ananke connector run
+  - ananke connector register
   - ananke app workflow-suggest
   - ananke app workflow-run
   - ananke app code

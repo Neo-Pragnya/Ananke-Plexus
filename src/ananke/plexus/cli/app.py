@@ -9,6 +9,7 @@ import typer
 from ananke.plexus import __version__
 from ananke.plexus.api import Ananke
 from ananke.plexus.cli.app_facade_cli import app_app as app_facade_app
+from ananke.plexus.cli.connector_cli import connector_app
 from ananke.plexus.cli.context_cli import context_app
 from ananke.plexus.cli.learning_cli import learning_app
 from ananke.plexus.cli.process_cli import process_app
@@ -60,6 +61,7 @@ eval_adapter_app = typer.Typer(help="Eval adapter management")
 eval_judge_app = typer.Typer(help="Judge management")
 app.add_typer(spec_app, name="spec")
 app.add_typer(graph_app, name="graph")
+app.add_typer(connector_app, name="connector")
 app.add_typer(arch_app, name="arch")
 app.add_typer(run_app, name="run")
 app.add_typer(plugin_app, name="plugin")
