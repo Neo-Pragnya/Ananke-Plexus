@@ -174,6 +174,34 @@ ananke bmad trace --feature-dir .ananke/specs/PROJ-101
 
 ---
 
+## From an approved PRD
+
+A PRD is the Markdown spec `dev spec new` writes: front matter with `status: approved` once it has been reviewed, a
+`## Requirements` section whose lines start with an id (`**R1**`), optionally under `### Feature` headings, and a
+`## Acceptance` section whose lines start with the requirement they check (`- R1: ...`). Indented bullets under a
+requirement count as its criteria too.
+
+```bash
+ananke spec map docs/orders-prd.md            # features, acceptance ids and tests; exit 1 if inconsistent
+ananke triage api-contract --out contract     # optional: the API's model contract
+ananke spec compile docs/orders-prd.md --out .ananke/specs/bmad --api-contract contract/model-contract.yaml
+```
+
+- **Map:** each criterion gets a global id, `AC-R1-1`, the behaviour test that will be generated for it, and the tests
+  that already mention it (by acceptance id, or by requirement id). The map is consistent when the PRD is approved,
+  has requirements, every requirement has a criterion, no id repeats and every criterion names a real requirement.
+  `--require-tests`, after implementation, also makes an untested criterion an error.
+- **Compile:** one folder per requirement with `requirement.md` and the BMAD bundle. With `--api-contract`, the model
+  contract holds the operations the requirement names (`POST /orders`, a path such as `/orders/{order_id}`, or an
+  operation id in backticks) and their schemas, and says why when it names none. With a CALM file (`--calm`, or
+  `.ananke/architecture/system.calm.json` when present) the architecture contract lists the components it names.
+- **Linked to the revision:** `bmad-index.json` records the PRD's sha256, the map's digest, the API contract's digest
+  and every generated file's sha256, so evidence made later can be traced to the exact spec it answers.
+- **Inconsistency blocks:** an inconsistent PRD compiles nothing (exit 1). `--draft` maps or compiles one that isn't
+  approved yet, with a warning.
+
+---
+
 ## BMAD vs BMAD-METHOD
 
 Ananke uses **Ananke BMAD** (Behavior, Model, Architecture) as its internal contract triad.

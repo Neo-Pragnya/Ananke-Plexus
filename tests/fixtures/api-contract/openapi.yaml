@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: "1.0"
+security:
+  - bearer: []
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  schemas:
+    Order:
+      type: object
+      required: [id, customer_id]
+      properties:
+        id: {type: integer}
+        customer_id: {type: integer}
+        parent:
+          $ref: "#/components/schemas/Order"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Line"
+    Line:
+      type: object
+      properties:
+        sku: {type: string}
+  responses:
+    NotFound:
+      description: not found
+paths:
+  /orders/{order_id}:
+    parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema: {type: integer}
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /status:
+    get:
+      operationId: status
+      security: []
+      responses:
+        "200":
+          description: ok
+  /reports:
+    get:
+      operationId: listReports
+      parameters:
+        - name: since
+          in: query
+          schema: {type: string, format: date}
+      responses:
+        "200":
+          description: ok

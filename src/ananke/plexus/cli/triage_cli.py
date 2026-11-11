@@ -136,6 +136,76 @@ def contracts(
         typer.echo(out, nl=False)
 
 
+@triage_app.command("api-contract")
+def api_contract(
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    spec: list[Path] = typer.Option(
+        [],
+        "--spec",
+        help="An OpenAPI 3 or Swagger 2 file (repeat); default: the ones found in the project",
+    ),
+    name: str | None = typer.Option(
+        None, "--name", help="Contract name; default: the OpenAPI title or folder"
+    ),
+    out_dir: Path | None = typer.Option(
+        None,
+        "--out",
+        help="Write api-contract.json, model-contract.yaml and api-contract.md into this folder",
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable report"),
+    fail_on: str | None = typer.Option(
+        None, "--fail-on", help="Exit 1 when a finding is this severe or worse: high, medium, low"
+    ),
+) -> None:
+    """What each operation takes and returns and who may call it, from the handlers and the OpenAPI files, with
+    each fact's file and line; the same as a BMAD model contract; and findings: missing error responses, auth with
+    no 401/403, untested auth, code and contract disagreeing, frameworks not read. Nothing is run."""
+    from ananke.plexus import intel
+    from ananke.plexus.intel.api_contract import ApiContractError, build, to_markdown, to_yaml
+
+    root = project.resolve()
+    if not root.is_dir():
+        typer.echo(f"error: {project} isn't a folder (INVALID_INPUT)", err=True)
+        raise typer.Exit(2)
+    if fail_on is not None and fail_on not in {"high", "medium", "low"}:
+        typer.echo("error: --fail-on takes high, medium or low (INVALID_INPUT)", err=True)
+        raise typer.Exit(2)
+    report = intel.analyze(root)
+    api = (report.get("sections") or {}).get("api") or {}
+    files = [
+        p.relative_to(root).as_posix()
+        for p in root.rglob("*")
+        if p.is_file() and ".git" not in p.parts
+    ]
+    try:
+        result = build(root, api, files, [s.resolve() for s in spec] or None, name)
+    except ApiContractError as exc:
+        typer.echo(f"error: {exc} (INVALID_INPUT)", err=True)
+        raise typer.Exit(2) from exc
+    text = to_markdown(result)
+    if out_dir is not None:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "api-contract.json").write_text(
+            json.dumps(result, indent=2) + "\n", encoding="utf-8"
+        )
+        (out_dir / "model-contract.yaml").write_text(
+            to_yaml(result["model_contract"]), encoding="utf-8"
+        )
+        (out_dir / "api-contract.md").write_text(text, encoding="utf-8")
+        typer.echo(
+            f"wrote {out_dir}: api-contract.json, model-contract.yaml, api-contract.md", err=True
+        )
+    if as_json:
+        typer.echo(json.dumps(result, indent=2))
+    elif out_dir is None:
+        typer.echo(text, nl=False)
+    if fail_on is not None:
+        order = ["high", "medium", "low"]
+        worst = order[: order.index(fail_on) + 1]
+        if any(f["severity"] in worst for f in result["findings"]):
+            raise typer.Exit(1)
+
+
 @triage_app.command("infra")
 def infra(
     project: list[Path] = typer.Option(

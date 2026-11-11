@@ -3,6 +3,7 @@
 import json
 from datetime import UTC
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -417,6 +418,117 @@ def spec_create(
     )
     result = Ananke.open(project).create_spec(requirement, provider_name=provider or None)
     render_result(result.summary, result.details, ok=result.ok)
+
+
+@spec_app.command("map")
+def spec_map(
+    prd: Path = typer.Argument(
+        ..., help="The PRD: Markdown with status, ## Requirements and ## Acceptance"
+    ),
+    project: Path = typer.Option(
+        Path("."), "--project", help="Repository root, where tests are looked for"
+    ),
+    draft: bool = typer.Option(
+        False, "--draft", help="Map a PRD that isn't approved yet (a warning, not an error)"
+    ),
+    require_tests: bool = typer.Option(
+        False,
+        "--require-tests",
+        help="Every criterion must already have a test (use after implementation)",
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable map"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Write the map here"),
+) -> None:
+    """Map an approved PRD's requirements to features, acceptance ids (AC-R1-1) and tests. Exits 1 when the PRD isn't
+    consistent (not approved, a requirement with no criterion, a repeated id, a criterion naming no requirement)."""
+    from ananke.plexus.specs.prd import PrdError, map_prd, to_markdown
+
+    try:
+        result = map_prd(prd, project.resolve(), allow_draft=draft, require_tests=require_tests)
+    except PrdError as exc:
+        typer.echo(f"error: {exc} (INVALID_INPUT)", err=True)
+        raise typer.Exit(2) from exc
+    text = json.dumps(result, indent=2) + "\n" if as_json else to_markdown(result)
+    if output:
+        output.write_text(text, encoding="utf-8")
+        typer.echo(f"wrote {output}", err=True)
+    else:
+        typer.echo(text, nl=False)
+    if not result["consistent"]:
+        raise typer.Exit(1)
+
+
+def _load_api_contract(path: Path) -> dict[str, Any]:
+    import yaml
+
+    try:
+        text = path.read_text(encoding="utf-8")
+        data = json.loads(text) if path.suffix.lower() == ".json" else yaml.safe_load(text)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        raise typer.BadParameter(
+            f"{path} can't be read as an API contract: {str(exc)[:200]}"
+        ) from exc
+    if isinstance(data, dict) and isinstance(data.get("model_contract"), dict):
+        data = data["model_contract"]  # the whole `ananke triage api-contract --json` report
+    if not isinstance(data, dict) or not isinstance(data.get("operations"), list):
+        raise typer.BadParameter(
+            f"{path} isn't an API model contract; make one with `ananke triage api-contract --out DIR`"
+        )
+    return data
+
+
+@spec_app.command("compile")
+def spec_compile(
+    prd: Path = typer.Argument(..., help="The approved PRD"),
+    out_dir: Path = typer.Option(
+        Path(".ananke/specs/bmad"), "--out", help="Where the BMAD bundles go"
+    ),
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    api_contract: Path | None = typer.Option(
+        None,
+        "--api-contract",
+        help="model-contract.yaml or api-contract.json from `ananke triage api-contract`",
+    ),
+    calm: Path | None = typer.Option(
+        None,
+        "--calm",
+        help="CALM architecture JSON; default: .ananke/architecture/system.calm.json if present",
+    ),
+    draft: bool = typer.Option(False, "--draft", help="Compile a PRD that isn't approved yet"),
+    as_json: bool = typer.Option(False, "--json", help="Print the index as JSON"),
+) -> None:
+    """Compile BMAD contracts (behaviour tests and Gherkin, model, architecture) for every requirement of an approved,
+    consistent PRD, and an index linking each file to the PRD revision. An inconsistent PRD is refused (exit 1)."""
+    from ananke.plexus.specs.prd import PrdError, compile_prd, map_prd
+
+    root = project.resolve()
+    contract = _load_api_contract(api_contract) if api_contract is not None else None
+    calm_path = calm if calm is not None else root / ".ananke" / "architecture" / "system.calm.json"
+    calm_doc = None
+    if calm is not None or calm_path.is_file():
+        try:
+            calm_doc = json.loads(calm_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            typer.echo(
+                f"error: {calm_path} can't be read as CALM JSON: {exc} (INVALID_INPUT)", err=True
+            )
+            raise typer.Exit(2) from exc
+    try:
+        prd_map = map_prd(prd, root, allow_draft=draft)
+        index = compile_prd(prd_map, out_dir, api_contract=contract, calm=calm_doc)
+    except PrdError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1 if "consistent" in str(exc) else 2) from exc
+    if as_json:
+        typer.echo(json.dumps(index, indent=2))
+        return
+    mapped = sum(1 for e in index["requirements"] if e["api_operations_mapped"])
+    typer.echo(
+        f"wrote {out_dir}: {len(index['requirements'])} BMAD bundles"
+        + (f", {mapped} with API operations" if contract is not None else "")
+        + (", CALM components named" if calm_doc is not None else "")
+        + "; index bmad-index.json"
+    )
 
 
 @spec_app.command("plan")

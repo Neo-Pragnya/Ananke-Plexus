@@ -10,6 +10,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.42] — 2026-11-11
+
+### Added
+
+- **`ananke triage api-contract`:** what each operation takes and returns and who may call it, read from the handlers
+  (FastAPI, Starlette, Flask, aiohttp, Tornado, Express, NestJS) and from OpenAPI 3 and Swagger 2 files, each fact cited
+  to its file and line and marked observed or inferred. The same facts as a BMAD model contract (`model-contract.yaml`).
+  Findings: missing error responses, auth with no 401/403, untested auth, code and contract disagreeing on auth,
+  frameworks not read. `--fail-on` gates on severity.
+- **`ananke spec map`:** an approved PRD's requirements mapped to features, acceptance ids (`AC-R1-1`), planned and
+  existing tests; exit 1 when it isn't consistent.
+- **`ananke spec compile`:** a BMAD bundle per requirement from an approved, consistent PRD, with model contracts filled
+  from an API contract and the CALM components each requirement names, and `bmad-index.json` linking every file to the
+  PRD revision.
+
+### Fixed
+
+- A quote in an acceptance criterion no longer breaks `bmad.yaml`: descriptions are written as quoted strings.
+
+---
+
 ## [0.3.41] — 2026-11-11
 
 ### Added
