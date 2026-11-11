@@ -8,8 +8,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+---
+
+## [0.3.34] — 2026-11-10
+
 ### Added
 
+- **Connectors (`ananke connector`):** `code-graph`, `junit-to-sarif`, `openapi-routes` and `log-triage` turn
+  source, JUnit results, OpenAPI 3 specs and Jenkins or container logs into typed documents. Each runs in its own
+  isolated process, its output is checked against its port before anything is written, and `register` adds them to
+  the registry with typed ports for workflow assembly.
 - **`ananke app workflow-gaps`:** every input of a workflow draft that nothing feeds and the run won't supply, with
   every registered capability that could feed it (authorized first) and the fix. Changes nothing.
 - **`ananke app workflow-proposal`:** checks a draft a template, a person or a model proposed with the same

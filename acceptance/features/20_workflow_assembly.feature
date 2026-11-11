@@ -147,3 +147,34 @@ Feature: Workflows are validated, explained and compiled without running anythin
     And the JSON output at "status" equals "proposal"
     And the JSON output at "compiled" equals false
     And the JSON output at "valid" equals true
+
+  @cap_connectors
+  Scenario: A connector converts in its own process, and its typed ports fill a workflow gap
+    Given the file "results.xml" with content:
+      """
+      <testsuite name="s" tests="2">
+        <testcase classname="tests.test_a" name="test_ok" file="tests/test_a.py" line="3"/>
+        <testcase classname="tests.test_a" name="test_bad" file="tests/test_a.py" line="9"><failure message="assert 1 == 2"/></testcase>
+      </testsuite>
+      """
+    When I run "ananke connector run junit-to-sarif results.xml -o results.sarif"
+    Then it succeeds
+    And the JSON file "results.sarif" at "version" equals "2.1.0"
+    And the JSON file "results.sarif" at "runs[0].results[0].ruleId" equals "test-failure"
+    When I run "ananke connector register --approve"
+    Then it succeeds
+    And the JSON output at "registered[1]" equals "ananke/junit-to-sarif@1.0.0"
+    When I run "ananke connector list"
+    Then it succeeds
+    And the output contains "sarif/2.1.0"
+
+  @cap_connectors @adversarial
+  Scenario: Input a connector can't read is refused, and nothing is written
+    Given the file "bad.xml" with content:
+      """
+      <!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]><testsuite>&e;</testsuite>
+      """
+    When I run "ananke connector run junit-to-sarif bad.xml -o out.sarif"
+    Then the exit code is 2
+    And the output contains "INVALID_INPUT"
+    And the file "out.sarif" does not exist
