@@ -268,6 +268,27 @@ def _log_triage(log: Path) -> dict[str, Any]:
     return {"schema": "findings/v1", "source": kind, "lines": len(lines), "findings": findings}
 
 
+def _jenkins_triage(log: Path) -> dict[str, Any]:
+    from ananke.plexus.jenkins_triage import TriageError, triage
+
+    try:
+        return triage(_read_text(log), source=log.name)
+    except TriageError as exc:
+        raise ConnectorError("INVALID_INPUT", str(exc)) from exc
+
+
+def _verify_triage(out: Any) -> list[str]:
+    if not isinstance(out, dict) or out.get("schema") != "triage-report/v1":
+        return ["not a triage-report/v1 document"]
+    names = {t.get("stage") for t in out.get("timeline", [])}
+    first = out.get("first_failure") or {}
+    if first.get("stage") and first["stage"] not in names:
+        return ["the first failure names a stage that isn't in the timeline"]
+    return [
+        f"cascade stage {c} isn't in the timeline" for c in out.get("cascade", []) if c not in names
+    ]
+
+
 def _verify_findings(out: Any) -> list[str]:
     if not isinstance(out, dict) or out.get("schema") != "findings/v1":
         return ["not a findings/v1 document"]
@@ -285,6 +306,7 @@ CAPABILITY_IDS = {
     "junit-to-sarif": "test.report",
     "openapi-routes": "api.routes",
     "log-triage": "logs.triage",
+    "jenkins-triage": "ci.triage",
 }
 
 CONNECTORS: dict[str, Connector] = {
@@ -321,6 +343,14 @@ CONNECTORS: dict[str, Connector] = {
             (("findings", "findings/v1"),),
             _log_triage,
             _verify_findings,
+        ),
+        Connector(
+            "jenkins-triage",
+            "A Jenkins console log to a triage report: stages, the first primary failure, the cascade and a rerun plan",
+            (("log", "build-log/v1"),),
+            (("report", "triage-report/v1"),),
+            _jenkins_triage,
+            _verify_triage,
         ),
     )
 }

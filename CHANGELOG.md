@@ -8,6 +8,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **`ananke triage jenkins`:** why a Jenkins build failed, from its console log: the stages and their times, the
+  first primary failure, the cascade it caused, the changed files its commands point at (from the Jenkinsfile and
+  `--changed` or `--base`), and where to rerun from. No CI access needed. Also the `jenkins-triage` connector.
+
 ---
 
 ## [0.3.34] — 2026-11-10

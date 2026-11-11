@@ -87,6 +87,7 @@ nav:
       - Learning Candidates: guides/learning-candidates.md
       - Workflow Assembly: guides/workflow-assembly.md
       - Connectors: guides/connectors.md
+      - Build triage: guides/build-triage.md
       - Code Graph: guides/code-graph.md
       - Saving Tokens: guides/saving-tokens.md
       - Business Processes: guides/business-processes.md

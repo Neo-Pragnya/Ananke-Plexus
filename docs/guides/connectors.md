@@ -14,6 +14,7 @@ capability.
 | `code-graph` | `python-source/v1` (a folder) | `code-graph/v1` | Ananke's native code graph, built in memory: nothing is written into the folder |
 | `junit-to-sarif` | `junit-xml/v1` | `sarif/2.1.0` | each failure, error and skip with its file and line |
 | `openapi-routes` | `openapi/v3` (JSON or YAML) | `api-routes/v1` | method, path, operation, parameters and responses for every route |
+| `jenkins-triage` | `build-log/v1` | `triage-report/v1` | a Jenkins console log to its stages, first primary failure, cascade and rerun plan ([build triage](build-triage.md)) |
 | `log-triage` | `build-log/v1` | `findings/v1` | a Jenkins console or container log grouped into findings: build result, tracebacks, out of memory, exit codes, errors and warnings, each with its lines |
 
 ```bash

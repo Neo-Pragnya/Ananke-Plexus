@@ -14,6 +14,7 @@ from ananke.plexus.cli.context_cli import context_app
 from ananke.plexus.cli.learning_cli import learning_app
 from ananke.plexus.cli.process_cli import process_app
 from ananke.plexus.cli.rendering import render_result
+from ananke.plexus.cli.triage_cli import triage_app
 from ananke.plexus.core.paths import safe_child
 from ananke.plexus.mcp.http import serve_http
 from ananke.plexus.mcp.server import serve_stdio
@@ -62,6 +63,7 @@ eval_judge_app = typer.Typer(help="Judge management")
 app.add_typer(spec_app, name="spec")
 app.add_typer(graph_app, name="graph")
 app.add_typer(connector_app, name="connector")
+app.add_typer(triage_app, name="triage")
 app.add_typer(arch_app, name="arch")
 app.add_typer(run_app, name="run")
 app.add_typer(plugin_app, name="plugin")
