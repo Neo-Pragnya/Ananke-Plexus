@@ -77,6 +77,41 @@ ananke triage contracts --json -o contract-gaps.json
 
 A route nothing in the project calls may still be used by another service; it's listed so someone can check.
 
+## What each operation takes and returns
+
+`ananke triage api-contract` reads each route's handler and every OpenAPI file, without importing or running anything:
+
+```bash
+ananke triage api-contract                      # a table and the findings
+ananke triage api-contract --out contract       # api-contract.json, model-contract.yaml, api-contract.md
+ananke triage api-contract --spec api/openapi.yaml --fail-on high
+```
+
+- **Auth:** `Depends(get_current_user)`, `Security(...)` and a route's `dependencies=` in FastAPI; decorators such as
+  `@login_required` and `@jwt_required`; Express middleware such as `requireAuth`; NestJS `@UseGuards`; `security` in
+  OpenAPI, per operation or for the whole document (`security: []` turns it off).
+- **Request:** path parameters; for FastAPI the handler's typed parameters (a Pydantic model or dataclass is the body,
+  a plain type the query); the fields a handler reads (`request.args.get("q")`, `payload["items"]`, `req.body.sku`,
+  `const { sku } = req.body`); OpenAPI parameters and request bodies with local `$ref` resolved.
+- **Responses:** `response_model=` and `status_code=`, and every status a handler raises or returns
+  (`HTTPException(status_code=404)`, `abort(403)`, `return ..., 409`, `res.status(400)`).
+
+Every fact names the file and line it came from and says whether it was **observed** (written down: an OpenAPI
+operation, a type, a `response_model`) or **inferred** (read from how the handler uses its input). Where an OpenAPI file
+describes an operation, it's the declared contract, and the code fills in only what it leaves out.
+
+The same facts become a **BMAD model contract** (`model-contract.yaml`): the schemas, an `api_error` schema with every
+error status seen, and each operation pointing at its request and response schemas by name. `ananke spec compile
+--api-contract` uses it (see [BMAD](../concepts/bmad.md)).
+
+**Findings:** operations with no 4xx response documented or raised; secured operations that document no 401 or 403;
+secured operations no test calls, or whose tests never check the failed-auth response; auth the code and the OpenAPI
+file disagree on; and frameworks whose routes aren't read (Go, Spring, ASP.NET, Rails, Laravel, Rust), with the remedy
+of describing them in an OpenAPI file. `--fail-on` makes findings that severe or worse exit 1.
+
+A missing file, a malformed or unsupported specification, or a project with no routes and no OpenAPI file is an error
+that says what to do (exit 2). The digest leaves out the time, so the same sources give the same digest.
+
 ## Infrastructure
 
 `ananke triage infra` reads what the repository declares and says how it fits together:

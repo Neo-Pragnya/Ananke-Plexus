@@ -71,6 +71,8 @@ Named, ordered sequences of `ananke`/`apm` commands — see the [Workflows guide
 - `ananke spec diff --feature-dir PATH`: report lock drift.
 - `ananke spec converge --id ID --title TEXT [--body TEXT] [--acceptance TEXT ...] [--provider speckit|native]`: run end-to-end spec pipeline.
 - `ananke spec superpowers --id ID --title TEXT [--body TEXT] [--acceptance TEXT ...] [--provider speckit|native]`: converge pipeline via single high-agency command.
+- `ananke spec map PRD.md [--project PATH] [--draft] [--require-tests] [--json] [-o FILE]`: map an approved PRD's requirements to features, acceptance ids (`AC-R1-1`) and tests. Exit 1 when the PRD isn't consistent (not approved, a requirement with no criterion, a repeated id, a criterion naming no requirement).
+- `ananke spec compile PRD.md [--out DIR] [--api-contract FILE] [--calm FILE] [--draft] [--json]`: a BMAD bundle per requirement (behaviour tests and Gherkin, a model contract filled from an API contract, the CALM components it names) and `bmad-index.json` linking every file to the PRD revision. An inconsistent PRD is refused (exit 1).
 
 ---
 
@@ -268,7 +270,7 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 
 ## ananke triage
 
-[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found. `findings [--project P] [--changed PATH]… [--base REF] [--check-vulnerabilities] [--json] [-o FILE]`: what to fix first. `contracts [--project P] [--json] [-o FILE]`: API contract gaps and recommended tests. `infra [--project P]… [--log FILE] [--json] [-o FILE]`: infrastructure, its links and a safe check order. `api-tests SPEC [--out DIR] [--run URL] [--json]`: contract tests from OpenAPI, run only against this machine. `topology [--project P]… [--pin] [--home DIR] [--json]`: several repositories as one system.
+[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found. `findings [--project P] [--changed PATH]… [--base REF] [--check-vulnerabilities] [--json] [-o FILE]`: what to fix first. `contracts [--project P] [--json] [-o FILE]`: API contract gaps and recommended tests. `infra [--project P]… [--log FILE] [--json] [-o FILE]`: infrastructure, its links and a safe check order. `api-tests SPEC [--out DIR] [--run URL] [--json]`: contract tests from OpenAPI, run only against this machine. `topology [--project P]… [--pin] [--home DIR] [--json]`: several repositories as one system. `api-contract [--project P] [--spec FILE]… [--name N] [--out DIR] [--json] [--fail-on high|medium|low]`: auth, request and response shapes per operation, cited to source, as a BMAD model contract, with findings.
 
 ## ananke learning
 

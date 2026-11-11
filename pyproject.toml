@@ -340,6 +340,8 @@ ignore_errors = true
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --strict-config"
 testpaths = ["tests"]
+# fixture repositories hold sample tests that are read as data, never run
+norecursedirs = ["*.egg", ".*", "_darcs", "build", "CVS", "dist", "node_modules", "venv", "{arch}", "tests/fixtures/api-contract"]
 
 [tool.coverage.run]
 branch = true
