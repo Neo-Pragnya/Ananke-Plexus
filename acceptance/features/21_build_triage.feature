@@ -116,3 +116,24 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     When I run "ananke learning overlap lesson.md --json"
     Then it succeeds
     And the output contains "checked"
+
+  @cap_build_triage
+  Scenario: Infrastructure, its links and a safe order to check it
+    Given the file "docker-compose.yml" with content:
+      """
+      services:
+        api:
+          build: ./api
+          depends_on: [db]
+        db:
+          image: postgres:16
+      """
+    And the file "api/Dockerfile" with content:
+      """
+      FROM python:3.12-slim
+      """
+    When I run "ananke triage infra --json"
+    Then it succeeds
+    And the JSON output at "sequence[0].step" equals "validate"
+    And the output contains "runs as root"
+    And the output contains "doesn't wait for it to be healthy"

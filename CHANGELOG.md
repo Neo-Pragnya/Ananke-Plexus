@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.38] — 2026-11-11
+
+### Added
+
+- **`ananke triage infra`:** Compose services, Dockerfiles, Kubernetes manifests and Terraform resources with their
+  links (also across repositories), warnings (root containers, unpinned bases, missing probes, unhealthy waits), a
+  container log triaged by service, and a safe order to validate and start them. Nothing is started or applied.
+
+---
+
 ## [0.3.37] — 2026-11-10
 
 ### Added
