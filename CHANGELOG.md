@@ -10,6 +10,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.35] — 2026-11-10
+
+### Added
+
+- **`ananke triage jenkins`:** why a Jenkins build failed, from its console log: the stages and their times, the
+  first primary failure, the cascade it caused, the changed files its commands point at (from the Jenkinsfile and
+  `--changed` or `--base`), and where to rerun from. No CI access needed. Also the `jenkins-triage` connector.
+- **`ananke triage findings`:** scanner findings (SARIF), failing tests (JUnit), low coverage on changed files and
+  vulnerable dependencies in one schema, each with a stable id, marked changed, impacted (through imports) or
+  reachable, ranked *fix now*, *fix soon* or *later* with a suggestion, and the gates to rerun. A fix version is
+  given only when the advisory has one.
+
+---
+
 ## [0.3.34] — 2026-11-10
 
 ### Added

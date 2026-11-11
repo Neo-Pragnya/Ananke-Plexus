@@ -266,6 +266,10 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 
 [Connectors](../guides/connectors.md): `list`, `run NAME SOURCE [-o FILE]`, `register [--project P] [--approve]`. Each runs in its own process; only output that passes its port's check is written.
 
+## ananke triage
+
+[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found. `findings [--project P] [--changed PATH]… [--base REF] [--check-vulnerabilities] [--json] [-o FILE]`: what to fix first.
+
 ## ananke learning
 
 [Learning candidates](../guides/learning-candidates.md): reusable lessons that need evaluation and review.
