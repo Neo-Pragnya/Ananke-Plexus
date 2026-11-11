@@ -343,6 +343,8 @@ See [Business processes](../guides/business-processes.md).
 - `ananke context outline PATH [--signatures] [--json]`: what's in a file, without reading it.
 - `ananke context symbol NAME [--path FILE] [--json]`: one function, method or class with its source.
 - `ananke context callers NAME [--path FILE] [--json]`: what calls or inherits from a symbol, and text matches the graph couldn't resolve.
+- `ananke context ask QUESTION [--budget N] [--json]`: the code a question is about, within a token budget; cached per snapshot.
+- `ananke context eval CASES.json [--budget N]`: recall and tokens on a list of questions, against reading every matching file.
 - `ananke context enable [--client NAME] [--local] [--session-map] [--dry-run]`: make a project use these by default. `--local` keeps it out of commits. Clients are `claude-code`, `codex`, `copilot`, `kiro`, `cursor`, `amazon-q` or `all`. Without `--client`, it detects them.
 - `ananke context disable`: remove exactly what `enable` added.
 - `ananke context pack --include GLOB [--no-compress] [--output FILE]`: pack chosen files with repomix.

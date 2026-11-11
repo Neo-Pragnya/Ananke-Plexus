@@ -10,6 +10,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.39] — 2026-11-11
+
+### Added
+
+- **`ananke context ask`:** the code a question is about, within a token budget: symbols planned from the question's
+  words (split and stemmed, with the words each matched), their source, then their callers and callees, overlapping
+  passages merged, cached per snapshot.
+- **`ananke context eval`:** recall and token cost on a list of questions against reading every matching file. On
+  this repository: 5 of 6 found, 99.8% fewer tokens.
+
+---
+
 ## [0.3.38] — 2026-11-11
 
 ### Added

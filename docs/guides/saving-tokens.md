@@ -275,3 +275,23 @@ Read `GRAPH_REPORT.md`, or use `graphify query` and `graphify explain`.
 
 Most of the cost of a long chat is the chat itself, because everything said so far is sent with each turn. Start a new chat for a new
 task, and let the map and your notes carry what matters across.
+
+## Ask a question, get just the code
+
+```bash
+ananke context ask "where is the gold discount applied"
+ananke context ask "how is a learning candidate promoted" --budget 1500 --json
+ananke context eval tests/fixtures/retrieval-questions.json     # recall and tokens against reading every match
+```
+
+`ask` plans from the question's words to symbols: names first (`orderTotal` and `order_total` both count as *order*
+and *total*, and *promoted* matches `promote`), then docstrings and paths. Test code ranks lower unless the question
+is about tests. It returns the best symbols' source, then what calls them and what they call, until the budget is
+spent; overlapping passages are merged, and what didn't fit is counted. Each candidate says which words it matched.
+The answer is kept for this snapshot of the repository, uncommitted edits included, so asking again costs nothing
+until the code changes.
+
+`eval` measures it. On Ananke's own repository, the six questions in `tests/fixtures/retrieval-questions.json` found
+the expected symbol in the top three for five, using 5,353 tokens in all, against 3.45 million for reading every
+Python file that contains one of the question's words: 99.8% fewer.
+

@@ -137,3 +137,17 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     And the JSON output at "sequence[0].step" equals "validate"
     And the output contains "runs as root"
     And the output contains "doesn't wait for it to be healthy"
+
+  @cap_build_triage
+  Scenario: A question gets just the code it's about
+    Given the file "shop/pricing.py" with content:
+      """
+      def apply_discount(total, tier):
+          return total * 0.8 if tier == "gold" else total
+      """
+    When I run "ananke context ask 'where is the gold discount applied' --json"
+    Then it succeeds
+    And the JSON output at "plan[0].name" equals "apply_discount"
+    When I run "ananke context ask 'where is the gold discount applied' --json"
+    Then it succeeds
+    And the JSON output at "cached" equals true
