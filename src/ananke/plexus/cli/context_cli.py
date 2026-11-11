@@ -187,3 +187,49 @@ def benchmark(project: Path = _PROJECT) -> None:
     from ananke.plexus.context import benchmark as run
 
     typer.echo(json.dumps(run(project), indent=1))
+
+
+@context_app.command("ask")
+def ask(
+    question: str,
+    budget: int = typer.Option(2000, "--budget", help="Most tokens to return"),
+    project: Path = _PROJECT,
+    as_json: bool = typer.Option(False, "--json"),
+) -> None:
+    """The code a question is about, within a token budget: the best matching symbols with their source, then what
+    calls them and what they call. Kept for this snapshot of the repository, so asking again is free."""
+    from ananke.plexus.retrieval import ask as run
+    from ananke.plexus.retrieval import to_text
+
+    if not 100 <= budget <= 50_000:
+        typer.echo("budget must be between 100 and 50000", err=True)
+        raise typer.Exit(2)
+    out = run(project, question, budget=budget)
+    typer.echo(json.dumps(out, indent=1) if as_json else to_text(out), nl=not as_json)
+    if not out["plan"]:
+        raise typer.Exit(1)
+
+
+@context_app.command("eval")
+def evaluate(
+    cases: Path,
+    budget: int = typer.Option(2000, "--budget", help="Token budget per question"),
+    project: Path = _PROJECT,
+) -> None:
+    """Recall and token cost on a list of questions ([{"question": ..., "expect": ["symbol", ...]}]), against
+    reading every file that contains one of the question's words."""
+    from ananke.plexus.retrieval import evaluate as run
+
+    try:
+        data = json.loads(cases.read_text(encoding="utf-8"))
+        if not isinstance(data, list) or not all(
+            isinstance(c, dict) and c.get("question") for c in data
+        ):
+            raise ValueError("not a list of questions")
+    except (OSError, ValueError) as exc:
+        typer.echo(
+            f'{cases}: expected a JSON list of {{"question": ..., "expect": [...]}} ({exc})',
+            err=True,
+        )
+        raise typer.Exit(2) from exc
+    typer.echo(json.dumps(run(project, data, budget=budget), indent=1))
