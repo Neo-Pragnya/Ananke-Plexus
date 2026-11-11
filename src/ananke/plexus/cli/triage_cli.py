@@ -134,3 +134,46 @@ def contracts(
         typer.echo(f"wrote {output}", err=True)
     else:
         typer.echo(out, nl=False)
+
+
+@triage_app.command("infra")
+def infra(
+    project: list[Path] = typer.Option(
+        [Path(".")], "--project", help="A repository root (repeat for several)"
+    ),
+    log: Path | None = typer.Option(
+        None, "--log", help="A `docker compose logs` output to triage by service"
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable report"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Write the report here"),
+) -> None:
+    """Compose services, Dockerfiles, Kubernetes manifests and Terraform resources with their links (across
+    projects too), what a container log says about each service, and a safe order to check them in. Nothing is
+    started, applied or contacted."""
+    from ananke.plexus.intel.infra import scan, to_markdown, triage_log, validation_sequence
+
+    roots = [p.resolve() for p in project]
+    missing = [str(p) for p in roots if not p.is_dir()]
+    if missing:
+        typer.echo(f"error: not a folder: {', '.join(missing)} (INVALID_INPUT)", err=True)
+        raise typer.Exit(2)
+    found = scan(roots)
+    triaged = None
+    if log is not None:
+        try:
+            triaged = triage_log(found, log.read_text(encoding="utf-8", errors="replace"))
+        except OSError as exc:
+            typer.echo(f"error: {exc} (INVALID_INPUT)", err=True)
+            raise typer.Exit(2) from exc
+    if as_json:
+        out = (
+            json.dumps({**found, "log": triaged, "sequence": validation_sequence(found)}, indent=2)
+            + "\n"
+        )
+    else:
+        out = to_markdown(found, triaged)
+    if output:
+        output.write_text(out, encoding="utf-8")
+        typer.echo(f"wrote {output}", err=True)
+    else:
+        typer.echo(out, nl=False)

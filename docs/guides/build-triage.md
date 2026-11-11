@@ -77,3 +77,26 @@ ananke triage contracts --json -o contract-gaps.json
 
 A route nothing in the project calls may still be used by another service; it's listed so someone can check.
 
+## Infrastructure
+
+`ananke triage infra` reads what the repository declares and says how it fits together:
+
+```bash
+ananke triage infra
+ananke triage infra --project ../shop --project ../payments      # several repositories, linked
+ananke triage infra --log compose.log                            # from `docker compose logs > compose.log`
+```
+
+- **Resources**, each with its file and line: Compose services (image, build folder, ports, health check),
+  Dockerfiles (base image, ports, health check, whether it runs as root), Kubernetes objects (images, probes) and
+  Terraform resources.
+- **Links**: `depends_on`, a service to the Dockerfile it builds, a Kubernetes Service to the workloads its selector
+  matches, Terraform references, and across repositories, a URL that names another project's service.
+- **Warnings**: containers running as root, unpinned base images, workloads without probes, and services that start
+  after another without waiting for it to be healthy.
+- **A container log**, split by service and triaged, each service with its code folder, health check and what it
+  depends on, and the first service to fail.
+- **A safe order to check it in**: dry runs first (`docker compose config`, `terraform validate`,
+  `kubectl apply --dry-run=client`), then builds, then each service after what it depends on, checking it at each step.
+  These are commands to run yourself: nothing is started, applied or contacted.
+
