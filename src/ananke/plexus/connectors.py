@@ -23,7 +23,6 @@ import os
 import re
 import subprocess
 import sys
-import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -89,13 +88,20 @@ def _first_line(text: str | None, default: str) -> str:
 
 
 def _junit_to_sarif(report: Path) -> dict[str, Any]:
-    text = _read_text(report)
-    if "<!DOCTYPE" in text or "<!ENTITY" in text:
-        raise ConnectorError("INVALID_INPUT", "a JUnit report with a DTD or entities isn't read")
+    from ananke.plexus.intel.coverage import _BadReport, _safe_xml
+
+    if not report.is_file():
+        raise ConnectorError("INVALID_INPUT", f"{report}: no such file")
+    if report.stat().st_size > MAX_INPUT:
+        raise ConnectorError(
+            "INVALID_INPUT", f"{report} is larger than {MAX_INPUT // 1_000_000} MB"
+        )
     try:
-        root = ET.fromstring(text)  # noqa: S314 - DTDs and entities refused above
-    except ET.ParseError as exc:
-        raise ConnectorError("INVALID_INPUT", f"{report} isn't JUnit XML: {exc}") from exc
+        root = _safe_xml(report.read_bytes())  # strict UTF-8, no DOCTYPE, no entities
+    except _BadReport as exc:
+        raise ConnectorError(
+            "INVALID_INPUT", f"{report} isn't a JUnit report it will read: {exc}"
+        ) from exc
     results: list[dict[str, Any]] = []
     total = 0
     for case in root.iter("testcase"):

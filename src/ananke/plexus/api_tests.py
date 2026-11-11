@@ -18,7 +18,6 @@ import json
 import re
 import subprocess
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -250,7 +249,13 @@ def run(test_file: Path, base_url: str, out_dir: Path, *, timeout: int = 900) ->
     subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=env, check=False)  # noqa: S603
     results: dict[str, str] = {}
     if junit.is_file():
-        for case in ET.parse(junit).getroot().iter("testcase"):  # noqa: S314 - our own pytest run's output
+        from ananke.plexus.intel.coverage import _BadReport, _safe_xml
+
+        try:
+            root = _safe_xml(junit.read_bytes())  # strict UTF-8, no DOCTYPE, no entities
+        except _BadReport:
+            root = None
+        for case in root.iter("testcase") if root is not None else []:
             outcome = (
                 "failed"
                 if case.find("failure") is not None or case.find("error") is not None
