@@ -20,6 +20,23 @@ flowchart LR
   P -- read-only or<br/>public for an internal lesson --> X
 ```
 
+
+## From a session to a draft
+
+```bash
+ananke learning draft --base main -o lesson.md          # what the session changed, decided and broke
+ananke learning draft --base main --run run-1a2b -o lesson.md
+ananke learning overlap lesson.md                       # does Dex Trove already have it?
+```
+
+`draft` writes a lesson to finish by hand: the commits, the decisions written in their messages, the tests that
+failed (from JUnit reports) and the warnings of the runs you name, plus the files involved. It holds names and
+messages only, never file contents, and it never overwrites a draft. Fill in *When this applies* and *Technique*,
+then capture it as below; capture redacts secrets and paths.
+
+`overlap` searches Dex Trove for the lesson's main words and scores each result by the words they share. Without Dex
+it says it couldn't check, never that nothing is similar.
+
 ## The steps
 
 ```bash
