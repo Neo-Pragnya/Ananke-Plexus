@@ -176,6 +176,8 @@ class AppFacade:
                 "suggest_capabilities",
                 "workflow_gaps",
                 "review_proposal",
+                "prioritized_findings",
+                "contract_gaps",
                 "code_view",
                 "read_source",
                 "read_sources",
@@ -796,6 +798,33 @@ class AppFacade:
             "source_snapshot": snapshot or self.source_snapshot(),
             "lines": lines[first - 1 : last],
         }
+
+    def prioritized_findings(
+        self, changed: list[str] | None = None, *, check_vulnerabilities: bool = False
+    ) -> dict[str, Any]:
+        """What to fix first: the repository's SARIF, JUnit, coverage and dependency findings, ranked against the
+        changed files and what imports them. Reads existing reports; runs no scanner."""
+        from ananke.plexus import intel
+        from ananke.plexus.graph.service import build_graph
+        from ananke.plexus.intel.priorities import prioritize
+
+        report = intel.analyze(self.workspace, check_vulnerabilities=check_vulnerabilities)
+        graph = {"edges": [e.model_dump(mode="json") for e in build_graph(self.workspace).edges]}
+        return prioritize(report, graph, list(changed or []))
+
+    def contract_gaps(self) -> dict[str, Any]:
+        """API routes against the tests and code that call them and the OpenAPI file, with recommended tests."""
+        from ananke.plexus import intel
+        from ananke.plexus.intel.contracts import gaps
+
+        api = (intel.analyze(self.workspace).get("sections") or {}).get("api") or {}
+        files = [
+            p.relative_to(self.workspace).as_posix()
+            for p in self.workspace.rglob("*")
+            if p.is_file()
+            and not any(part.startswith(".") for part in p.relative_to(self.workspace).parts)
+        ]
+        return gaps(self.workspace, api, files)
 
     def architecture_view(self) -> dict[str, Any]:
         """The declared architecture and how it differs from the code graph, both read-only."""

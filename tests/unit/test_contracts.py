@@ -126,3 +126,14 @@ def test_cli_on_a_real_project(tmp_path: Path) -> None:
     tested = {r["id"]: r["tested_by"] for r in out["routes"]}
     assert tested["route:GET /api/customers/{customer_id}"] == ["tests/test_api.py:2"]
     assert out["summary"]["untested"] == out["summary"]["routes"] - 1
+
+
+def test_the_app_facade_offers_both_views(tmp_path: Path) -> None:
+    from ananke.plexus.app import AppFacade
+
+    (tmp_path / "x.py").write_text("X = 1\n")
+    facade = AppFacade(tmp_path)
+    caps = facade.capabilities()["operations"]
+    assert "prioritized_findings" in caps and "contract_gaps" in caps
+    assert facade.prioritized_findings(["x.py"])["schema"] == "prioritized-findings/v1"
+    assert facade.contract_gaps()["schema"] == "api-contract-gaps/v1"
