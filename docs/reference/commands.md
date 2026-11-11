@@ -272,7 +272,7 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 
 ## ananke learning
 
-[Learning candidates](../guides/learning-candidates.md): reusable lessons that need evaluation and review.
+[Learning candidates](../guides/learning-candidates.md): reusable lessons that need evaluation and review. `draft --base REF [--run RUN]… [-o FILE]` drafts one from a session; `overlap LESSON [--json]` checks Dex Trove for similar items.
 
 - `ananke learning capture NAME --description TEXT --body FILE --case ID:positive|regression:COMMAND… [--run ID]… [--public]`
 - `ananke learning evaluate NAME --allow-commands`

@@ -166,6 +166,8 @@ surface:
   - ananke triage jenkins
   - ananke triage findings
   - ananke triage contracts
+  - ananke learning draft
+  - ananke learning overlap
   - ananke app workflow-suggest
   - ananke app workflow-run
   - ananke app code

@@ -10,6 +10,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.37] — 2026-11-10
+
+### Added
+
+- **`ananke learning draft`:** a lesson drafted from a session: its commits, the decisions in their messages, failed
+  tests and run warnings, and the files involved. Names and messages only; never overwrites a draft.
+- **`ananke learning overlap`:** Dex Trove items that look like the same lesson, scored by shared words. Without Dex
+  it says it couldn't check.
+
+---
+
 ## [0.3.36] — 2026-11-10
 
 ### Added

@@ -101,3 +101,18 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     And the JSON output at "summary.tested" equals 1
     And the JSON output at "gaps.untested_routes" equals ["route:POST /orders"]
     And the output contains "test_post_orders_rejects_invalid_body"
+
+  @cap_build_triage
+  Scenario: A session becomes a lesson draft, checked for overlap
+    Given I have run "git add -A && git -c user.email=t@x.invalid -c user.name=t commit -qm base --allow-empty"
+    And the file "app.py" with content:
+      """
+      X = 2
+      """
+    And I have run "git add -A && git -c user.email=t@x.invalid -c user.name=t commit -qm 'Pin the clock in tests' -m 'Chose a fixed clock over retries because retries hid a bug.'"
+    When I run "ananke learning draft --base HEAD~1 -o lesson.md"
+    Then it succeeds
+    And the file "lesson.md" contains "Chose a fixed clock over retries"
+    When I run "ananke learning overlap lesson.md --json"
+    Then it succeeds
+    And the output contains "checked"

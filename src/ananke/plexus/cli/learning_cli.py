@@ -143,3 +143,70 @@ def list_cmd(workspace: Path = _WS) -> None:
         )
     if not found:
         typer.echo("no candidates")
+
+
+@learning_app.command("draft")
+def draft_cmd(
+    base: str = typer.Option(
+        ..., "--base", help="Where the session started: a branch, tag or commit"
+    ),
+    run: list[str] = typer.Option(
+        [], "--run", help="An Ananke run from the session, for its warnings (repeat)"
+    ),
+    title: str = typer.Option(
+        "", "--title", help="The lesson's title (default: the first commit's subject)"
+    ),
+    output: Path = typer.Option(Path("lesson.md"), "--output", "-o", help="Write the draft here"),
+    workspace: Path = _WS,
+) -> None:
+    """A lesson drafted from a session: what changed, the decisions in its commit messages, the tests that failed
+    and its runs' warnings. Names and messages only, never file contents. Finish it, then capture it."""
+    from ananke.plexus.app import AppFacade
+    from ananke.plexus.learning_draft import draft
+
+    if output.exists():
+        typer.echo(f"{output} already exists; choose another --output", err=True)
+        raise typer.Exit(2)
+    runs = []
+    for run_id in run:
+        try:
+            runs.append(AppFacade(workspace).get_run(run_id))
+        except Exception as exc:  # an unknown run is the user's input, not a crash
+            typer.echo(f"no run {run_id!r}: {exc}", err=True)
+            raise typer.Exit(2) from exc
+    try:
+        out = draft(workspace, base, runs=runs, title=title)
+    except ValueError as exc:
+        typer.echo(f"{exc}", err=True)
+        raise typer.Exit(2) from exc
+    output.write_text(out["markdown"], encoding="utf-8")
+    typer.echo(
+        f"wrote {output}: {len(out['commits'])} commits, {len(out['decisions'])} decisions, "
+        f"{len(out['failed_tests'])} failed tests. Finish it, check `ananke learning overlap {output}`, then capture it."
+    )
+
+
+@learning_app.command("overlap")
+def overlap_cmd(lesson: Path, as_json: bool = typer.Option(False, "--json")) -> None:
+    """Does Dex Trove already have this lesson? Items scored by the words they share with it."""
+    from ananke.plexus.learning_draft import overlap
+
+    try:
+        text = lesson.read_text(encoding="utf-8")
+    except OSError as exc:
+        typer.echo(f"{exc}", err=True)
+        raise typer.Exit(2) from exc
+    out = overlap(text)
+    if as_json:
+        typer.echo(json.dumps(out, indent=2))
+        return
+    if not out["checked"]:
+        typer.echo(f"not checked: {out['reason']}")
+        return
+    if not out["similar"]:
+        typer.echo("nothing similar in Dex Trove")
+        return
+    for s in out["similar"]:
+        typer.echo(
+            f"{s['score']:.2f}  {s['id']}  {s['title']}  (shares {', '.join(s['shared'][:6])})"
+        )
