@@ -167,6 +167,7 @@ surface:
   - ananke triage findings
   - ananke triage contracts
   - ananke triage infra
+  - ananke triage api-tests
   - ananke context ask
   - ananke context eval
   - ananke learning draft

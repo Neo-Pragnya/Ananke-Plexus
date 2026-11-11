@@ -100,3 +100,20 @@ ananke triage infra --log compose.log                            # from `docker 
   `kubectl apply --dry-run=client`), then builds, then each service after what it depends on, checking it at each step.
   These are commands to run yourself: nothing is started, applied or contacted.
 
+## Contract tests from an OpenAPI document
+
+```bash
+ananke triage api-tests openapi.yaml                                   # tests/api_contract/test_api_contract.py
+ananke triage api-tests openapi.yaml --run http://127.0.0.1:8000       # run them against your local service
+```
+
+For every operation it writes test cases: the positive case, an unknown resource for each path parameter, a request
+without credentials when the operation is secured, a body with a required field left out and one with a field of the
+wrong type, a five-second response limit, and repeating a `PUT` or `DELETE`. Request bodies come from each schema's
+`example`, or its required fields filled by type: edit them to real values. It also lists operations that document no
+`404`, `400`/`422` or `401`/`403` for a failure they can have.
+
+The tests only run when you ask, and only against a service on this machine (`127.0.0.1`, `localhost`, `::1`). The
+results are kept as JUnit XML, and the report marks each case **executed** (passed or failed) or **suggested**. A
+generated test never counts as a passing one. Exit `1` if an executed case failed.
+

@@ -151,3 +151,19 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     When I run "ananke context ask 'where is the gold discount applied' --json"
     Then it succeeds
     And the JSON output at "cached" equals true
+
+  @cap_build_triage
+  Scenario: Contract tests from an OpenAPI document, run only on this machine
+    Given the file "openapi.json" with content:
+      """
+      {"openapi": "3.0.3", "info": {"title": "Shop", "version": "1"},
+       "paths": {"/orders/{order_id}": {"get": {"responses": {"200": {}}}}}}
+      """
+    When I run "ananke triage api-tests openapi.json --json"
+    Then it succeeds
+    And the JSON output at "cases[1].case" equals "unknown order_id"
+    And the JSON output at "cases[1].status" equals "suggested"
+    And the file "tests/api_contract/test_api_contract.py" contains "ANANKE_API_BASE_URL"
+    When I run "ananke triage api-tests openapi.json --run https://example.com"
+    Then the exit code is 2
+    And the output contains "only against a service on this machine"

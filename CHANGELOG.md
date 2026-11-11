@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.40] — 2026-11-11
+
+### Added
+
+- **`ananke triage api-tests`:** contract tests from an OpenAPI 3 document (positive, unknown resource, no
+  credentials, invalid body, timing, repeat), example fixtures from the schemas, and operations missing error
+  statuses. `--run` executes them only against a service on this machine and marks each case executed or suggested.
+
+---
+
 ## [0.3.39] — 2026-11-11
 
 ### Added

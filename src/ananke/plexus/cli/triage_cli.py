@@ -177,3 +177,53 @@ def infra(
         typer.echo(f"wrote {output}", err=True)
     else:
         typer.echo(out, nl=False)
+
+
+@triage_app.command("api-tests")
+def api_tests(
+    spec: Path,
+    out_dir: Path = typer.Option(
+        Path("tests/api_contract"), "--out", help="Where the generated tests go"
+    ),
+    run_against: str | None = typer.Option(
+        None,
+        "--run",
+        help="Also run them against this service on this machine, e.g. http://127.0.0.1:8000",
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable report"),
+) -> None:
+    """Contract tests from an OpenAPI 3 document: positive, unknown resource, no credentials, invalid body, timing and
+    repeat cases, example fixtures, and operations missing error statuses. With --run, executes them against a local
+    service only and reports each case as executed (passed or failed) or only suggested."""
+    from ananke.plexus.api_tests import ApiTestError, plan, pytest_file, report, run
+
+    try:
+        from ananke.plexus.api_tests import _load
+
+        p = plan(_load(spec))
+    except (OSError, ValueError, ApiTestError) as exc:
+        typer.echo(f"error: {exc} (INVALID_INPUT)", err=True)
+        raise typer.Exit(2) from exc
+    out_dir.mkdir(parents=True, exist_ok=True)
+    test_file = out_dir / "test_api_contract.py"
+    test_file.write_text(pytest_file(p), encoding="utf-8")
+    (out_dir / "api-test-plan.json").write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")
+    executed = None
+    if run_against:
+        try:
+            executed = run(test_file, run_against, out_dir)["results"]
+        except ApiTestError as exc:
+            typer.echo(f"error: {exc} (INVALID_INPUT)", err=True)
+            raise typer.Exit(2) from exc
+    rep = report(p, executed)
+    if as_json:
+        typer.echo(json.dumps(rep, indent=2))
+    else:
+        typer.echo(
+            f"wrote {test_file}: {len(rep['cases'])} cases; "
+            + ", ".join(f"{v} {k}" for k, v in sorted(rep["counts"].items()))
+        )
+        for m in rep["missing_status_codes"]:
+            typer.echo(f"  {m['operation']} documents no {', '.join(m['missing'])}")
+    if executed is not None and any(r["status"] == "executed: failed" for r in rep["cases"]):
+        raise typer.Exit(1)
