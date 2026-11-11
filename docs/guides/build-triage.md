@@ -57,3 +57,23 @@ ranked into *fix now*, *fix soon* and *later*, each with a suggestion. A fix ver
 names one; otherwise it says there isn't one. The report ends with the gates to rerun: the tools whose reports these
 came from. Nothing is run, and with no reports the findings are unknown, not zero.
 
+## API contract gaps
+
+`ananke triage contracts` checks an API's routes against everything that should agree with them:
+
+```bash
+ananke triage contracts
+ananke triage contracts --json -o contract-gaps.json
+```
+
+- **Tested by:** HTTP calls in test files (`client.get("/orders/1")`, `requests.post(f"{BASE}/orders")`,
+  `fetch("/x", { method: "DELETE" })`), matched to a route by method and path, with parameters matching any value.
+- **Called by:** the frontend and service calls the repository analysis matched to the route.
+- **Mismatches:** calls and test calls to routes that don't exist, and operations an OpenAPI file promises that the code
+  doesn't serve.
+- **Recommended contract tests** for each untested route: the success case, a missing resource for each path
+  parameter, an invalid body for `POST`, `PUT` and `PATCH`, and a repeated `DELETE`. They're suggestions named after
+  the route: nothing is run or written.
+
+A route nothing in the project calls may still be used by another service; it's listed so someone can check.
+

@@ -8,6 +8,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **`ananke triage contracts`:** each API route against the tests that call it, the code that calls it and the
+  OpenAPI file; calls and test calls to routes that don't exist; and recommended contract tests for every untested
+  route (success, missing resource per path parameter, invalid body, repeated delete). Nothing is run or written.
+
 ---
 
 ## [0.3.35] — 2026-11-10

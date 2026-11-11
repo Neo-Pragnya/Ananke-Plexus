@@ -165,6 +165,7 @@ surface:
   - ananke connector register
   - ananke triage jenkins
   - ananke triage findings
+  - ananke triage contracts
   - ananke app workflow-suggest
   - ananke app workflow-run
   - ananke app code

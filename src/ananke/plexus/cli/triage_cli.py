@@ -103,3 +103,34 @@ def findings(
         typer.echo(f"wrote {output}", err=True)
     else:
         typer.echo(out, nl=False)
+
+
+@triage_app.command("contracts")
+def contracts(
+    project: Path = typer.Option(Path("."), "--project", help="Repository root"),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable report"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Write the report here"),
+) -> None:
+    """API contract gaps: routes no test calls, routes nothing calls, calls to missing routes, OpenAPI operations
+    the code doesn't serve, and recommended contract tests for each untested route. Nothing is run or written."""
+    from ananke.plexus import intel
+    from ananke.plexus.intel.contracts import gaps, to_markdown
+
+    root = project.resolve()
+    if not root.is_dir():
+        typer.echo(f"error: {project} isn't a folder (INVALID_INPUT)", err=True)
+        raise typer.Exit(2)
+    report = intel.analyze(root)
+    api = (report.get("sections") or {}).get("api") or {}
+    files = [
+        p.relative_to(root).as_posix()
+        for p in root.rglob("*")
+        if p.is_file() and ".git" not in p.parts
+    ]
+    result = gaps(root, api, files)
+    out = json.dumps(result, indent=2) + "\n" if as_json else to_markdown(result)
+    if output:
+        output.write_text(out, encoding="utf-8")
+        typer.echo(f"wrote {output}", err=True)
+    else:
+        typer.echo(out, nl=False)
