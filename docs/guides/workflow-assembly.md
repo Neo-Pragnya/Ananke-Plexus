@@ -47,6 +47,8 @@ ananke app workflow-validate draft.json     # every problem, each with a code an
 ananke app workflow-preview draft.json      # order, locked versions, permissions, approvals, plan hash
 ananke app workflow-compile draft.json      # the ExecutionPlan
 ananke app workflow-suggest draft.json plan openapi --candidate team/other@1.0.0
+ananke app workflow-gaps draft.json         # inputs nothing feeds, and every registered capability that could
+ananke app workflow-proposal draft.json --proposer "a model I ran"   # check a proposed draft; never compiles it
 ```
 
 ## The rules
@@ -89,9 +91,20 @@ always give the same plan and hash.
 authorized under policy. A capability can be compatible and still not authorized. It never adds a node, activates
 anything or changes the draft.
 
+## Gaps and proposals
+
+`workflow-gaps` lists every input that nothing feeds and the run won't supply, and for each one, every registered
+capability that could feed it: authorized ones first, then compatible ones policy doesn't allow, with the fix. Like a
+suggestion, it changes nothing.
+
+`workflow-proposal` is for a draft something else wrote: a template, a teammate, or a language model you chose to
+run. Ananke never calls a model. The proposal gets exactly the checks a hand-written draft gets (validation, policy,
+preview) and its gaps, marked `status: proposal`, `compiled: false`. It isn't compiled or run: after someone reviews
+it, it goes through `workflow-compile` and `workflow-run` like any draft.
+
 ## What doesn't run anything
 
-Validating, previewing, suggesting and compiling start no process, make no network call, install nothing and write
+Validating, previewing, suggesting, finding gaps, checking proposals and compiling start no process, make no network call, install nothing and write
 nothing to the workspace.
 
 Only `workflow-run` does work.

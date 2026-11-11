@@ -122,3 +122,28 @@ Feature: Workflows are validated, explained and compiled without running anythin
     When I run "ananke app workflow-run draft.json --backend nope --plan-hash $(cat plan-hash) --approve b --input a.source=src --key nobackend"
     Then the output contains "BACKEND_NOT_FOUND"
     And the output does not contain ".output.txt"
+
+  @cap_assembly @adversarial
+  Scenario: Gaps name what nothing feeds, and a proposal is checked like any draft but never compiled
+    Given the file "gap.json" with content:
+      """
+      {"schema_version": "1.0.0", "workflow_id": "demo/gap",
+       "nodes": [
+         {"id": "a", "capability_ref": "local/good-skill@0.1.0", "kind": "skill",
+          "inputs": [{"name": "source", "schema_ref": "python-source/v1"}],
+          "outputs": [{"name": "report", "schema_ref": "report/v1"}]},
+         {"id": "b", "capability_ref": "local/good-skill@0.1.0", "kind": "skill",
+          "inputs": [{"name": "report", "schema_ref": "report/v1", "required": true}],
+          "outputs": [{"name": "summary", "schema_ref": "markdown/v1"}]}],
+       "edges": []}
+      """
+    When I run "ananke app workflow-gaps gap.json"
+    Then it succeeds
+    And the JSON output at "gaps[0].node" equals "b"
+    And the JSON output at "gaps[0].requires" equals "report/v1"
+    And the JSON output at "auto_activate" equals false
+    When I run "ananke app workflow-proposal draft.json --proposer 'a model I ran'"
+    Then it succeeds
+    And the JSON output at "status" equals "proposal"
+    And the JSON output at "compiled" equals false
+    And the JSON output at "valid" equals true

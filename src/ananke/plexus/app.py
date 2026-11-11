@@ -174,6 +174,8 @@ class AppFacade:
                 "preview_workflow",
                 "compile_workflow",
                 "suggest_capabilities",
+                "workflow_gaps",
+                "review_proposal",
                 "code_view",
                 "read_source",
                 "read_sources",
@@ -499,6 +501,21 @@ class AppFacade:
         from ananke.plexus.assembly import suggest
 
         return suggest(draft, node, port, candidates, self._registry())
+
+    def workflow_gaps(self, draft: dict[str, Any]) -> dict[str, Any]:
+        """Inputs nothing feeds, and the registered capabilities that could. Activates nothing."""
+        from ananke.plexus.assembly import gaps
+
+        return gaps(draft, self._registry())
+
+    def review_proposal(self, draft: dict[str, Any], proposer: str) -> dict[str, Any]:
+        """The checks a hand-written draft gets, for a proposed one; never compiles or runs it."""
+        from ananke.plexus.assembly import review_proposal
+
+        try:
+            return review_proposal(draft, self._registry(), proposer=proposer)
+        except ValueError as exc:
+            raise AppError("INVALID_REQUEST", str(exc)) from exc
 
     # ------------------------------------------------------------------ read-only projections for products
     def code_view(

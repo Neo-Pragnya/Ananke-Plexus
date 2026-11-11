@@ -156,6 +156,8 @@ surface:
   - ananke app workflow-validate
   - ananke app workflow-preview
   - ananke app workflow-compile
+  - ananke app workflow-gaps
+  - ananke app workflow-proposal
   - ananke app workflow-suggest
   - ananke app workflow-run
   - ananke app code
