@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.41] — 2026-11-11
+
+### Added
+
+- **`ananke triage topology`:** several repositories as one system: a pinned workspace, each repository's packages,
+  services and routes, calls from one to another's routes, routes changed since the pin and the callers they reach,
+  calls no repository serves, and external systems.
+
+---
+
 ## [0.3.40] — 2026-11-11
 
 ### Added

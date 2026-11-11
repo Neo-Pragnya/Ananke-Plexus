@@ -167,3 +167,27 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     When I run "ananke triage api-tests openapi.json --run https://example.com"
     Then the exit code is 2
     And the output contains "only against a service on this machine"
+
+  @cap_build_triage
+  Scenario: Two repositories as one system, pinned
+    Given the file "orders/app/api.py" with content:
+      """
+      from fastapi import FastAPI
+
+      app = FastAPI()
+
+
+      @app.get("/orders/{order_id}")
+      def get_order(order_id: int):
+          return {}
+      """
+    And the file "web/src/api.js" with content:
+      """
+      export async function load(id) {
+        return fetch(`/orders/${id}`);
+      }
+      """
+    When I run "for r in orders web; do (cd $r && git init -q -b main && git add -A && git -c user.email=t@x.invalid -c user.name=t commit -qm base); done; ananke triage topology --project orders --project web --pin --json"
+    Then it succeeds
+    And the JSON output at "links[0].route" equals "GET /orders/{order_id}"
+    And the file ".ananke/workspace.json" contains "orders"
