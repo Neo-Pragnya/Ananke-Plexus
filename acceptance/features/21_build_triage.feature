@@ -72,3 +72,32 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     And the JSON output at "findings[0].tier" equals "fix now"
     And the JSON output at "impacted" equals ["pkg/a.py"]
     And the JSON output at "rerun[0].gate" equals "semgrep"
+
+  @cap_build_triage
+  Scenario: API contract gaps name untested routes and recommend tests
+    Given the file "api/main.py" with content:
+      """
+      from fastapi import FastAPI
+
+      app = FastAPI()
+
+
+      @app.get("/orders/{order_id}")
+      def get_order(order_id: int):
+          return {}
+
+
+      @app.post("/orders")
+      def create_order(body: dict):
+          return {}
+      """
+    And the file "tests/test_api.py" with content:
+      """
+      def test_get(client):
+          client.get("/orders/1")
+      """
+    When I run "ananke triage contracts --json"
+    Then it succeeds
+    And the JSON output at "summary.tested" equals 1
+    And the JSON output at "gaps.untested_routes" equals ["route:POST /orders"]
+    And the output contains "test_post_orders_rejects_invalid_body"
