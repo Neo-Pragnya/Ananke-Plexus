@@ -692,6 +692,76 @@ def suggest(
     return {"node": node_id, "port": port, "requires": want, "candidates": rows}
 
 
+def gaps(draft: dict[str, Any], registry: Registry) -> dict[str, Any]:
+    """Every input that nothing feeds and the run won't supply, with the registered capabilities that could feed it.
+
+    For each gap, the candidates are every registered version, explained by :func:`suggest`: compatible and
+    authorized first, then compatible but not authorized. Like ``suggest``, it only explains: it adds no node,
+    activates nothing and changes nothing (``auto_activate`` is always false).
+    """
+    v = validate(draft, registry)
+    bound = {(e.get("target"), e.get("target_port")) for e in draft.get("edges", [])}
+    supplied = set(v.workflow_inputs)
+    refs = sorted(f"{r.namespace}/{r.name}@{r.version}" for r in registry.list_versions())
+    out = []
+    for node in draft.get("nodes", []):
+        nid = node.get("id")
+        own = node.get("capability_ref")
+        for port in node.get("inputs", []):
+            name = port.get("name")
+            if (nid, name) in bound or f"{nid}.{name}" in supplied:
+                continue
+            answer = suggest(draft, str(nid), str(name), [r for r in refs if r != own], registry)
+            rows = answer.get("candidates", [])
+            fits = [r for r in rows if r["compatible"]]
+            out.append(
+                {
+                    "node": nid,
+                    "port": name,
+                    "requires": port.get("schema_ref"),
+                    "authorized": [r for r in fits if r["authorized"]],
+                    "not_authorized": [r for r in fits if not r["authorized"]],
+                    "incompatible": len(rows) - len(fits),
+                    "fix": (
+                        f"connect {fits[0]['ref']} ({fits[0].get('output_port')})"
+                        if fits and fits[0]["authorized"]
+                        else f"register or approve a capability that outputs {port.get('schema_ref')}, "
+                        "or add an explicit adapter node"
+                    ),
+                }
+            )
+    return {
+        "valid": v.ok,
+        "gaps": out,
+        "issues": [asdict(i) for i in v.issues if i.code != "UNBOUND_INPUT"],
+        "auto_activate": False,
+    }
+
+
+def review_proposal(draft: dict[str, Any], registry: Registry, *, proposer: str) -> dict[str, Any]:
+    """Check a workflow someone or something proposed: a person, a template, or a model a user chose to run.
+
+    Ananke never calls a model itself. Whatever proposed the draft, it gets the same checks as a hand-written one
+    (validation, policy, preview) and its gaps are named. A proposal is never compiled or run here: after a person
+    reviews it, it goes through ``compile_workflow`` like any draft.
+    """
+    if not proposer.strip():
+        raise ValueError("say what proposed this draft (a person, a template or a model)")
+    v = validate(draft, registry)
+    return {
+        "status": "proposal",
+        "proposer": proposer,
+        "valid": v.ok,
+        "issues": [asdict(i) for i in v.issues],
+        "preview": preview(draft, registry) if v.ok else None,
+        "gaps": gaps(draft, registry)["gaps"],
+        "compiled": False,
+        "next": "review it, then compile it with workflow-compile"
+        if v.ok
+        else "fix the issues, or reject the proposal",
+    }
+
+
 __all__ = [
     "SCHEMA_VERSION",
     "STEP_TYPE",
@@ -703,7 +773,9 @@ __all__ = [
     "authorization_issues",
     "compile_workflow",
     "describe",
+    "gaps",
     "preview",
+    "review_proposal",
     "suggest",
     "validate",
 ]

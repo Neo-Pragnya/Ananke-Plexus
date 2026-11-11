@@ -171,6 +171,27 @@ def workflow_suggest(
     )
 
 
+@app_app.command("workflow-gaps")
+def workflow_gaps(draft: Path, workspace: Path = _WS, protocol: str = _PROTO) -> None:
+    """Inputs nothing feeds and the run won't supply, with every registered capability that could feed each one
+    (authorized first). Explains only: activates nothing and changes nothing."""
+    _call(protocol, lambda: _facade(workspace).workflow_gaps(_draft(draft)))
+
+
+@app_app.command("workflow-proposal")
+def workflow_proposal(
+    draft: Path,
+    proposer: str = typer.Option(
+        ..., "--proposer", help="What proposed it: a person, a template, or a model you ran"
+    ),
+    workspace: Path = _WS,
+    protocol: str = _PROTO,
+) -> None:
+    """Check a proposed workflow with the same validation, policy and preview as a hand-written one, and name its
+    gaps. Ananke never calls a model; a proposal is never compiled or run here."""
+    _call(protocol, lambda: _facade(workspace).review_proposal(_draft(draft), proposer))
+
+
 @app_app.command("workflow-run")
 def workflow_run(
     draft: Path,

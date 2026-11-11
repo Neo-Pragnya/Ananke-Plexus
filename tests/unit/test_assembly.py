@@ -275,3 +275,56 @@ def test_what_the_compiler_cant_honour_is_a_diagnostic_not_ignored(
     result = validate(draft, reg)
     assert not result.ok
     assert all(i.code and i.message for i in result.issues)
+
+
+def test_gaps_name_each_unfed_input_and_what_could_feed_it(reg: Registry) -> None:
+    from ananke.plexus.assembly import gaps
+
+    draft = copy.deepcopy(WWI)
+    draft["edges"] = [
+        e for e in draft["edges"] if e["target"] != "plan"
+    ]  # nothing feeds plan.openapi now
+    for node in draft["nodes"]:
+        if node["id"] == "plan":
+            for port in node["inputs"]:
+                port["required"] = True  # so the run can't supply it
+    add(
+        reg,
+        "unsafe-extract",
+        "1.0.0",
+        namespace="fixture",
+        kind="tool",
+        trust=TrustStatus.UNKNOWN,
+        outputs=contract([("openapi", "openapi/v3")]),
+    )
+    before = json.dumps(draft, sort_keys=True)
+    out = gaps(draft, reg)
+    (gap,) = [g for g in out["gaps"] if g["node"] == "plan"]
+    assert gap["requires"] == "openapi/v3"
+    assert [r["ref"] for r in gap["authorized"]] == ["fixture/api-contract-extract@1.0.0"]
+    assert [r["ref"] for r in gap["not_authorized"]] == ["fixture/unsafe-extract@1.0.0"]
+    assert gap["incompatible"] > 0 and gap["fix"].startswith(
+        "connect fixture/api-contract-extract@1.0.0"
+    )
+    assert out["auto_activate"] is False and json.dumps(draft, sort_keys=True) == before
+    assert all(
+        g["node"] != "extract" for g in out["gaps"]
+    )  # an entry input the run supplies isn't a gap
+    assert gaps(WWI, reg)["gaps"] == []  # the complete example has none
+
+
+def test_a_proposal_gets_the_same_checks_and_is_never_compiled(reg: Registry) -> None:
+    from ananke.plexus.assembly import review_proposal
+
+    good = review_proposal(WWI, reg, proposer="a model the user ran")
+    assert good["status"] == "proposal" and good["valid"] and good["compiled"] is False
+    assert good["preview"]["plan_hash"] == preview(WWI, reg)["plan_hash"]
+    bad = copy.deepcopy(WWI)
+    bad["nodes"][0]["permission_profile"] = [
+        "network-unrestricted"
+    ]  # asking for more than it declares
+    bad["nodes"][0]["capability_ref"] = "fixture/not-registered@9.9.9"
+    out = review_proposal(bad, reg, proposer="template")
+    assert not out["valid"] and out["preview"] is None and out["issues"]
+    with pytest.raises(ValueError, match="what proposed"):
+        review_proposal(WWI, reg, proposer=" ")

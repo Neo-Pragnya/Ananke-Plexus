@@ -8,6 +8,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **`ananke app workflow-gaps`:** every input of a workflow draft that nothing feeds and the run won't supply, with
+  every registered capability that could feed it (authorized first) and the fix. Changes nothing.
+- **`ananke app workflow-proposal`:** checks a draft a template, a person or a model proposed with the same
+  validation, policy and preview as a hand-written one, and names its gaps. Ananke never calls a model, and a
+  proposal is never compiled or run.
+
 ---
 
 ## [0.3.33] — 2026-11-06
