@@ -1,6 +1,6 @@
 ---
 title: Build triage
-description: Find why a Jenkins build failed from its console log, its Jenkinsfile and what changed, with no access to the CI server.
+description: Find why a Jenkins build failed, and what to fix first across scanners, tests, coverage and dependencies, from files you already have.
 ---
 
 # Build triage
@@ -34,3 +34,26 @@ A related change is evidence to look at, not proof that it caused the failure.
 
 The same triage is the `jenkins-triage` [connector](connectors.md) (`build-log/v1` → `triage-report/v1`), so a
 workflow can use it and its output is checked before it's kept.
+
+## What to fix first
+
+`ananke triage findings` puts every finding the repository's reports hold in one list, ranked against what changed:
+
+```bash
+ananke triage findings --base origin/main
+ananke triage findings --changed api/orders.py --check-vulnerabilities --json
+```
+
+| Kind | From |
+| --- | --- |
+| `code` | SARIF reports (CodeQL, Semgrep, Bandit, Trivy and others), with the rule's own remediation text |
+| `test` | failing tests in JUnit XML |
+| `coverage` | a changed file whose line coverage is under 60% |
+| `dependency` | vulnerable packages from the dependency check, each with its package, version and advisory, and the project files that import it |
+
+Each finding has a stable id and is marked **changed** (in a changed file), **impacted** (in a file that imports a
+changed file, directly or not) or neither; a dependency is **reachable** when project code imports it. They're
+ranked into *fix now*, *fix soon* and *later*, each with a suggestion. A fix version is given only when the advisory
+names one; otherwise it says there isn't one. The report ends with the gates to rerun: the tools whose reports these
+came from. Nothing is run, and with no reports the findings are unknown, not zero.
+

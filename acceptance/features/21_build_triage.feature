@@ -46,3 +46,29 @@ Feature: A failed build is triaged from its log, with no access to the CI server
     When I run "ananke triage jenkins notes.txt"
     Then the exit code is 2
     And the output contains "INVALID_INPUT"
+
+  @cap_build_triage
+  Scenario: Findings from the repository's reports are ranked against what changed
+    Given the file "pkg/a.py" with content:
+      """
+      from pkg import b
+      """
+    And the file "pkg/__init__.py" with content:
+      """
+      """
+    And the file "pkg/b.py" with content:
+      """
+      def q():
+          return 1
+      """
+    And the file "semgrep.sarif" with content:
+      """
+      {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": "Semgrep"}}, "results": [
+        {"ruleId": "r1", "level": "error", "message": {"text": "unsafe"},
+         "locations": [{"physicalLocation": {"artifactLocation": {"uri": "pkg/b.py"}, "region": {"startLine": 2}}}]}]}]}
+      """
+    When I run "ananke triage findings --changed pkg/b.py --json"
+    Then it succeeds
+    And the JSON output at "findings[0].tier" equals "fix now"
+    And the JSON output at "impacted" equals ["pkg/a.py"]
+    And the JSON output at "rerun[0].gate" equals "semgrep"

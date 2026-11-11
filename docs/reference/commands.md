@@ -268,7 +268,7 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 
 ## ananke triage
 
-[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found.
+[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found. `findings [--project P] [--changed PATH]… [--base REF] [--check-vulnerabilities] [--json] [-o FILE]`: what to fix first.
 
 ## ananke learning
 
