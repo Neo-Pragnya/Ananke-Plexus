@@ -10,6 +10,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.43] — 2026-11-11
+
+### Fixed
+
+- **`ananke triage api-contract` read committed virtualenvs.** Classes from installed packages (a folder holding
+  `pyvenv.cfg`, `site-packages`, `node_modules`, dot-folders) were taken for the project's models, and which ones got
+  in depended on the Python version reading them. Found on a real repository: 9 schemas on Python 3.14, 7 on 3.12.
+  Now only the project's own files are read, the result is the same on every version, and it's faster.
+- **Enums are enum schemas.** A field typed with an `Enum` subclass now refers to a schema listing its values, instead
+  of being dropped or shown as an empty object.
+
 ## [0.3.42] — 2026-11-11
 
 ### Added

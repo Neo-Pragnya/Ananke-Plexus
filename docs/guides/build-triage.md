@@ -96,6 +96,9 @@ ananke triage api-contract --spec api/openapi.yaml --fail-on high
 - **Responses:** `response_model=` and `status_code=`, and every status a handler raises or returns
   (`HTTPException(status_code=404)`, `abort(403)`, `return ..., 409`, `res.status(400)`).
 
+Only the project's own files are read: virtualenvs (any folder holding `pyvenv.cfg`), `site-packages`,
+`node_modules` and dot-folders are skipped. An `Enum` subclass becomes a schema listing its values.
+
 Every fact names the file and line it came from and says whether it was **observed** (written down: an OpenAPI
 operation, a type, a `response_model`) or **inferred** (read from how the handler uses its input). Where an OpenAPI file
 describes an operation, it's the declared contract, and the code fills in only what it leaves out.
