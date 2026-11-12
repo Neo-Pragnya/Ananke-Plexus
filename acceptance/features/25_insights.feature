@@ -123,10 +123,10 @@ Feature: Advanced insights are deterministic, run nothing unasked and label what
     Given the file "shop/cart.py" with content:
       """
       def total(items):
-          # total is the sum
           return sum(items)
 
 
+      # total is the sum
       LABEL = "total"
 
 
