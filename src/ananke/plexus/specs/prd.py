@@ -168,9 +168,20 @@ def _test_files(root: Path) -> list[Path]:
             for part in path.relative_to(root).parts
         ):
             continue
-        if path.is_file() and (_TEST_NAME.search(rel) or (rel.startswith(_TEST_DIRS) and path.suffix in {
-            ".py", ".js", ".ts", ".feature", ".go",
-        })):  # fmt: skip
+        if path.is_file() and (
+            _TEST_NAME.search(rel)
+            or (
+                rel.startswith(_TEST_DIRS)
+                and path.suffix
+                in {
+                    ".py",
+                    ".js",
+                    ".ts",
+                    ".feature",
+                    ".go",
+                }
+            )
+        ):
             found.append(path)
     return found
 
@@ -232,37 +243,50 @@ def map_prd(
     if status != "approved":
         found.append(
             _finding(
-                "PRD_NOT_APPROVED", "warning" if allow_draft else "error",
+                "PRD_NOT_APPROVED",
+                "warning" if allow_draft else "error",
                 f"the PRD's status is {status or 'not set'}, not approved",
-                1, "review it, then set `status: approved` in its front matter",
+                1,
+                "review it, then set `status: approved` in its front matter",
             )
-        )  # fmt: skip
+        )
     if not parsed["requirements"]:
         found.append(
             _finding(
-                "NO_REQUIREMENTS", "error",
-                "no requirement lines were found" + ("" if parsed["has_requirements_section"]
-                                                     else " (there is no ## Requirements section)"),
-                None, "list requirements as lines starting with an id, such as `- **R1** The cart keeps items`",
+                "NO_REQUIREMENTS",
+                "error",
+                "no requirement lines were found"
+                + (
+                    ""
+                    if parsed["has_requirements_section"]
+                    else " (there is no ## Requirements section)"
+                ),
+                None,
+                "list requirements as lines starting with an id, such as `- **R1** The cart keeps items`",
             )
-        )  # fmt: skip
+        )
     for dup in parsed["duplicates"]:
         found.append(
             _finding(
-                "DUPLICATE_REQUIREMENT", "error", f"{dup['id']} is used again (first at line {dup['first']})",
-                dup["line"], "give every requirement its own id",
+                "DUPLICATE_REQUIREMENT",
+                "error",
+                f"{dup['id']} is used again (first at line {dup['first']})",
+                dup["line"],
+                "give every requirement its own id",
             )
-        )  # fmt: skip
+        )
     known = {r["id"] for r in parsed["requirements"]}
     for c in parsed["criteria"]:
         if c["requirement"] not in known:
             found.append(
                 _finding(
-                    "ACCEPTANCE_UNKNOWN_REQUIREMENT", "error",
-                    f"an acceptance line names {c['requirement']}, which isn't a requirement", c["line"],
+                    "ACCEPTANCE_UNKNOWN_REQUIREMENT",
+                    "error",
+                    f"an acceptance line names {c['requirement']}, which isn't a requirement",
+                    c["line"],
                     "fix the id or add the requirement",
                 )
-            )  # fmt: skip
+            )
     mentions = _mentions(root)
     rows = []
     for req in parsed["requirements"]:
@@ -300,18 +324,23 @@ def map_prd(
             if not own and not req_tests:
                 found.append(
                     _finding(
-                        "ACCEPTANCE_UNTESTED", "error" if require_tests else "warning",
-                        f"{acc_id} has no test yet that mentions {acc_id} or {req['id']}", crit["line"],
+                        "ACCEPTANCE_UNTESTED",
+                        "error" if require_tests else "warning",
+                        f"{acc_id} has no test yet that mentions {acc_id} or {req['id']}",
+                        crit["line"],
                         f"name {acc_id} in the test that checks it (the compiled behaviour test does)",
                     )
-                )  # fmt: skip
+                )
         if not acceptance:
             found.append(
                 _finding(
-                    "REQUIREMENT_WITHOUT_ACCEPTANCE", "error", f"{req['id']} has no acceptance criterion", req["line"],
+                    "REQUIREMENT_WITHOUT_ACCEPTANCE",
+                    "error",
+                    f"{req['id']} has no acceptance criterion",
+                    req["line"],
                     f"add a line `- {req['id']}: how a reviewer can see it works` under ## Acceptance",
                 )
-            )  # fmt: skip
+            )
         rows.append(
             {
                 "id": req["id"],
@@ -330,10 +359,13 @@ def map_prd(
         if not f["requirements"]:
             found.append(
                 _finding(
-                    "FEATURE_WITHOUT_REQUIREMENTS", "warning", f"the feature '{f['title']}' has no requirements",
-                    f["line"], "add its requirements under that heading, or remove the heading",
+                    "FEATURE_WITHOUT_REQUIREMENTS",
+                    "warning",
+                    f"the feature '{f['title']}' has no requirements",
+                    f["line"],
+                    "add its requirements under that heading, or remove the heading",
                 )
-            )  # fmt: skip
+            )
     if not features and rows:
         features = [
             {

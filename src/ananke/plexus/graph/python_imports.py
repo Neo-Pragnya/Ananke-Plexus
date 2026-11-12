@@ -73,7 +73,8 @@ class ModuleIndex:
     def root_of(self, rel_path: str) -> str:
         """The folder a file's top-level package sits in; for a file outside any package, its own folder."""
         directory = _parent(rel_path)
-        while directory in self.packages:
+        # the repository's own folder can be a package (an __init__.py at the top); its parent is itself, so stop
+        while directory and directory in self.packages:
             directory = _parent(directory)
         return directory
 

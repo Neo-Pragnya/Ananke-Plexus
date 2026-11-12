@@ -88,6 +88,7 @@ nav:
       - Workflow Assembly: guides/workflow-assembly.md
       - Connectors: guides/connectors.md
       - Build triage: guides/build-triage.md
+      - Advanced insights: guides/advanced-insights.md
       - Code Graph: guides/code-graph.md
       - Saving Tokens: guides/saving-tokens.md
       - Business Processes: guides/business-processes.md

@@ -199,6 +199,14 @@ The `notebooks` section explains each one from its own text and code:
 
 The `findings` section reads reports already in the repository, and runs nothing. A `*.sarif` file gives `findings`: tool, rule, severity, message, path, line and how to fix it, worst first. A `junit*.xml`, `test-results*.xml`, `pytest*.xml` or `TEST-*.xml` file gives `tests`: totals, and what failed with its message. With no report, `status` is `not_found`, because that's unknown rather than zero. A report may be older than the code, and the section says so.
 
+## Test topology
+
+The `tests` section groups test files into suites by kind (unit, integration, end-to-end, acceptance, contract,
+performance) and framework (pytest, unittest, Jest, Vitest, Mocha, Playwright, Cypress, pytest-bdd, behave, Gherkin,
+Go testing), with their test counts, the project files each suite imports (directly or through one helper), the
+source files no test imports (`untested`, inferred: a test can still reach them over HTTP or a subprocess), and the
+shared setup (`conftest.py`, fixtures, test configuration). Nothing is run.
+
 ## Rules every section follows
 
 - **Evidence.** Each table, field, route, usage and step cites `path:line`.
@@ -280,3 +288,7 @@ asked for. It sends each pinned package's name and version to [OSV](https://osv.
 (`aliases` overlapping) are merged, keeping the worst severity. `severity` is the database's word or the CVSS 3 base score, otherwise
 `unknown`: CVSS 4 vectors aren't scored. `fixed_in` is the lowest fix newer than the installed version, or the lowest fix if none is
 newer; versions are compared without a full PEP 440 or SemVer parser.
+
+With `ANANKE_OSV_DB` pointing at a database made by `ananke cve import`, the scan answers from that copy and sends
+nothing: `scanner` is `osv-offline`, the limits say when the data was imported, and ecosystems the copy has no export
+for are listed as not checked rather than clean.

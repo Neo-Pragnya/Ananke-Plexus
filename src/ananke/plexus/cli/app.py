@@ -61,6 +61,12 @@ eval_baseline_app = typer.Typer(help="Evaluation baseline operations")
 eval_trace_app = typer.Typer(help="Trace operations")
 eval_adapter_app = typer.Typer(help="Eval adapter management")
 eval_judge_app = typer.Typer(help="Judge management")
+from ananke.plexus.cli.insight_cli import register as _register_insights  # noqa: E402
+
+_register_insights(graph_app, triage_app, context_app, arch_app)
+from ananke.plexus.cli.insight_cli import cve_app  # noqa: E402
+
+app.add_typer(cve_app, name="cve")
 app.add_typer(spec_app, name="spec")
 app.add_typer(graph_app, name="graph")
 app.add_typer(connector_app, name="connector")

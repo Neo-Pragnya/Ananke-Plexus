@@ -78,6 +78,12 @@ def findings(
     ),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable report"),
     output: Path | None = typer.Option(None, "--output", "-o", help="Write the report here"),
+    rerun_gates: list[str] = typer.Option(
+        [],
+        "--rerun",
+        help="Run this gate now (repeat): semgrep, bandit, ruff, gitleaks, trivy, grype, eslint, "
+        "tests, dependencies. Only the ones named run",
+    ),
 ) -> None:
     """What to fix first: scanner findings, failing tests, low coverage on changed files and vulnerable dependencies,
     ranked against what changed and what it affects, with the gates to rerun.
@@ -97,7 +103,19 @@ def findings(
     snap = build_graph(root)
     graph = {"edges": [e.model_dump(mode="json") for e in snap.edges]}
     result = prioritize(report, graph, files)
+    if rerun_gates:
+        from ananke.plexus.intel.gates import rerun
+        from ananke.plexus.intel.gates import to_markdown as gates_markdown
+
+        result["gates_rerun"] = rerun(root, rerun_gates, result)
+        result["limits"] = [
+            x if not x.startswith("Nothing was run") else
+            f"Only the gates under 'Gates rerun' were run ({', '.join(rerun_gates)}); their reports are in ananke-gates/."
+            for x in result.get("limits") or []
+        ]  # fmt: skip
     out = json.dumps(result, indent=2) + "\n" if as_json else to_markdown(result)
+    if rerun_gates and not as_json:
+        out += gates_markdown(result["gates_rerun"])
     if output:
         output.write_text(out, encoding="utf-8")
         typer.echo(f"wrote {output}", err=True)
