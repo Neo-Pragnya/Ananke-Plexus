@@ -436,6 +436,9 @@ test-python = [
 test-snapshot = [
     { name = "syrupy" },
 ]
+typed = [
+    { name = "jedi" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -471,6 +474,7 @@ requires-dist = [
     { name = "hypothesis", marker = "extra == 'test-all'", specifier = ">=6.100" },
     { name = "hypothesis", marker = "extra == 'test-property'", specifier = ">=6.100" },
     { name = "inspect-ai", marker = "extra == 'eval-inspect'", specifier = ">=0.3" },
+    { name = "jedi", marker = "extra == 'typed'", specifier = ">=0.19" },
     { name = "jinja2", specifier = ">=3.1.6,<4" },
     { name = "jsonschema", marker = "extra == 'all'", specifier = ">=4.23" },
     { name = "jsonschema", marker = "extra == 'eval-enterprise'", specifier = ">=4.23" },
@@ -543,7 +547,7 @@ requires-dist = [
     { name = "zstandard", marker = "extra == 'registry'", specifier = ">=0.22" },
     { name = "zstandard", marker = "extra == 'registry-zstd'", specifier = ">=0.22" },
 ]
-provides-extras = ["all", "context", "dev", "dex", "docs", "eval-agentevals", "eval-deepeval", "eval-enterprise", "eval-inspect", "eval-mlflow", "eval-openevals", "eval-otel", "eval-pydantic", "jira", "keychain", "mcp", "registry", "registry-analytics", "registry-fast", "registry-signing", "registry-validate", "registry-watch", "registry-zstd", "security", "telemetry", "test-all", "test-api", "test-automation", "test-bdd", "test-contract", "test-mutation", "test-property", "test-python", "test-snapshot"]
+provides-extras = ["all", "context", "dev", "dex", "docs", "eval-agentevals", "eval-deepeval", "eval-enterprise", "eval-inspect", "eval-mlflow", "eval-openevals", "eval-otel", "eval-pydantic", "jira", "keychain", "mcp", "registry", "registry-analytics", "registry-fast", "registry-signing", "registry-validate", "registry-watch", "registry-zstd", "security", "telemetry", "test-all", "test-api", "test-automation", "test-bdd", "test-contract", "test-mutation", "test-property", "test-python", "test-snapshot", "typed"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2952,6 +2956,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6c/1f/c23395957d41ccf27c4e535c3d334c4051e5395b3752057ba4cbaec35c56/jaraco_functools-4.6.0.tar.gz", hash = "sha256:880c577ec9720b3a052d5bc611fb9f2269b3d87902ef42440df443b88e443280", size = 20837, upload-time = "2026-07-14T01:28:02.544Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/02/36/ecc85bc96c273dc8a11273ed4782272975e6338d4a3e9228621175edf0e3/jaraco_functools-4.6.0-py3-none-any.whl", hash = "sha256:99e3dc0060c5cbe8fcd1cdb36258e2a65ca40f1566b2033b12abb1bb44dd3c30", size = 11677, upload-time = "2026-07-14T01:28:01.59Z" },
+]
+
+[[package]]
+name = "jedi"
+version = "0.20.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "parso" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/a4/4692ecd7fa700ac1066b1c1f6cadef60aa2e01e5e364710235137d823e0a/jedi-0.20.1.tar.gz", hash = "sha256:2f71208c3f9c1bca057c0e90d3f272aba44ace88fc4067d7587e9e069331b7e5", size = 3121738, upload-time = "2026-10-12T17:42:24.361Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/c7/71eb0d51cdcbb63b857c931aa4e9218b078b5d9f8ecd383b234f28fe7b0f/jedi-0.20.1-py2.py3-none-any.whl", hash = "sha256:0fb16d86c4a4c73c37ba518c77419975e30fcc620658a8d14fbb5720cdd34142", size = 4885980, upload-time = "2026-10-12T17:42:21.585Z" },
 ]
 
 [[package]]
@@ -5447,6 +5463,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/19/ea/42ba6ce0abba04ab6e0b997dcb9b528a4661b62af1fe1b0d498120d5ea78/parse_type-0.6.6.tar.gz", hash = "sha256:513a3784104839770d690e04339a8b4d33439fcd5dd99f2e4580f9fc1097bfb2", size = 98012, upload-time = "2025-08-11T22:53:48.066Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/85/8d/eef3d8cdccc32abdd91b1286884c99b8c3a6d3b135affcc2a7a0f383bb32/parse_type-0.6.6-py2.py3-none-any.whl", hash = "sha256:3ca79bbe71e170dfccc8ec6c341edfd1c2a0fc1e5cfd18330f93af938de2348c", size = 27085, upload-time = "2025-08-11T22:53:46.396Z" },
+]
+
+[[package]]
+name = "parso"
+version = "0.8.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/4b/90c937815137d43ce71ba043cd3566221e9df6b9c805f24b5d138c9d40a7/parso-0.8.7.tar.gz", hash = "sha256:eaaac4c9fdd5e9e8852dc778d2d7405897ec510f2a298071453e5e3a07914bb1", size = 401824, upload-time = "2026-05-01T23:13:02.138Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/5d/8268b644392ee874ee82a635cd0df1773de230bde356c38de28e298392cc/parso-0.8.7-py2.py3-none-any.whl", hash = "sha256:a8926eb2a1b915486941fdbd31e86a4baf88fe8c210f25f2f35ecec5b574ca1c", size = 107025, upload-time = "2026-05-01T23:12:58.867Z" },
 ]
 
 [[package]]

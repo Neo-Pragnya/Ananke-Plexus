@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.45] — 2026-11-12
+
+### Added
+
+- **References by type and symbol-level edits for Python**, without Serena: `ananke context refs` (resolved by type
+  with Jedi from the new `typed` extra, else from the graph, labelled), `context replace`, `context insert` and
+  `context rename`. Edits are dry runs that print a diff until `--write`; every changed file must still parse, a
+  file changed since it was read is refused, and a graph-only rename that can't resolve every use is refused rather
+  than half-applied.
+
 ## [0.3.44] — 2026-11-12
 
 ### Added

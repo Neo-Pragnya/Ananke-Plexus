@@ -57,6 +57,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+typed = ["jedi>=0.19"]  # type-aware references for ananke context refs/rename (MIT)
 mcp = ["mcp>=2,<3"]
 context = ["repomix>=0.5,<0.6"]
 telemetry = [

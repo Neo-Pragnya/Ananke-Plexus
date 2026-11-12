@@ -184,6 +184,10 @@ surface:
   - ananke graph twin
   - ananke arch decide
   - ananke context observe
+  - ananke context refs
+  - ananke context replace
+  - ananke context insert
+  - ananke context rename
   - ananke cve import
   - ananke cve status
   - ananke triage infra

@@ -295,3 +295,26 @@ until the code changes.
 the expected symbol in the top three for five, using 5,353 tokens in all, against 3.45 million for reading every
 Python file that contains one of the question's words: 99.8% fewer.
 
+## References and edits by symbol
+
+An assistant that knows a symbol's name doesn't need to read whole files to change it:
+
+```bash
+ananke context refs RankingEngine.rank_symbols                 # where it's used
+ananke context replace Cart.total --with new_total.py          # a dry run: prints the diff
+ananke context replace Cart.total --with new_total.py --write  # applies it
+ananke context insert --with count.py --after Cart.total --write
+ananke context rename Cart.total grand_total --write
+```
+
+`refs` resolves references by type with [Jedi](https://github.com/davidhalter/jedi) (MIT) when the `typed` extra
+is installed (`pip install 'ananke-plexus[typed]'`); without it, references come from the graph's call edges and are
+labelled inferred. The difference matters: on a real repository the graph missed
+`self.ranking_engine.rank_symbols(...)`, a call through an attribute, which Jedi resolved.
+
+Every edit is a dry run until `--write`, and before writing: each changed file must still parse, a replacement must
+define the name it replaces, and a file that changed since it was read is refused. A rename changes name tokens only,
+never text in strings or comments. Without Jedi, a rename that leaves uses of the name the graph couldn't resolve is
+refused, rather than half-applied; the dry run lists them.
+
+Only Python is edited. Serena isn't used: its application is GPL-3.0-or-later from v2.0.0.
