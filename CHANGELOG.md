@@ -10,6 +10,47 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.44] — 2026-11-12
+
+### Added
+
+- **Advanced insights** ([guide](docs/guides/advanced-insights.md)), deterministic, each claim labelled observed,
+  simulated, inferred, assumed or a hypothesis:
+  - `ananke graph diff`: the code graph at two revisions and the relationships that changed, between components too.
+  - `ananke graph whatif`: what a change would reach (tests, routes, tables), simulated; `--backtest` measures it on
+    the repository's own history against a same-folder baseline.
+  - `ananke graph twin`: per component, source, contract, infrastructure, verification and runtime, with stale reports
+    flagged.
+  - `ananke triage test-gaps`: pytest skeletons from missing branches, failing tests and changed contracts, each
+    failing until written.
+  - `ananke triage notebooks`: execution order, cells never run, hidden runs, names used before they're defined,
+    error outputs, undeclared imports, missing inputs.
+  - `ananke triage drift`: the repository against kubectl, docker, compose and Terraform snapshots and a running
+    service's OpenAPI; environment variable values are never read.
+  - `ananke triage patch`: a patch applied, measured and tested in a throwaway worktree, with an approval digest that
+    commits it to a new local branch.
+  - `ananke triage mesh`: HTTP links, event topics and datasets across repositories, and the gaps between them.
+  - `ananke triage incident`: from a failed Jenkins or GitHub Actions build to the commit, suspects since the last
+    good build, the step, the containers and their logs.
+  - `ananke context observe`: recall and cost at several budgets, the knee, and regressions between recorded runs.
+  - `ananke arch decide`: an ADR with measured, labelled evidence per option, ranked by stated weights.
+- **`ananke triage findings --rerun GATE`:** runs the named gates now (fixed commands, a time limit), compares their
+  findings before and after, and says when a tool isn't installed.
+- **Test topology** in the repository analysis (`tests` section): suites by kind and framework, what each exercises,
+  source files no test imports.
+- **Offline CVE data:** `ananke cve import` loads an OSV export; with `ANANKE_OSV_DB`, `--check-vulnerabilities`
+  sends nothing and says which ecosystems it didn't cover. It matched osv.dev exactly on a real project.
+
+### Fixed
+
+- **A repository whose own folder is a Python package hung the analysis.** With an `__init__.py` at the top, finding
+  a file's source root looped forever. Found on a real project; every command that analyses a repository was affected.
+- **`ananke context ask` missed code a question named in test terms.** A test whose name matches the question now lends
+  its rank to the code it calls (recall on Ananke's own question set 0.833 → 0.917).
+- Test tooling: pytest 9.2 with pytest-bdd 9.
+
+---
+
 ## [0.3.43] — 2026-11-11
 
 ### Fixed

@@ -8,6 +8,7 @@ clean. See docs/reference/repo-intelligence.md.
 from __future__ import annotations
 
 import json
+import os
 import re
 import tomllib
 import urllib.error
@@ -17,7 +18,7 @@ from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from http.client import HTTPException
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from ananke.plexus.intel._common import is_fixture, read_text, some
@@ -847,6 +848,43 @@ def _scan(packages: list[_Package], limits: list[str]) -> tuple[str, list[dict[s
     return "scanned", _merge_aliases(records)
 
 
+def _scan_offline(
+    packages: list[_Package], limits: list[str], db: Path
+) -> tuple[str, list[dict[str, Any]] | None]:
+    """The same answer from a local OSV copy (``ananke cve import``): nothing leaves the machine."""
+    from ananke.plexus.intel.osv_db import query, status
+
+    info = status(db)
+    covered = set(str(info.get("ecosystems") or "").split(",")) - {""}
+    wanted = sorted(
+        {(p.ecosystem, p.name, p.version or "") for p in packages if p.version}, key=str
+    )
+    uncovered = sorted({e for e, _, _ in wanted if e not in covered})
+    if uncovered:
+        limits.append(
+            f"{', '.join(uncovered)} packages weren't checked: the offline copy holds no export for them "
+            "(import that ecosystem's all.zip too)"
+        )
+    wanted = [w for w in wanted if w[0] in covered]
+    try:
+        ids, details = query(db, wanted)
+    except Exception as exc:
+        limits.append(
+            f"the offline vulnerability database couldn't be read, so nothing is known: {exc}"
+        )
+        return "failed", None
+    limits.append(
+        f"checked offline against an OSV copy imported {info.get('imported_at', 'at an unknown time')} "
+        f"({info.get('ecosystems', '?')}); advisories published since then aren't known"
+    )
+    records = [
+        _record(package, vid, details.get(vid) or {})
+        for package, found in zip(wanted, ids, strict=True)
+        for vid in found
+    ]
+    return "scanned", _merge_aliases(records)
+
+
 def analyze(ctx: RepoContext) -> dict[str, Any]:
     packages, limits = inventory(ctx)
     if not packages:
@@ -858,8 +896,14 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
             "vulnerabilities": None,
         }
     status, vulnerabilities = "not_scanned", None
-    if ctx.check_vulnerabilities:
+    offline = os.environ.get("ANANKE_OSV_DB")
+    scanner = None
+    if ctx.check_vulnerabilities and offline and Path(offline).is_file():
+        status, vulnerabilities = _scan_offline(packages, limits, Path(offline))
+        scanner = "osv-offline"
+    elif ctx.check_vulnerabilities:
         status, vulnerabilities = _scan(packages, limits)
+        scanner = "osv"
     else:
         limits.append(
             "vulnerabilities weren't checked: this needs the network and has to be asked for"
@@ -867,7 +911,7 @@ def analyze(ctx: RepoContext) -> dict[str, Any]:
     return {
         "status": status,
         "limits": limits,
-        "scanner": "osv" if ctx.check_vulnerabilities else None,
+        "scanner": scanner,
         "packages": [p.as_dict() for p in packages],
         "vulnerabilities": vulnerabilities,
     }

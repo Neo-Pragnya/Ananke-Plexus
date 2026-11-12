@@ -27,6 +27,7 @@ from ananke.plexus.intel import (
     notebooks,
     overview,
     quality,
+    tests_topology,
 )
 from ananke.plexus.intel.context import RepoContext
 
@@ -43,6 +44,7 @@ SECTIONS = (
     ("dependencies", dependencies.analyze),
     ("notebooks", notebooks.analyze),
     ("findings", findings.analyze),
+    ("tests", tests_topology.analyze),
 )
 
 

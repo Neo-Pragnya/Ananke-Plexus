@@ -37,6 +37,8 @@ capabilities:
   - { id: connectors, title: "Typed connectors (graph, JUnit to SARIF, OpenAPI routes, log triage) run in their own process; only verified output is written; registered with typed ports", dimension: automation, blocker: true }
   - { id: api-contract, title: "API contract inventory: auth, request and response shapes cited to source; OpenAPI normalised to the BMAD model contract; missing errors and untested auth found", dimension: automation, blocker: false }
   - { id: auto-sdd, title: "Approved PRD to features, acceptance ids and tests; BMAD contracts compiled and linked to the PRD revision; inconsistency blocks", dimension: core, blocker: false }
+  - { id: insights, title: "Advanced insights: graph diff, what-if with backtest, test gaps, notebooks, drift, patch loop, mesh, incident, observatory, decisions, twin; deterministic and labelled", dimension: automation, blocker: false }
+  - { id: offline-cve, title: "Offline OSV data: import, check without the network, uncovered ecosystems stated", dimension: safety, blocker: false }
   - { id: build-triage, title: "Jenkins triage from a console log: stages, the first primary failure, its cascade, related changes and a rerun plan; no CI access", dimension: automation, blocker: false }
   - { id: registry-ops, title: "Registry operations: export/import, backup/restore, reports, docs, diff, gc", dimension: registry, blocker: false }
   - { id: signing, title: "Supply chain: signing keys, signatures that verify", dimension: safety, blocker: false }
@@ -171,6 +173,19 @@ surface:
   - ananke triage findings
   - ananke triage contracts
   - ananke triage api-contract
+  - ananke triage test-gaps
+  - ananke triage notebooks
+  - ananke triage drift
+  - ananke triage patch
+  - ananke triage mesh
+  - ananke triage incident
+  - ananke graph diff
+  - ananke graph whatif
+  - ananke graph twin
+  - ananke arch decide
+  - ananke context observe
+  - ananke cve import
+  - ananke cve status
   - ananke triage infra
   - ananke triage api-tests
   - ananke triage topology

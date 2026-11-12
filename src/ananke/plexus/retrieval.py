@@ -121,7 +121,7 @@ def stem(word: str) -> str:
 
 
 _TEST_PATH = re.compile(r"(^|/)(tests?|spec)/|(^|/)test_[^/]+$|_test\.py$")
-PLANNER = "3"  # in the cache key: a change to how questions are planned must not serve old answers
+PLANNER = "4"  # in the cache key: a change to how questions are planned must not serve old answers
 
 
 def plan(question: str, graph: Any, *, limit: int = 8) -> list[dict[str, Any]]:
@@ -163,7 +163,46 @@ def plan(question: str, graph: Any, *, limit: int = 8) -> list[dict[str, Any]]:
                 }
             )
     scored.sort(key=lambda c: (-c["score"], c["path"], c["line"]))
+    _promote_subjects(scored, graph)
     return scored[:limit]
+
+
+def _promote_subjects(scored: list[dict[str, Any]], graph: Any) -> None:
+    """A test that matches the question points at its subject: the code it calls. That code takes the test's score
+    (a little less), so a question worded like a test's name still lands on the implementation."""
+    tests = [c for c in scored[:5] if _TEST_PATH.search(c["path"])]
+    if not tests:
+        return
+    nodes = {n.node_id: n for n in graph.nodes}
+    calls: dict[str, list[str]] = defaultdict(list)
+    for e in graph.edges:
+        if e.kind == "calls":
+            calls[e.source].append(e.target)
+    by_id = {c["id"]: c for c in scored}
+    for t in tests:
+        for target in calls.get(t["id"], []):
+            n = nodes.get(target)
+            if n is None or n.kind not in SYMBOL_KINDS or _TEST_PATH.search(n.path):
+                continue
+            score = round(t["score"] * 0.95, 3)
+            if target in by_id:
+                if by_id[target]["score"] < score:
+                    by_id[target]["score"] = score
+                    by_id[target]["matched"]["via_test"] = [t["name"]]
+                continue
+            row = {
+                "id": n.node_id,
+                "name": n.name,
+                "kind": n.kind,
+                "path": n.path,
+                "line": int(n.metadata.get("line") or 0),
+                "end_line": int(n.metadata.get("end_line") or n.metadata.get("line") or 0),
+                "score": score,
+                "matched": {"name": [], "doc": [], "path": [], "via_test": [t["name"]]},
+            }
+            scored.append(row)
+            by_id[target] = row
+    scored.sort(key=lambda c: (-c["score"], c["path"], c["line"]))
 
 
 def _source(root: Path, path: str, start: int, end: int) -> str:

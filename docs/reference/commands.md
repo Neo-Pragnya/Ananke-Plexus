@@ -91,6 +91,9 @@ Named, ordered sequences of `ananke`/`apm` commands — see the [Workflows guide
 - `ananke graph query --text TEXT [--project PATH]`: query graph nodes by name/path.
 - `ananke graph impact --changed-file PATH ... [--project PATH]`: compute impacted symbols.
 - `ananke graph export --format json|markdown [--project PATH]`: export graph snapshot.
+- `ananke graph diff --base REF [--head REF] [--project PATH] [--json] [-o FILE]`: the graph at two revisions and the relationships that changed, between components too. [Advanced insights](../guides/advanced-insights.md).
+- `ananke graph whatif --change PATH|SYMBOL … [--depth N] [--both] [--json]`: what a change would reach, simulated; `--backtest N` measures it on the repository's history.
+- `ananke graph twin [--snapshot FILE]… [--openapi FILE|URL] [--json]`: one model per component with each fact observed, inferred or unknown, and stale reports flagged.
 
 ---
 
@@ -101,6 +104,7 @@ Named, ordered sequences of `ananke`/`apm` commands — see the [Workflows guide
 - `ananke arch diff [--project PATH]`: compare CALM components against graph-derived component roots.
 - `ananke arch reconcile [--apply] [--project PATH]`: preview or apply missing graph components into CALM.
 - `ananke arch render [--project PATH]`: generate Markdown and Mermaid architecture output with graph overlay status.
+- `ananke arch decide DECISION.yaml [--project PATH] [--json] [-o FILE]`: an ADR whose options carry measured, labelled evidence, ranked by stated weights; status stays proposed.
 
 ---
 
@@ -270,7 +274,12 @@ The [app facade](app-facade.md) as JSON commands, for products such as Dev Guru.
 
 ## ananke triage
 
-[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found. `findings [--project P] [--changed PATH]… [--base REF] [--check-vulnerabilities] [--json] [-o FILE]`: what to fix first. `contracts [--project P] [--json] [-o FILE]`: API contract gaps and recommended tests. `infra [--project P]… [--log FILE] [--json] [-o FILE]`: infrastructure, its links and a safe check order. `api-tests SPEC [--out DIR] [--run URL] [--json]`: contract tests from OpenAPI, run only against this machine. `topology [--project P]… [--pin] [--home DIR] [--json]`: several repositories as one system. `api-contract [--project P] [--spec FILE]… [--name N] [--out DIR] [--json] [--fail-on high|medium|low]`: auth, request and response shapes per operation, cited to source, as a BMAD model contract, with findings.
+[Build triage](../guides/build-triage.md): `jenkins CONSOLE [--jenkinsfile F] [--changed PATH]… [--base REF] [--project P] [--json] [-o FILE]`. Exit 1 when a failure was found. `findings [--project P] [--changed PATH]… [--base REF] [--check-vulnerabilities] [--json] [-o FILE]`: what to fix first. `contracts [--project P] [--json] [-o FILE]`: API contract gaps and recommended tests. `infra [--project P]… [--log FILE] [--json] [-o FILE]`: infrastructure, its links and a safe check order. `api-tests SPEC [--out DIR] [--run URL] [--json]`: contract tests from OpenAPI, run only against this machine. `topology [--project P]… [--pin] [--home DIR] [--json]`: several repositories as one system. `api-contract [--project P] [--spec FILE]… [--name N] [--out DIR] [--json] [--fail-on high|medium|low]`: auth, request and response shapes per operation, cited to source, as a BMAD model contract, with findings. `findings … --rerun GATE…`: run the named gates now and compare. `test-gaps [--coverage F] [--junit F] [--base REF] [--write FILE]`: tests to write from missing branches, failures and changed contracts. `notebooks [--notebook F]…`: reproducibility of each notebook. `drift [--snapshot F]… [--openapi F|URL] [--fail-on-drift]`: repository against what's running. `patch FILE [--base REF] [--run-tests] [--approve DIGEST --branch NAME]`: the review-to-fix loop in a throwaway worktree. `mesh [--project P]…`: HTTP, topics and datasets across repositories. `incident CONSOLE [--project P] [--last-good REF] [--commit REF] [--service-logs F]`: from a failed build to its cause. See [Advanced insights](../guides/advanced-insights.md).
+
+## ananke cve
+
+- `ananke cve import EXPORT [--db FILE]`: load an OSV export (`<Ecosystem>/all.zip` or a folder of OSV JSON) into a local database. With `ANANKE_OSV_DB` set, `--check-vulnerabilities` answers offline.
+- `ananke cve status [--db FILE]`: what the local database holds and when it was imported.
 
 ## ananke learning
 
@@ -347,6 +356,7 @@ See [Business processes](../guides/business-processes.md).
 - `ananke context callers NAME [--path FILE] [--json]`: what calls or inherits from a symbol, and text matches the graph couldn't resolve.
 - `ananke context ask QUESTION [--budget N] [--json]`: the code a question is about, within a token budget; cached per snapshot.
 - `ananke context eval CASES.json [--budget N]`: recall and tokens on a list of questions, against reading every matching file.
+- `ananke context observe CASES.json [--budgets 500,1000,2000,4000] [--record] [--history FILE]`: recall and cost at several budgets, the knee, and regressions since the last recorded run.
 - `ananke context enable [--client NAME] [--local] [--session-map] [--dry-run]`: make a project use these by default. `--local` keeps it out of commits. Clients are `claude-code`, `codex`, `copilot`, `kiro`, `cursor`, `amazon-q` or `all`. Without `--client`, it detects them.
 - `ananke context disable`: remove exactly what `enable` added.
 - `ananke context pack --include GLOB [--no-compress] [--output FILE]`: pack chosen files with repomix.

@@ -53,3 +53,28 @@ def test_the_analysis_names_files_the_same_way(shop: Path) -> None:
     paths = [f["path"] for f in report["sections"]["quality"]["files"]]
     assert paths and not [p for p in paths if "\\" in p]
     assert "backend/app/services/orders.py" in paths
+
+
+def test_a_repository_that_is_itself_a_package_does_not_hang(tmp_path: Path) -> None:
+    """Found on a real folder with __init__.py at its top: finding a file's root looped forever, because the
+    parent of the repository's own folder is itself."""
+    import threading
+
+    from ananke.plexus.graph.service import build_graph
+
+    (tmp_path / "__init__.py").write_text("")
+    (tmp_path / "cli.py").write_text(
+        "from .ranking import rank\n\n\ndef main():\n    return rank()\n"
+    )
+    (tmp_path / "ranking.py").write_text("def rank():\n    return 1\n")
+    (tmp_path / "providers").mkdir()
+    (tmp_path / "providers" / "__init__.py").write_text("")
+    (tmp_path / "providers" / "base.py").write_text("from ..ranking import rank\n")
+    done: list[object] = []
+    worker = threading.Thread(target=lambda: done.append(build_graph(tmp_path)), daemon=True)
+    worker.start()
+    worker.join(timeout=30)
+    assert done, "build_graph didn't finish"
+    graph = done[0]
+    calls = {(e.source, e.target) for e in graph.edges if e.kind == "calls"}  # type: ignore[attr-defined]
+    assert ("function:cli.py:main", "function:ranking.py:rank") in calls

@@ -120,7 +120,7 @@ test-python = [
   "pytest-json-report>=1.5",
 ]
 test-bdd = [
-  "pytest-bdd>=7",
+  "pytest-bdd>=9",
 ]
 test-property = [
   "hypothesis>=6.100",

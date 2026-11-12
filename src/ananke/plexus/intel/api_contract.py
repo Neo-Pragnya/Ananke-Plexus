@@ -58,11 +58,26 @@ _AUTH_WORD = re.compile(
     re.I,
 )
 _PY_TYPES = {
-    "str": "string", "int": "integer", "float": "number", "bool": "boolean", "dict": "object",
-    "list": "array", "tuple": "array", "set": "array", "bytes": "string", "Decimal": "number",
-    "UUID": "string", "datetime": "string", "date": "string", "EmailStr": "string", "Any": "object",
-    "Dict": "object", "List": "array", "Sequence": "array", "Mapping": "object",
-}  # fmt: skip
+    "str": "string",
+    "int": "integer",
+    "float": "number",
+    "bool": "boolean",
+    "dict": "object",
+    "list": "array",
+    "tuple": "array",
+    "set": "array",
+    "bytes": "string",
+    "Decimal": "number",
+    "UUID": "string",
+    "datetime": "string",
+    "date": "string",
+    "EmailStr": "string",
+    "Any": "object",
+    "Dict": "object",
+    "List": "array",
+    "Sequence": "array",
+    "Mapping": "object",
+}
 _MODEL_BASES = {"BaseModel", "SQLModel", "Schema", "TypedDict", "Struct"}
 _ENUM_BASES = {"Enum", "StrEnum", "IntEnum", "IntFlag", "Flag"}
 _REQUEST_NAMES = {"request", "req"}
@@ -76,14 +91,22 @@ _JS_DESTRUCTURE = re.compile(r"\{([^{}]{1,300})\}\s*=\s*req(?:uest)?\s*\.\s*(bod
 _JS_IDENT = re.compile(r"[A-Za-z_$][\w$.]*")
 _NEST_GUARD = re.compile(r"@UseGuards\(([^)]*)\)")
 _UNSUPPORTED_MARKERS: tuple[tuple[str, re.Pattern[str], str], ...] = (
-    (".go", re.compile(r"\b(?:http\.HandleFunc|mux\.Handle|gin\.Default|echo\.New|chi\.NewRouter)\b"), "Go HTTP"),
+    (
+        ".go",
+        re.compile(r"\b(?:http\.HandleFunc|mux\.Handle|gin\.Default|echo\.New|chi\.NewRouter)\b"),
+        "Go HTTP",
+    ),
     (".java", re.compile(r"@(?:Get|Post|Put|Delete|Patch|Request)Mapping\b"), "Spring"),
     (".kt", re.compile(r"@(?:Get|Post|Put|Delete|Patch|Request)Mapping\b"), "Spring (Kotlin)"),
     (".cs", re.compile(r"\[(?:HttpGet|HttpPost|HttpPut|HttpDelete|Route)\b"), "ASP.NET"),
-    (".rb", re.compile(r"^\s*(?:get|post|put|patch|delete|resources)\s+['\":]", re.M), "Rails/Sinatra"),
+    (
+        ".rb",
+        re.compile(r"^\s*(?:get|post|put|patch|delete|resources)\s+['\":]", re.M),
+        "Rails/Sinatra",
+    ),
     (".php", re.compile(r"Route::(?:get|post|put|delete|patch)\("), "Laravel"),
     (".rs", re.compile(r"#\[(?:get|post|put|delete|patch)\(|Router::new\(\)"), "Rust (actix/axum)"),
-)  # fmt: skip
+)
 
 
 _VENDORED = {
@@ -580,8 +603,11 @@ def _walk_body(
             if code:
                 out["responses"].setdefault(code, _fact({}, where))
         elif isinstance(node, ast.Call) and _dotted(node.func).rsplit(".", 1)[-1] in {
-            "JSONResponse", "Response", "json_response", "make_response",
-        }:  # fmt: skip
+            "JSONResponse",
+            "Response",
+            "json_response",
+            "make_response",
+        }:
             code = _status_value(_kw(node, "status_code") or _kw(node, "status"))
             if code is None and len(node.args) > 1:
                 code = _status_value(node.args[1])
@@ -751,8 +777,21 @@ class _Refs:
                 out[key] = self.schema(value, depth + 1)
             elif key in {"allOf", "oneOf", "anyOf"} and isinstance(value, list):
                 out[key] = [self.schema(v, depth + 1) for v in value]
-            elif key in {"type", "format", "enum", "required", "nullable", "description", "title", "default",
-                         "minimum", "maximum", "minLength", "maxLength", "pattern"}:  # fmt: skip
+            elif key in {
+                "type",
+                "format",
+                "enum",
+                "required",
+                "nullable",
+                "description",
+                "title",
+                "default",
+                "minimum",
+                "maximum",
+                "minLength",
+                "maxLength",
+                "pattern",
+            }:
                 out[key] = value
         return out
 
@@ -792,8 +831,13 @@ def _spec_operations(
                     if "schema" in param
                     else {k: param[k] for k in ("type", "format", "enum") if k in param}
                 )
-                bucket = {"query": "query", "header": "header", "path": "path", "cookie": "cookie",
-                          "formData": "body"}.get(place)  # fmt: skip
+                bucket = {
+                    "query": "query",
+                    "header": "header",
+                    "path": "path",
+                    "cookie": "cookie",
+                    "formData": "body",
+                }.get(place)
                 if bucket:
                     request.setdefault(bucket, {})[name] = _fact(
                         {
@@ -859,11 +903,13 @@ def _schema_name(refs: _Refs, schema: Any, where: str) -> dict[str, Any]:
 def find_specs(root: Path, files: list[str]) -> list[str]:
     names = ("openapi", "swagger", "api-docs")
     return sorted(
-        rel for rel in files
+        rel
+        for rel in files
         if rel.rsplit("/", 1)[-1].lower().endswith((".json", ".yaml", ".yml"))
         and any(n in rel.rsplit("/", 1)[-1].lower() for n in names)
-        and "/node_modules/" not in f"/{rel}" and not rel.startswith(("tests/", "test/"))
-    )[:20]  # fmt: skip
+        and "/node_modules/" not in f"/{rel}"
+        and not rel.startswith(("tests/", "test/"))
+    )[:20]
 
 
 # ---------------------------------------------------------------- the inventory
@@ -1002,11 +1048,14 @@ def inventory(
         "schemas": dict(sorted(schemas.items())),
         "specs": spec_files,
         "unsupported_frameworks": frameworks,
-        "limits": sorted(limits | {
-            f"{f['framework']} routes aren't read at all (found at {f['evidence']}); their API isn't inventoried"
-            for f in frameworks
-        }),
-    }  # fmt: skip
+        "limits": sorted(
+            limits
+            | {
+                f"{f['framework']} routes aren't read at all (found at {f['evidence']}); their API isn't inventoried"
+                for f in frameworks
+            }
+        ),
+    }
 
 
 def _rel(root: Path, path: Path) -> str:
@@ -1082,10 +1131,13 @@ def merge(inv: dict[str, Any]) -> list[dict[str, Any]]:
         match = by_key.get(key)
         if match is None:  # the code may mount the spec's paths under a prefix
             match = next(
-                (row for k, row in by_key.items()
-                 if k[0] == key[0] and len(k[1]) > len(key[1]) and k[1][-len(key[1]):] == key[1]),
+                (
+                    row
+                    for k, row in by_key.items()
+                    if k[0] == key[0] and len(k[1]) > len(key[1]) and k[1][-len(key[1]) :] == key[1]
+                ),
                 None,
-            )  # fmt: skip
+            )
         if match is None:
             by_key[key] = {
                 **op,
@@ -1115,9 +1167,14 @@ def merge(inv: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _finding(
-    rule: str, severity: str, op: dict[str, Any], message: str, remedy: str, status: str = "observed",
+    rule: str,
+    severity: str,
+    op: dict[str, Any],
+    message: str,
+    remedy: str,
+    status: str = "observed",
     evidence: str | None = None,
-) -> dict[str, Any]:  # fmt: skip
+) -> dict[str, Any]:
     return {
         "rule": rule,
         "severity": severity,
@@ -1141,21 +1198,25 @@ def findings(
         if not any(c.startswith("4") for c in codes) and op.get("shapes_read", True):
             out.append(
                 _finding(
-                    "missing-error-response", "medium", op,
+                    "missing-error-response",
+                    "medium",
+                    op,
                     "no 4xx response is documented or raised, so clients can't tell how it fails",
                     "document the failure statuses it can return (400 for bad input, 404 for a missing resource)"
                     " and test one",
                     "observed" if op["source"] != "code" else "inferred",
                 )
-            )  # fmt: skip
+            )
         if secured and not codes & {"401", "403"}:
             out.append(
                 _finding(
-                    "auth-without-401", "high", op,
+                    "auth-without-401",
+                    "high",
+                    op,
                     f"it requires auth ({', '.join(str(a['value']) for a in op['auth'])}) but documents no 401 or 403",
                     "declare 401 (no or bad credentials) and 403 (not allowed) responses",
                 )
-            )  # fmt: skip
+            )
         spec = op.get("spec")
         code_auth = bool(op.get("code_auth"))
         if spec is not None and op["source"] == "openapi+code":
@@ -1163,13 +1224,15 @@ def findings(
             if declared != code_auth and spec["auth_declared"]:
                 out.append(
                     _finding(
-                        "auth-mismatch", "high", op,
+                        "auth-mismatch",
+                        "high",
+                        op,
                         "the OpenAPI file and the code disagree on whether it needs auth "
                         f"(declared: {'yes' if declared else 'no'}, code: {'yes' if code_auth else 'no auth seen'})",
                         "make the handler enforce what the contract declares, or correct the contract",
                         "inferred",
                     )
-                )  # fmt: skip
+                )
         if not secured:
             continue
         shape = _segments(op["path"])
@@ -1181,10 +1244,13 @@ def findings(
         if not hits:
             out.append(
                 _finding(
-                    "untested-auth", "high", op, "it requires auth and no test calls it",
+                    "untested-auth",
+                    "high",
+                    op,
+                    "it requires auth and no test calls it",
                     f"add a test that calls {op['method']} {op['path']} without credentials and expects 401 or 403",
                 )
-            )  # fmt: skip
+            )
             continue
         checked = False
         for hit in hits:
@@ -1197,11 +1263,15 @@ def findings(
         if not checked:
             out.append(
                 _finding(
-                    "untested-auth", "medium", op,
+                    "untested-auth",
+                    "medium",
+                    op,
                     "tests call it, but none checks the failed-auth response",
-                    "add a case without credentials that expects 401 or 403", "inferred", hits[0]["evidence"],
+                    "add a case without credentials that expects 401 or 403",
+                    "inferred",
+                    hits[0]["evidence"],
                 )
-            )  # fmt: skip
+            )
     for fw in inv["unsupported_frameworks"]:
         out.append(
             {
@@ -1254,9 +1324,15 @@ def model_contract(rows: list[dict[str, Any]], inv: dict[str, Any], name: str) -
             else:
                 request_name = f"{opid}_request"
                 schemas.append(
-                    {"name": request_name, "type": "object", "description": f"{op['method']} {op['path']} body",
-                     **_object(body["value"]), "evidence": body["evidence"], "status": body["status"]}
-                )  # fmt: skip
+                    {
+                        "name": request_name,
+                        "type": "object",
+                        "description": f"{op['method']} {op['path']} body",
+                        **_object(body["value"]),
+                        "evidence": body["evidence"],
+                        "status": body["status"],
+                    }
+                )
         elif op["request"].get("body"):
             request_name = f"{opid}_request"
             fields = op["request"]["body"]
@@ -1265,13 +1341,17 @@ def model_contract(rows: list[dict[str, Any]], inv: dict[str, Any], name: str) -
                     "name": request_name,
                     "type": "object",
                     "description": f"{op['method']} {op['path']} body",
-                    "properties": {k: {kk: vv for kk, vv in v["value"].items() if kk != "required"}
-                                   for k, v in sorted(fields.items())},
+                    "properties": {
+                        k: {kk: vv for kk, vv in v["value"].items() if kk != "required"}
+                        for k, v in sorted(fields.items())
+                    },
                     "required": sorted(k for k, v in fields.items() if v["value"].get("required")),
                     "evidence": next(iter(fields.values()))["evidence"],
-                    "status": "inferred" if any(v["status"] == "inferred" for v in fields.values()) else "observed",
+                    "status": "inferred"
+                    if any(v["status"] == "inferred" for v in fields.values())
+                    else "observed",
                 }
-            )  # fmt: skip
+            )
         responses: dict[str, str] = {}
         for code, resp in op["responses"].items():
             if code.startswith(("4", "5")):
@@ -1282,10 +1362,15 @@ def model_contract(rows: list[dict[str, Any]], inv: dict[str, Any], name: str) -
             elif resp["value"]:
                 rname = f"{opid}_response_{code}"
                 schemas.append(
-                    {"name": rname, "type": "object", **_object(resp["value"]),
-                     "description": f"{op['method']} {op['path']} {code}", "evidence": resp["evidence"],
-                     "status": resp["status"]}
-                )  # fmt: skip
+                    {
+                        "name": rname,
+                        "type": "object",
+                        **_object(resp["value"]),
+                        "description": f"{op['method']} {op['path']} {code}",
+                        "evidence": resp["evidence"],
+                        "status": resp["status"],
+                    }
+                )
                 responses[code] = rname
             else:
                 responses[code] = ""
@@ -1329,9 +1414,11 @@ def model_contract(rows: list[dict[str, Any]], inv: dict[str, Any], name: str) -
 
 
 def _object(schema: dict[str, Any]) -> dict[str, Any]:
-    return {"properties": schema.get("properties") or {}, "required": schema.get("required") or []} if (
-        schema.get("properties") or schema.get("type") == "object"
-    ) else {"properties": {"value": schema}, "required": []}  # fmt: skip
+    return (
+        {"properties": schema.get("properties") or {}, "required": schema.get("required") or []}
+        if (schema.get("properties") or schema.get("type") == "object")
+        else {"properties": {"value": schema}, "required": []}
+    )
 
 
 def build(
