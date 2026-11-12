@@ -516,3 +516,49 @@ def test_cli_commands_are_registered(repo: Path) -> None:
     assert json.loads(done.output)["tests_to_run"] == ["tests/test_orders.py"]
     bad = runner.invoke(app, ["graph", "diff", "--base", "nope", "--project", str(repo)])
     assert bad.exit_code == 2
+
+
+def test_incident_parsers_read_words_in_linear_time() -> None:
+    import time
+
+    from ananke.plexus.insight.incident import _compose_services, _images, _paths
+
+    assert _compose_services("+ docker compose -f a.yml run --rm -e X=1 backend pytest") == [
+        ("run", "backend")
+    ]
+    assert _images("docker run --rm -p 80:80 shop/api:1.4 serve") == ["shop/api:1.4"]
+    assert _images("docker build -t shop/api:2.0 .") == ["shop/api:2.0"]
+    assert _paths("FAILED tests/test_orders.py::test_place - x") == ["tests/test_orders.py"]
+    started = time.monotonic()
+    _compose_services("docker compose run " + "-a " * 50_000 + "!")
+    _images("docker run " + "-x " * 50_000)
+    assert time.monotonic() - started < 2  # a crafted log line can't stall it (CodeQL py/redos)
+
+
+def test_snapshot_extraction_refuses_paths_outside(tmp_path: Path) -> None:
+    import io
+    import tarfile
+
+    from ananke.plexus.insight import _extract
+
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tar:
+        data = b"x = 1\n"
+        ok = tarfile.TarInfo("app/ok.py")
+        ok.size = len(data)
+        tar.addfile(ok, io.BytesIO(data))
+        link = tarfile.TarInfo("app/link")
+        link.type = tarfile.SYMTYPE
+        link.linkname = "/etc/passwd"
+        tar.addfile(link)
+    _extract(buf.getvalue(), tmp_path / "out")
+    assert (tmp_path / "out" / "app" / "ok.py").read_text() == "x = 1\n"
+    assert not (tmp_path / "out" / "app" / "link").exists()  # links are skipped
+    bad = io.BytesIO()
+    with tarfile.open(fileobj=bad, mode="w") as tar:
+        evil = tarfile.TarInfo("../escape.py")
+        evil.size = 1
+        tar.addfile(evil, io.BytesIO(b"x"))
+    with pytest.raises(InsightError, match="outside"):
+        _extract(bad.getvalue(), tmp_path / "out2")
+    assert not (tmp_path / "escape.py").exists()

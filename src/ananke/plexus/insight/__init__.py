@@ -77,9 +77,24 @@ def snapshot(root: Path, ref: str) -> Iterator[Path]:
             f"git archive {ref} failed: {done.stderr.decode('utf-8', 'replace')[:200]}"
         )
     with tempfile.TemporaryDirectory(prefix="ananke-snapshot-") as tmp:
-        with tarfile.open(fileobj=io.BytesIO(done.stdout)) as tar:
-            tar.extractall(tmp, filter="data")  # no links out, no absolute paths
+        _extract(done.stdout, Path(tmp))
         yield Path(tmp)
+
+
+def _extract(archive: bytes, dest: Path) -> None:
+    """Unpack a ``git archive`` tar member by member: only regular files and folders, each path checked to stay
+    inside ``dest``, then extracted with the ``data`` filter as well (no links, devices or absolute paths)."""
+    root = dest.resolve()
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        for member in tar.getmembers():
+            if not (member.isfile() or member.isdir()):
+                continue  # symlinks and the like aren't source; a code graph doesn't need them
+            target = (root / member.name).resolve()
+            if target != root and root not in target.parents:
+                raise InsightError(
+                    f"the archive names {member.name!r}, outside the snapshot folder"
+                )
+            tar.extract(member, root, filter="data")
 
 
 def write_or_print(text: str, output: Path | None) -> str | None:

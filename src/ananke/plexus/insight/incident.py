@@ -35,15 +35,105 @@ _REVISION = [
 _CONTAINER = re.compile(
     r"\bContainer\s+([A-Za-z0-9_.\-]+)\s+(Started|Starting|Exited|Created|Error|Running|Stopped)"
 )
-_COMPOSE_CMD = re.compile(
-    r"docker[- ]compose\s+(?:-f\s+\S+\s+)*(run|up|build|exec|start)\s+(?:--?\S+\s+)*([A-Za-z0-9_.\-]+)"
-)
-_IMAGE = re.compile(
-    r"docker\s+(?:run|pull|push|build\s+-t)\s+(?:--?\S+\s+)*([A-Za-z0-9_./\-]+:[A-Za-z0-9_.\-]+)"
-)
+_NAME = re.compile(r"[A-Za-z0-9_.\-]+")
+_IMAGE_REF = re.compile(r"[A-Za-z0-9_./\-]+:[A-Za-z0-9_.\-]+")
+_COMPOSE_VERBS = {"run", "up", "build", "exec", "start"}
+_DOCKER_VERBS = {"run", "pull", "push", "build"}
+_VALUE_FLAGS = {
+    "-p",
+    "--publish",
+    "-e",
+    "--env",
+    "-v",
+    "--volume",
+    "--name",
+    "-w",
+    "--workdir",
+    "--network",
+    "--entrypoint",
+    "-u",
+    "--user",
+    "--env-file",
+    "--mount",
+    "--platform",
+    "-l",
+    "--label",
+    "--add-host",
+    "-m",
+    "--memory",
+}
+_SOURCE_SUFFIXES = (".py", ".js", ".ts", ".tsx", ".java", ".go", ".kt", ".rb")
+
+
+def _compose_services(line: str) -> list[tuple[str, str]]:
+    """``docker compose [-f F] VERB [--opts] SERVICE`` read token by token (no backtracking regular expression)."""
+    tokens = line.split()
+    out = []
+    for i, tok in enumerate(tokens):
+        if tok == "docker-compose":
+            j = i + 1
+        elif tok == "docker" and i + 1 < len(tokens) and tokens[i + 1] == "compose":
+            j = i + 2
+        else:
+            continue
+        while j + 1 < len(tokens) and tokens[j] in {"-f", "--file", "-p", "--project-name"}:
+            j += 2
+        if j < len(tokens) and tokens[j] in _COMPOSE_VERBS:
+            verb = tokens[j]
+            j += 1
+            while j < len(tokens) and (tokens[j].startswith("-") or "=" in tokens[j]):
+                j += 1
+            if j < len(tokens) and _NAME.fullmatch(tokens[j]):
+                out.append((verb, tokens[j]))
+    return out
+
+
+def _images(line: str) -> list[str]:
+    """``docker run|pull|push IMAGE:TAG`` and ``docker build -t IMAGE:TAG``, read token by token."""
+    tokens = line.split()
+    out = []
+    for i, tok in enumerate(tokens[:-1]):
+        if tok != "docker" or tokens[i + 1] not in _DOCKER_VERBS:
+            continue
+        rest = tokens[i + 2 :]
+        if tokens[i + 1] == "build":
+            for k, t in enumerate(rest[:-1]):
+                if t in {"-t", "--tag"} and _IMAGE_REF.fullmatch(rest[k + 1]):
+                    out.append(rest[k + 1])
+            continue
+        k = 0
+        while k < len(rest):
+            t = rest[k]
+            if t in _VALUE_FLAGS:
+                k += 2  # the flag's value (a port, a volume, a name) isn't the image
+                continue
+            if t.startswith("-"):
+                k += 1
+                continue
+            if _IMAGE_REF.fullmatch(t) and re.search(r"[A-Za-z]", t.split(":", 1)[0]):
+                out.append(t)
+            break  # the first positional word is the image, or there's none
+
+    return out
+
+
+def _paths(text: str) -> list[str]:
+    """Source file paths in a failure line, from its words: no regular expression to backtrack."""
+    found = []
+    for word in re.split(r"[\s'\"`(),\[\]]+", text):
+        word = word.split("::", 1)[0].rstrip(":.")
+        word = word.split(":", 1)[0] if word.count(":") and not word.startswith("http") else word
+        if (
+            "/" in word
+            and word.endswith(_SOURCE_SUFFIXES)
+            and _NAME.fullmatch(word.replace("/", ""))
+        ):
+            found.append(word)
+    return found
+
+
 _POD = re.compile(r"\bpod/([a-z0-9\-]+)")
 _GHA = re.compile(r"^([^\t]+)\t([^\t]+)\t\d{4}-\d\d-\d\dT[\d:.]+Z ?(.*)$")
-_PATH = re.compile(r"((?:[\w.\-]+/)+[\w.\-]+\.(?:py|js|ts|tsx|java|go|kt|rb))")
 
 
 def _revision(log: str) -> str | None:
@@ -69,25 +159,24 @@ def _containers(lines: list[str], around: int, services: set[str]) -> list[dict[
             )
             found[name]["states"].append(m.group(2))
             found[name]["lines"].append(no)
-        for m in _COMPOSE_CMD.finditer(line):
-            svc = m.group(2)
+        for verb, svc in _compose_services(line):
             found.setdefault(
                 f"service:{svc}",
                 {
                     "name": svc,
                     "kind": "compose service",
                     "service": svc,
-                    "states": [m.group(1)],
+                    "states": [verb],
                     "lines": [],
                 },
             )
             found[f"service:{svc}"]["lines"].append(no)
-        for m in _IMAGE.finditer(line):
+        for image in _images(line):
             found.setdefault(
-                f"image:{m.group(1)}",
-                {"name": m.group(1), "kind": "image", "service": None, "states": [], "lines": []},
+                f"image:{image}",
+                {"name": image, "kind": "image", "service": None, "states": [], "lines": []},
             )
-            found[f"image:{m.group(1)}"]["lines"].append(no)
+            found[f"image:{image}"]["lines"].append(no)
         for m in _POD.finditer(line):
             found.setdefault(
                 f"pod:{m.group(1)}",
@@ -249,7 +338,7 @@ def investigate(
                 else "hypothesis: named in the log, far from the failure",
             }
         )
-    failing_files = sorted({m.group(1) for m in _PATH.finditer(failure["text"])}) if failure else []
+    failing_files = sorted(set(_paths(failure["text"]))) if failure else []
     suspects = None
     if last_good:
         if root is None or not (root / ".git").exists():
