@@ -164,7 +164,7 @@ def _test_files(root: Path) -> list[Path]:
             break
         rel = path.relative_to(root).as_posix()
         if any(
-            part.startswith(".") or part in {"node_modules", "venv"}
+            part.startswith(".") or part in {"node_modules", "venv", "site-packages", "__pycache__"}
             for part in path.relative_to(root).parts
         ):
             continue

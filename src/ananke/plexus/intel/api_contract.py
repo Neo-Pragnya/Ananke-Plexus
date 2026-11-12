@@ -64,6 +64,7 @@ _PY_TYPES = {
     "Dict": "object", "List": "array", "Sequence": "array", "Mapping": "object",
 }  # fmt: skip
 _MODEL_BASES = {"BaseModel", "SQLModel", "Schema", "TypedDict", "Struct"}
+_ENUM_BASES = {"Enum", "StrEnum", "IntEnum", "IntFlag", "Flag"}
 _REQUEST_NAMES = {"request", "req"}
 _BODY_CALLS = {"get_json", "json"}
 _STATUS_CONST = re.compile(r"HTTP_(\d{3})")
@@ -83,6 +84,34 @@ _UNSUPPORTED_MARKERS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     (".php", re.compile(r"Route::(?:get|post|put|delete|patch)\("), "Laravel"),
     (".rs", re.compile(r"#\[(?:get|post|put|delete|patch)\(|Router::new\(\)"), "Rust (actix/axum)"),
 )  # fmt: skip
+
+
+_VENDORED = {
+    "node_modules",
+    "site-packages",
+    "dist-packages",
+    "__pycache__",
+    "venv",
+    "virtualenv",
+    "bower_components",
+}
+
+
+def project_files(root: Path, files: list[str]) -> list[str]:
+    """The project's own files: no virtualenv (any folder holding ``pyvenv.cfg``), installed packages, dependency
+    folders or dot-folders, whose code isn't the project's API and would change with the Python reading it."""
+    envs = {f.rsplit("/", 1)[0] + "/" for f in files if f.endswith("/pyvenv.cfg")}
+    if "pyvenv.cfg" in files:
+        envs.add("")
+    kept = []
+    for rel in files:
+        parts = rel.split("/")
+        if any(p.startswith(".") or p in _VENDORED for p in parts[:-1]):
+            continue
+        if any(rel.startswith(env) for env in envs):
+            continue
+        kept.append(rel)
+    return kept
 
 
 class ApiContractError(ValueError):
@@ -207,6 +236,9 @@ class _Models:
             if not isinstance(node, ast.ClassDef):
                 continue
             bases = {_dotted(b).rsplit(".", 1)[-1] for b in node.bases}
+            if bases & _ENUM_BASES:
+                self._add_enum(rel, node, bases)
+                continue
             decorated = {_dotted(d).rsplit(".", 1)[-1] for d in node.decorator_list}
             if not (bases & _MODEL_BASES or "dataclass" in decorated or bases & set(self.found)):
                 continue
@@ -248,6 +280,35 @@ class _Models:
                 "evidence": f"{rel}:{node.lineno}",
                 "status": "observed",
             }
+
+    def _add_enum(self, rel: str, node: ast.ClassDef, bases: set[str]) -> None:
+        values: list[Any] = []
+        for item in node.body:
+            if (
+                isinstance(item, ast.Assign)
+                and len(item.targets) == 1
+                and isinstance(item.targets[0], ast.Name)
+                and not item.targets[0].id.startswith("_")
+                and isinstance(item.value, ast.Constant)
+            ):
+                values.append(item.value.value)
+        kinds = {type(v).__name__ for v in values}
+        if "str" in bases or "StrEnum" in bases or kinds == {"str"}:
+            kind = "string"
+        elif "int" in bases or "IntEnum" in bases or kinds == {"int"}:
+            kind = "integer"
+        else:
+            kind = "string" if not kinds else "object"
+        self.found[node.name] = {
+            "name": node.name,
+            "type": kind,
+            "description": (ast.get_docstring(node) or "").split("\n", 1)[0],
+            "enum": values,
+            "properties": {},
+            "required": [],
+            "evidence": f"{rel}:{node.lineno}",
+            "status": "observed",
+        }
 
 
 def _is_ellipsis(node: ast.AST) -> bool:
@@ -1176,6 +1237,7 @@ def model_contract(rows: list[dict[str, Any]], inv: dict[str, Any], name: str) -
             "description": schema.get("description") or "",
             "properties": schema.get("properties") or {},
             "required": schema.get("required") or [],
+            **({"enum": schema["enum"]} if "enum" in schema else {}),
             "evidence": schema.get("evidence") or "",
             "status": schema.get("status") or "observed",
         }
@@ -1280,6 +1342,7 @@ def build(
     name: str | None = None,
 ) -> dict[str, Any]:
     """The whole report: operations, findings, the model contract and a stable digest."""
+    files = project_files(root, files)
     if specs is None:
         specs = [root / rel for rel in find_specs(root, files)]
         usable = []

@@ -247,3 +247,35 @@ def test_cli_writes_three_files_and_fails_on_high(repo: Path, tmp_path: Path) ->
         app, ["triage", "api-contract", "--project", str(repo), "--spec", str(repo / "x.xml")]
     )
     assert bad.exit_code == 2
+
+
+def test_virtualenvs_are_not_the_project_and_enums_are_schemas(tmp_path: Path) -> None:
+    """Found on a real repository with a committed venv: vendored classes leaked in, and which ones depended on the
+    Python version reading them. Only the project's own models count, and an Enum is an enum schema."""
+    app_dir = tmp_path / "app"
+    app_dir.mkdir()
+    (app_dir / "schemas.py").write_text(
+        "from enum import Enum\n\nfrom pydantic import BaseModel\n\n\n"
+        "class Kind(str, Enum):\n    UP = 'up'\n    DOWN = 'down'\n\n\n"
+        "class Event(BaseModel):\n    kind: Kind\n"
+    )
+    (app_dir / "main.py").write_text(
+        "from fastapi import FastAPI\n\nfrom .schemas import Event\n\napp = FastAPI()\n\n\n"
+        "@app.post('/events')\ndef add(event: Event):\n    return event\n"
+    )
+    vendored = (
+        "from dataclasses import dataclass\n\n\n@dataclass\nclass Enum:\n    x: int\n\n\n"
+        "@dataclass\nclass Event:\n    leaked: int\n\n\n@dataclass\nclass Node:\n    y: int\n"
+    )
+    for env in ("venv/lib/python3.9/site-packages/pkg", "tools/myenv/lib/pkg", ".venv/lib/pkg"):
+        (tmp_path / env).mkdir(parents=True)
+        (tmp_path / env / "models.py").write_text(vendored)
+    (tmp_path / "tools" / "myenv" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+    (tmp_path / "venv" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+    rep = _report(tmp_path)
+    assert sorted(rep["schemas"]) == ["Event", "Kind"]
+    assert rep["schemas"]["Event"]["properties"] == {"kind": {"$ref": "Kind"}}
+    assert rep["schemas"]["Kind"]["enum"] == ["up", "down"]
+    assert rep["schemas"]["Kind"]["type"] == "string"
+    kind = next(s for s in rep["model_contract"]["schemas"] if s["name"] == "Kind")
+    assert kind["enum"] == ["up", "down"]
