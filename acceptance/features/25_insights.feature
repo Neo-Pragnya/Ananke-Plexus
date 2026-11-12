@@ -117,3 +117,38 @@ Feature: Advanced insights are deterministic, run nothing unasked and label what
     When I run "ananke cve status --db osv.sqlite"
     Then it succeeds
     And the output contains "imported_at"
+
+  @cap_insights
+  Scenario: A symbol is replaced and renamed safely, as dry runs until written
+    Given the file "shop/cart.py" with content:
+      """
+      def total(items):
+          # total is the sum
+          return sum(items)
+
+
+      LABEL = "total"
+
+
+      def receipt(items):
+          return total(items)
+      """
+    And the file "new_total.txt" with content:
+      """
+      def total(items):
+          return round(sum(items), 2)
+      """
+    When I run "ananke context replace total --with new_total.txt"
+    Then it succeeds
+    And the output contains "+    return round(sum(items), 2)"
+    And the file "shop/cart.py" contains "return sum(items)"
+    When I run "ananke context replace total --with new_total.txt --write"
+    Then it succeeds
+    And the file "shop/cart.py" contains "return round(sum(items), 2)"
+    When I run "ananke context rename total grand_total --write"
+    Then it succeeds
+    And the file "shop/cart.py" contains "def grand_total(items):"
+    And the file "shop/cart.py" contains "return grand_total(items)"
+    And the file "shop/cart.py" contains "# total is the sum"
+    When I run "ananke context rename receipt class"
+    Then the exit code is 2

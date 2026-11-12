@@ -432,6 +432,125 @@ def cve_status(
     typer.echo(json.dumps(status(target), indent=2))
 
 
+def _edit_result(result: dict[str, Any], as_json: bool) -> None:
+    if as_json:
+        typer.echo(json.dumps(result, indent=2))
+        return
+    typer.echo(result["diff"] or "no change", nl=not result["diff"])
+    state = "written" if result["written"] else "dry run: nothing written (add --write)"
+    typer.echo(f"{state}; files: {', '.join(result['files']) or 'none'}", err=True)
+    for limit in result.get("limits") or []:
+        typer.echo(f"note: {limit}", err=True)
+
+
+def _source_arg(source: Path) -> str:
+    try:
+        return source.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise typer.BadParameter(f"{source}: {exc}") from exc
+
+
+def context_refs(
+    name: str = typer.Argument(..., help="A function, method (Class.method) or class"),
+    path: str | None = typer.Option(
+        None, "--path", help="The file it's defined in, when the name is ambiguous"
+    ),
+    project: Path = _PROJECT,
+    as_json: bool = _JSON,
+) -> None:
+    """Where a symbol is used: resolved by type with Jedi (pip install 'ananke-plexus[typed]'), else from the code
+    graph's call edges, labelled inferred."""
+    from ananke.plexus.editing import EditError, references
+
+    try:
+        result = references(project, name, path=path)
+    except EditError as exc:
+        _fail(exc)
+        return
+    if as_json:
+        typer.echo(json.dumps(result, indent=2))
+        return
+    typer.echo(f"{result['symbol']} ({result['definition']}), by {result['method']}:")
+    for r in result["references"]:
+        col = f":{r['column']}" if r["column"] is not None else ""
+        typer.echo(
+            f"  {r['path']}:{r['line']}{col}{'  (definition)' if r['definition'] else ''}  [{r['status']}]"
+        )
+    for limit in result["limits"]:
+        typer.echo(f"note: {limit}", err=True)
+
+
+_WRITE = typer.Option(
+    False, "--write", help="Apply the change (otherwise a dry run that prints the diff)"
+)
+
+
+def context_replace(
+    name: str = typer.Argument(..., help="The function, method or class to replace"),
+    source: Path = typer.Option(..., "--with", help="A file holding the new definition"),
+    path: str | None = typer.Option(None, "--path", help="Its file, when the name is ambiguous"),
+    write: bool = _WRITE,
+    project: Path = _PROJECT,
+    as_json: bool = _JSON,
+) -> None:
+    """Replace a whole definition with new source, re-indented to fit. Dry run unless --write; the file must still
+    parse and the new source must define the same name."""
+    from ananke.plexus.editing import EditError, replace
+
+    try:
+        result = replace(project, name, _source_arg(source), path=path, write=write)
+    except EditError as exc:
+        _fail(exc)
+        return
+    _edit_result(result, as_json)
+
+
+def context_insert(
+    source: Path = typer.Option(..., "--with", help="A file holding the source to insert"),
+    after: str | None = typer.Option(None, "--after", help="Insert after this symbol"),
+    before: str | None = typer.Option(None, "--before", help="Insert before this symbol"),
+    path: str | None = typer.Option(
+        None, "--path", help="The anchor's file, when its name is ambiguous"
+    ),
+    write: bool = _WRITE,
+    project: Path = _PROJECT,
+    as_json: bool = _JSON,
+) -> None:
+    """Insert source before or after a symbol, at its indentation. Dry run unless --write."""
+    from ananke.plexus.editing import EditError, insert
+
+    try:
+        result = insert(
+            project, _source_arg(source), after=after, before=before, path=path, write=write
+        )
+    except EditError as exc:
+        _fail(exc)
+        return
+    _edit_result(result, as_json)
+
+
+def context_rename(
+    old: str = typer.Argument(
+        ..., help="The current name (function, method as Class.method, or class)"
+    ),
+    new: str = typer.Argument(..., help="The new name"),
+    path: str | None = typer.Option(None, "--path", help="Its file, when the name is ambiguous"),
+    write: bool = _WRITE,
+    project: Path = _PROJECT,
+    as_json: bool = _JSON,
+) -> None:
+    """Rename a symbol at its definition and every reference found (by type with Jedi, else from the graph), in name
+    tokens only. Dry run unless --write; every changed file must still parse."""
+    from ananke.plexus.editing import EditError, rename
+
+    try:
+        result = rename(project, old, new, path=path, write=write)
+    except EditError as exc:
+        _fail(exc)
+        return
+    _edit_result(result, as_json)
+
+
 def register(
     graph_app: typer.Typer, triage_app: typer.Typer, context_app: typer.Typer, arch_app: typer.Typer
 ) -> None:
@@ -446,3 +565,7 @@ def register(
     arch_app.command("decide")(arch_decide)
     triage_app.command("incident")(triage_incident)
     graph_app.command("twin")(graph_twin)
+    context_app.command("refs")(context_refs)
+    context_app.command("replace")(context_replace)
+    context_app.command("insert")(context_insert)
+    context_app.command("rename")(context_rename)

@@ -356,6 +356,10 @@ See [Business processes](../guides/business-processes.md).
 - `ananke context callers NAME [--path FILE] [--json]`: what calls or inherits from a symbol, and text matches the graph couldn't resolve.
 - `ananke context ask QUESTION [--budget N] [--json]`: the code a question is about, within a token budget; cached per snapshot.
 - `ananke context eval CASES.json [--budget N]`: recall and tokens on a list of questions, against reading every matching file.
+- `ananke context refs NAME [--path FILE] [--json]`: where a symbol is used, resolved by type with Jedi (`pip install 'ananke-plexus[typed]'`), else from the graph's call edges.
+- `ananke context replace NAME --with FILE [--path FILE] [--write]`: replace a whole definition, re-indented; a dry run that prints the diff until `--write`.
+- `ananke context insert --with FILE --after|--before NAME [--write]`: insert source next to a symbol at its indentation.
+- `ananke context rename OLD NEW [--path FILE] [--write]`: rename at the definition and every reference, in name tokens only; refused when the graph can't resolve every use.
 - `ananke context observe CASES.json [--budgets 500,1000,2000,4000] [--record] [--history FILE]`: recall and cost at several budgets, the knee, and regressions since the last recorded run.
 - `ananke context enable [--client NAME] [--local] [--session-map] [--dry-run]`: make a project use these by default. `--local` keeps it out of commits. Clients are `claude-code`, `codex`, `copilot`, `kiro`, `cursor`, `amazon-q` or `all`. Without `--client`, it detects them.
 - `ananke context disable`: remove exactly what `enable` added.
