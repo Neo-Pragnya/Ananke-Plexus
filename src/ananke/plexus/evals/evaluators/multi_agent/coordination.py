@@ -19,6 +19,60 @@ def _subagent_spans(trace: AgentTrace) -> list[AgentSpan]:
     return [s for s in trace.spans if s.kind == SpanKind.SUBAGENT]
 
 
+def _agent_of(span: AgentSpan) -> str:
+    return str(span.attributes.get("agent_id", span.name))
+
+
+def _delegation_graph(trace: AgentTrace) -> dict[str, set[str]]:
+    """Edges delegator -> delegate, one per subagent span.
+
+    The delegate is the subagent span's agent. The delegator is the agent of its nearest
+    ancestor (via ``parent_span_id``) that is a subagent or agent span; a subagent span with
+    no such ancestor is delegated from the trace root, which adds no edge.
+    """
+    by_id = {s.span_id: s for s in trace.spans}
+    graph: dict[str, set[str]] = {}
+    for span in _subagent_spans(trace):
+        parent_id = span.parent_span_id
+        visited: set[str] = set()
+        delegator: str | None = None
+        while parent_id is not None and parent_id in by_id and parent_id not in visited:
+            visited.add(parent_id)
+            parent = by_id[parent_id]
+            if parent.kind in (SpanKind.SUBAGENT, SpanKind.AGENT):
+                delegator = _agent_of(parent)
+                break
+            parent_id = parent.parent_span_id
+        if delegator is not None:
+            graph.setdefault(delegator, set()).add(_agent_of(span))
+    return graph
+
+
+def _find_cycle(graph: dict[str, set[str]]) -> list[str] | None:
+    """Return one cycle as a closed path (``[a, b, a]``), or None if the graph is acyclic."""
+    done: set[str] = set()
+    for start in sorted(graph):
+        if start in done:
+            continue
+        path: list[str] = [start]
+        on_path = {start}
+        stack = [iter(sorted(graph.get(start, ())))]
+        while stack:
+            nxt = next(stack[-1], None)
+            if nxt is None:
+                stack.pop()
+                finished = path.pop()
+                on_path.discard(finished)
+                done.add(finished)
+            elif nxt in on_path:
+                return [*path[path.index(nxt) :], nxt]
+            elif nxt not in done:
+                path.append(nxt)
+                on_path.add(nxt)
+                stack.append(iter(sorted(graph.get(nxt, ()))))
+    return None
+
+
 class DelegationAccuracyEvaluator:
     id = "ananke.multi_agent.delegation_accuracy"
     version = "1"
@@ -41,6 +95,10 @@ class DelegationAccuracyEvaluator:
             actual_agent = span.attributes.get("agent_id", span.name)
             if expected_agent and actual_agent != expected_agent:
                 violations.append(f"task '{task}': expected {expected_agent}, got {actual_agent}")
+        delegated_tasks = {span.attributes.get("task", span.name) for span in spans}
+        for task, expected_agent in self._expected.items():
+            if task not in delegated_tasks:
+                violations.append(f"task '{task}': expected {expected_agent}, never delegated")
         passed = len(violations) == 0
         return [
             make_score(
@@ -163,20 +221,17 @@ class CyclicDelegationEvaluator:
     def evaluate(
         self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
     ) -> list[EvalScore]:
-        seen: set[str] = set()
-        for span in _subagent_spans(trace):
-            agent_id = span.attributes.get("agent_id", span.name)
-            if agent_id in seen:
-                return [
-                    make_score(
-                        self.id,
-                        _DIM,
-                        "cyclic_delegation",
-                        False,
-                        reason=f"agent '{agent_id}' appeared twice in delegation chain",
-                    )
-                ]
-            seen.add(agent_id)
+        cycle = _find_cycle(_delegation_graph(trace))
+        if cycle:
+            return [
+                make_score(
+                    self.id,
+                    _DIM,
+                    "cyclic_delegation",
+                    False,
+                    reason=f"cyclic delegation: {' -> '.join(cycle)}",
+                )
+            ]
         return [make_score(self.id, _DIM, "cyclic_delegation", True)]
 
 

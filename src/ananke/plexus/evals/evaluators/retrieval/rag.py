@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from ananke.plexus.evals.evaluators.base import make_score, skipped_score
@@ -23,6 +24,22 @@ def _retrieval_docs(trace: AgentTrace) -> list[str]:
     return docs
 
 
+def _mentions(ref: str, text: str) -> bool:
+    """True when *ref* occurs in *text* as a whole id, not as part of a longer identifier.
+
+    A word-character edge of *ref* must not touch another word character, so ``doc1``
+    matches ``"doc1 body"`` but not ``"doc10 body"``.
+    """
+    if not ref:
+        return False
+    pattern = re.escape(ref)
+    if re.match(r"\w", ref[0]):
+        pattern = r"(?<!\w)" + pattern
+    if re.match(r"\w", ref[-1]):
+        pattern += r"(?!\w)"
+    return re.search(pattern, text) is not None
+
+
 class ContextPrecisionEvaluator:
     id = "ananke.retrieval.context_precision"
     version = "1"
@@ -40,7 +57,7 @@ class ContextPrecisionEvaluator:
             return [
                 skipped_score(self.id, _DIM, "context_precision", "no relevant_docs in metadata")
             ]
-        relevant_retrieved = sum(1 for d in docs if any(r in d for r in relevant_refs))
+        relevant_retrieved = sum(1 for d in docs if any(_mentions(r, d) for r in relevant_refs))
         precision = relevant_retrieved / len(docs)
         passed = precision >= 0.7
         return [
@@ -61,7 +78,7 @@ class ContextRecallEvaluator:
         relevant_refs: list[str] = case.metadata.get("relevant_docs", [])
         if not relevant_refs:
             return [skipped_score(self.id, _DIM, "context_recall", "no relevant_docs in metadata")]
-        found = sum(1 for r in relevant_refs if any(r in d for d in docs))
+        found = sum(1 for r in relevant_refs if any(_mentions(r, d) for d in docs))
         recall = found / len(relevant_refs)
         passed = recall >= 0.7
         return [make_score(self.id, _DIM, "context_recall", passed, normalized=round(recall, 3))]
@@ -134,7 +151,7 @@ class ContextEfficiencyEvaluator:
                     self.id, _DIM, "context_efficiency", "missing retrieval or relevant_docs"
                 )
             ]
-        relevant_text = " ".join(d for d in docs if any(r in d for r in relevant_refs))
+        relevant_text = " ".join(d for d in docs if any(_mentions(r, d) for r in relevant_refs))
         relevant_tokens = len(relevant_text.split())
         efficiency = min(1.0, relevant_tokens / total_tokens)
         passed = efficiency >= self._minimum
@@ -163,7 +180,7 @@ class BlastRadiusCoverageEvaluator:
             ]
         docs = _retrieval_docs(trace)
         retrieved_text = " ".join(docs)
-        covered = [f for f in affected_files if f in retrieved_text]
+        covered = [f for f in affected_files if _mentions(f, retrieved_text)]
         ratio = len(covered) / len(affected_files)
         passed = ratio >= 0.8
         return [
@@ -196,7 +213,7 @@ class SpecContextCoverageEvaluator:
             ]
         docs = _retrieval_docs(trace)
         retrieved_text = " ".join(docs)
-        covered = [s for s in required_specs if s in retrieved_text]
+        covered = [s for s in required_specs if _mentions(s, retrieved_text)]
         ratio = len(covered) / len(required_specs)
         passed = ratio >= 0.9
         return [
@@ -231,9 +248,9 @@ class GraphContextPrecisionEvaluator:
                     "missing retrieval or relevant_symbols",
                 )
             ]
-        retrieved_text = " ".join(docs)
-        relevant_in_context = sum(1 for sym in relevant_symbols if sym in retrieved_text)
-        precision = relevant_in_context / len(docs)
+        # Share of retrieved documents that hold at least one relevant symbol: always in [0, 1].
+        relevant_docs = sum(1 for d in docs if any(_mentions(sym, d) for sym in relevant_symbols))
+        precision = relevant_docs / len(docs)
         passed = precision >= 0.6
         return [
             make_score(
@@ -260,7 +277,7 @@ class ArchitectureContextCoverageEvaluator:
             ]
         docs = _retrieval_docs(trace)
         retrieved_text = " ".join(docs)
-        covered = [c for c in required_components if c in retrieved_text]
+        covered = [c for c in required_components if _mentions(c, retrieved_text)]
         ratio = len(covered) / len(required_components)
         passed = ratio >= 0.8
         return [

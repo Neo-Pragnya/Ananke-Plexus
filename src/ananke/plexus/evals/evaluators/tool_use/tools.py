@@ -156,8 +156,14 @@ class ToolOrderEvaluator:
         names = [s.name for s in _tool_spans(trace)]
         violations = []
         for before, after in self._pairs:
-            if before in names and after in names and names.index(before) > names.index(after):
-                violations.append(f"{before} must precede {after}")
+            # Every call of `after` must have at least one call of `before` ahead of it.
+            seen_before = False
+            for name in names:
+                if name == after and not seen_before:
+                    violations.append(f"{before} must precede {after}")
+                    break
+                if name == before:
+                    seen_before = True
         passed = len(violations) == 0
         return [
             make_score(

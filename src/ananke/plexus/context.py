@@ -146,8 +146,22 @@ def _git(root: Path, *args: str) -> str | None:
     return done.stdout.decode("utf-8", "replace") if done.returncode == 0 else None
 
 
+_EXTRACTOR_STAMP: str | None = None
+
+
+def _extractor_stamp() -> str:
+    """Changes when the graph builder does, so an upgraded extractor never serves a graph the old one kept."""
+    global _EXTRACTOR_STAMP
+    if _EXTRACTOR_STAMP is None:
+        digest = hashlib.sha256(__version__.encode())
+        for path in sorted(Path(__file__).with_name("graph").rglob("*.py")):
+            digest.update(path.read_bytes())
+        _EXTRACTOR_STAMP = digest.hexdigest()[:16]
+    return _EXTRACTOR_STAMP
+
+
 def source_state(root: Path) -> str:
-    """Changes whenever tracked or new files change: the commit, plus what's different from it."""
+    """Changes whenever tracked or new files change: the commit, plus what's different from it, and the extractor."""
     head = _git(root, "rev-parse", "HEAD")
     changed = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
     if head is None or changed is None:
@@ -171,7 +185,7 @@ def source_state(root: Path) -> str:
             else:
                 dirty.append(f"{path}:{hashlib.sha256(target.read_bytes()).hexdigest()}")
         material = head + "\n".join(sorted(dirty))
-    return hashlib.sha256(material.encode()).hexdigest()[:16]
+    return hashlib.sha256((_extractor_stamp() + material).encode()).hexdigest()[:16]
 
 
 def _cap(rows: list[str], heading: str, budget_left: int) -> list[str]:
@@ -494,7 +508,9 @@ def callers(root: Path, name: str, *, path: str | None = None) -> dict[str, Any]
     # the graph keeps the first call from each caller, and can't see dynamic use: text finds the rest
     short = name.rsplit(".", 1)[-1]
     seen = {e.source_location for e in edges} | {_where(n) for n in found}
-    listed = _git(root, "grep", "-n", "-w", "-I", "--untracked", "--", short) or ""
+    listed = (
+        _git(root, "grep", "-n", "-w", "-I", "--untracked", "--", short, ":(exclude).ananke") or ""
+    )
     mentions = []
     for line in listed.splitlines():
         file, _, rest = line.partition(":")

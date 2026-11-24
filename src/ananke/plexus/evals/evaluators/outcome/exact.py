@@ -16,6 +16,20 @@ if TYPE_CHECKING:
     from ananke.plexus.evals.context import EvaluationContext
 
 _DIM = "outcome"
+_NO_OUTPUT = "no final output"
+
+
+def _as_items(value: Any) -> Any:
+    """A string becomes its JSON list when it is one, else its newline/comma-separated items."""
+    if not isinstance(value, str):
+        return value
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        parsed = None
+    if isinstance(parsed, list):
+        return parsed
+    return [item.strip() for item in re.split(r"[\n,]", value) if item.strip()]
 
 
 class ExactMatchEvaluator:
@@ -29,6 +43,8 @@ class ExactMatchEvaluator:
     ) -> list[EvalScore]:
         if case.expected is None:
             return [skipped_score(self.id, _DIM, "exact_match", "no expected value")]
+        if trace.final_output is None:
+            return [make_score(self.id, _DIM, "exact_match", False, reason=_NO_OUTPUT)]
         actual = str(trace.final_output)
         expected = str(case.expected)
         passed = actual == expected
@@ -55,6 +71,8 @@ class NormalizedMatchEvaluator:
     ) -> list[EvalScore]:
         if case.expected is None:
             return [skipped_score(self.id, _DIM, "normalized_match", "no expected value")]
+        if trace.final_output is None:
+            return [make_score(self.id, _DIM, "normalized_match", False, reason=_NO_OUTPUT)]
         actual = str(trace.final_output).strip().lower()
         expected = str(case.expected).strip().lower()
         passed = actual == expected
@@ -150,11 +168,11 @@ class SetEqualityEvaluator:
         if case.expected is None:
             return [skipped_score(self.id, _DIM, "set_equality", "no expected value")]
         try:
-            final = trace.final_output
+            final = _as_items(trace.final_output)
             actual: set[object] = (
                 set(final) if not isinstance(final, (set, type(None))) else (final or set())
             )
-            exp = case.expected
+            exp = _as_items(case.expected)
             expected: set[object] = (
                 set(exp) if not isinstance(exp, (set, type(None))) else (exp or set())
             )
@@ -252,6 +270,10 @@ class AcceptanceCriteriaEvaluator:
                 skipped_score(self.id, _DIM, "acceptance_criteria", "no criteria in case metadata")
             ]
 
+        if trace.final_output is None:
+            return [
+                make_score(self.id, _DIM, "acceptance_criteria", False, reason="no final output")
+            ]
         output_text = str(trace.final_output).lower()
         met = [c for c in criteria if c.lower() in output_text]
         ratio = len(met) / len(criteria)

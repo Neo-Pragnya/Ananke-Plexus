@@ -96,7 +96,9 @@ class LatencyEvaluator:
                 "latency",
                 passed,
                 value=duration,
-                reason=f"{duration}ms > p95 target {self._max}ms" if not passed else None,
+                reason=f"latency {duration} ms exceeds the limit {self._max} ms"
+                if not passed
+                else None,
             )
         ]
 
@@ -218,10 +220,11 @@ class CacheEfficiencyEvaluator:
     def evaluate(
         self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
     ) -> list[EvalScore]:
-        cache_hits = sum(1 for s in trace.spans if s.attributes.get("cache.hit") is True)
-        total_model_calls = len([s for s in trace.spans if s.kind == SpanKind.MODEL])
+        model_spans = [s for s in trace.spans if s.kind == SpanKind.MODEL]
+        total_model_calls = len(model_spans)
         if total_model_calls == 0:
             return [skipped_score(self.id, _DIM, "cache_efficiency", "no model calls")]
-        ratio = cache_hits / total_model_calls
+        cache_hits = sum(1 for s in model_spans if s.attributes.get("cache.hit") is True)
+        ratio = min(1.0, cache_hits / total_model_calls)
         passed = ratio >= 0.3
         return [make_score(self.id, _DIM, "cache_efficiency", passed, normalized=round(ratio, 3))]

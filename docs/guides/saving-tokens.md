@@ -220,7 +220,7 @@ Here's what each does:
 | Stay current with edits | Yes | Yes |
 | Whole-repository map, routes, tables, components | Yes | No |
 | Works with no language server or download | Yes | No |
-| Languages | Python, JavaScript, TypeScript | Many, through language servers |
+| Languages | Python, JavaScript, TypeScript, Rust | Many, through language servers |
 | Rename a symbol across a project | No | Yes |
 | Edit by symbol: replace a body, insert before or after | No | Yes |
 | Compiler diagnostics | No | Yes |

@@ -20,6 +20,7 @@ from ananke.plexus.graph.python_imports import (
     attribute_chain,
     read_imports,
 )
+from ananke.plexus.graph.rust import RUST_SKIP_DIRS, RUST_SUFFIXES, build_rust
 
 _SKIP_DIRS = {"node_modules", "site-packages", "__pycache__"}
 _MAX_SOURCE_BYTES = 2_000_000
@@ -276,7 +277,8 @@ def build_graph(repository_root: Path, generated: WrittenFiles | None = None) ->
     the file, and nothing in it is run. ``data:<path>`` nodes and inferred ``reads``/``writes`` edges come from calls
     naming a data file with a literal path; computed paths, URLs and paths outside the repository aren't included.
 
-    JavaScript and TypeScript files take the same id forms; see ``graph.javascript``.
+    JavaScript and TypeScript files take the same id forms; see ``graph.javascript``. So do Rust files; see
+    ``graph.rust``.
 
     A file a notebook writes with ``%%writefile`` counts as a file at that path, with ``written_by`` and
     ``written_cell`` in its metadata and a ``generates`` edge from the notebook. See ``graph.notebook_files``.
@@ -540,6 +542,12 @@ def build_graph(repository_root: Path, generated: WrittenFiles | None = None) ->
     )
     nodes += script_nodes
     edges += script_edges
+
+    rust_nodes, rust_edges = build_rust(
+        repository_root, _iter_project_files(repository_root, RUST_SUFFIXES, RUST_SKIP_DIRS)
+    )
+    nodes += rust_nodes
+    edges += rust_edges
 
     nodes += [data_nodes[k] for k in sorted(data_nodes)]
     for rel, made in sorted(generated.files.items()):

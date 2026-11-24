@@ -179,6 +179,11 @@ Issues = "https://github.com/Neo-Pragnya/Ananke-Plexus/issues"
 ananke = "ananke.plexus.cli.app:main"
 apm = "ananke.plexus.apm.cli:app"
 
+[tool.uv]
+# The development lock covers Python 3.11.5+ only: soupsieve (via beautifulsoup4 in the jira/eval-inspect extras) has
+# fixes for CVE-2026-126190/126191 only in releases that need 3.11.5. The package itself still supports 3.11.0+.
+environments = ["python_full_version >= '3.11.5'"]
+
 [tool.hatch.version]
 path = "src/ananke/plexus/version.py"
 

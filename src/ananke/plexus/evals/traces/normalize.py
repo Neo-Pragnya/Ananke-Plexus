@@ -62,13 +62,18 @@ def normalize_trace(
         retries=usage_raw.get("retries", 0),
     )
 
+    # Only a missing value falls back: False, 0, "" and [] are real outputs.
+    final_output = raw.get("final_output")
+    if final_output is None:
+        final_output = raw.get("output")
+
     return AgentTrace(
         trace_id=str(raw.get("trace_id") or raw.get("id") or "unknown"),
         run_id=str(raw.get("run_id") or raw.get("trace_id") or "unknown"),
         runtime=raw.get("runtime") or runtime,
         model=raw.get("model"),
         spans=spans,
-        final_output=raw.get("final_output") or raw.get("output"),
+        final_output=final_output,
         usage=usage,
         spec_hash=raw.get("spec_hash"),
         architecture_hash=raw.get("architecture_hash"),
