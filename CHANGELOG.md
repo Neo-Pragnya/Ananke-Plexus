@@ -12,6 +12,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [0.3.46] — 2026-11-24
 
+### Security
+- The development lock (`uv.lock`) moves soupsieve, which beautifulsoup4 brings in for the `jira`, `eval-inspect` and
+  `all` extras, to 4.1.3 (CVE-2026-126190, CVE-2026-126191). Fixed soupsieve releases need Python 3.11.5, so the lock
+  now covers Python 3.11.5 and later (`[tool.uv] environments`); the package still installs on 3.11.0+, where those
+  extras resolve whatever soupsieve pip finds.
+
 ### Added
 - Rust in the code graph (`graph/rust.py`): functions, structs, enums, traits and `impl` methods with spans, docs and
   signatures; `#[test]` functions marked; `use` and `mod` resolved across the crates of a workspace; `calls` drawn
