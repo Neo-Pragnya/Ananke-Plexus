@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
+import re
+from typing import TYPE_CHECKING, Any
 
 from ananke.plexus.evals.evaluators.base import make_score, skipped_score
 from ananke.plexus.evals.models.case import EvalCase
@@ -18,6 +20,41 @@ _DIM = "planning"
 def _planning_span(trace: AgentTrace) -> AgentSpan | None:
     spans = [s for s in trace.spans if s.kind == SpanKind.PLANNING]
     return spans[0] if spans else None
+
+
+_ITEM_MARKER = re.compile(r"^\s*(?:\d+[.)]|[-*+\u2022])\s+")
+_STEP_KEYS = ("name", "step", "tool", "action", "title")
+
+
+def _count_text_steps(text: str) -> int:
+    """Numbered/bulleted items when the plan has any, otherwise its non-empty lines."""
+    lines = [line for line in text.splitlines() if line.strip()]
+    items = [line for line in lines if _ITEM_MARKER.match(line)]
+    return len(items) if items else len(lines)
+
+
+def _step_key(item: Any) -> Any:
+    """A hashable key for a planned step, so dict (and list) steps can be compared."""
+    if isinstance(item, dict):
+        for key in _STEP_KEYS:
+            value = item.get(key)
+            if isinstance(value, str) and value:
+                return value
+        return json.dumps(item, sort_keys=True, default=str)
+    if isinstance(item, (list, set)):
+        return json.dumps(item, sort_keys=True, default=str)
+    return item
+
+
+def _keyword_pattern(keyword: str) -> re.Pattern[str]:
+    words = [re.escape(w) for w in keyword.lower().split()]
+    # whole words, but the last one may be inflected: "drop" matches "drops", "dropped", "dropping", not "dropdown"
+    last = words[-1]
+    inflected = last
+    if last[-1:].isalpha():
+        inflected = rf"(?:{last}(?:s|es|d|ed|ing|{last[-1]}ed|{last[-1]}ing)?"
+        inflected += rf"|{last[:-1]}ing)" if last.endswith("e") else ")"  # delete → deleting
+    return re.compile(r"(?<!\w)" + r"\s+".join([*words[:-1], inflected]) + r"(?!\w)")
 
 
 class PlanCoverageEvaluator:
@@ -72,8 +109,14 @@ class PlanDependencyEvaluator:
         plan_text = str(span.output or "").lower()
         violations = []
         for before, after in self._pairs:
-            if after.lower() in plan_text and before.lower() not in plan_text:
+            after_pos = plan_text.find(after.lower())
+            if after_pos < 0:
+                continue
+            before_pos = plan_text.find(before.lower())
+            if before_pos < 0:
                 violations.append(f"'{after}' requires '{before}'")
+            elif before_pos > after_pos:
+                violations.append(f"'{after}' comes before its prerequisite '{before}'")
         passed = len(violations) == 0
         return [
             make_score(
@@ -102,8 +145,12 @@ class PlanFeasibilityEvaluator:
         if span is None:
             return [skipped_score(self.id, _DIM, "plan_feasibility", "no planning span")]
         plan_output = span.output
-        steps = plan_output if isinstance(plan_output, list) else []
-        step_count = len(steps)
+        if isinstance(plan_output, list):
+            step_count = len(plan_output)
+        elif isinstance(plan_output, str):
+            step_count = _count_text_steps(plan_output)
+        else:
+            step_count = 0
         passed = step_count <= self._max
         return [
             make_score(
@@ -133,7 +180,7 @@ class PlanRiskEvaluator:
         if span is None:
             return [skipped_score(self.id, _DIM, "plan_risk", "no planning span")]
         plan_text = str(span.output or "").lower()
-        found_risks = [k for k in self._risky if k in plan_text]
+        found_risks = [k for k in self._risky if _keyword_pattern(k).search(plan_text)]
         passed = len(found_risks) == 0
         return [
             make_score(
@@ -167,7 +214,7 @@ class PlanAdherenceEvaluator:
                 skipped_score(self.id, _DIM, "plan_adherence", "planning span has no step list")
             ]
         executed = [s.name for s in trace.spans if s.kind == SpanKind.TOOL]
-        planned_set = set(planned)
+        planned_set = {_step_key(item) for item in planned}
         executed_set = set(executed)
         adherence = len(planned_set & executed_set) / len(planned_set) if planned_set else 1.0
         passed = adherence >= 0.7

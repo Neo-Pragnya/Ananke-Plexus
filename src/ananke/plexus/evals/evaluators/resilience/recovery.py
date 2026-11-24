@@ -2,17 +2,45 @@
 
 from __future__ import annotations
 
+import contextlib
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from ananke.plexus.evals.evaluators.base import make_score, skipped_score
 from ananke.plexus.evals.models.case import EvalCase
 from ananke.plexus.evals.models.score import EvalScore
-from ananke.plexus.evals.models.trace import AgentTrace, SpanKind
+from ananke.plexus.evals.models.trace import AgentSpan, AgentTrace, SpanKind
 
 if TYPE_CHECKING:
     from ananke.plexus.evals.context import EvaluationContext
 
 _DIM = "resilience"
+
+
+def _chronological_positions(trace: AgentTrace) -> dict[int, int]:
+    """Map each span's index in ``trace.spans`` to its chronological position.
+
+    Spans are ordered by start time, ties broken by their order in the trace. If the start
+    times cannot be compared (naive and aware datetimes mixed), trace order is used.
+    """
+    indices = list(range(len(trace.spans)))
+    with contextlib.suppress(TypeError):
+        indices = sorted(indices, key=lambda i: (trace.spans[i].started_at, i))
+    return {span_index: position for position, span_index in enumerate(indices)}
+
+
+def _any_after_first_failure(
+    trace: AgentTrace,
+    is_failure: Callable[[AgentSpan], bool],
+    is_response: Callable[[AgentSpan], bool],
+) -> bool:
+    """True when some span matching *is_response* comes after the earliest failure."""
+    positions = _chronological_positions(trace)
+    failure_positions = [positions[i] for i, s in enumerate(trace.spans) if is_failure(s)]
+    if not failure_positions:
+        return False
+    first_failure = min(failure_positions)
+    return any(positions[i] > first_failure for i, s in enumerate(trace.spans) if is_response(s))
 
 
 class FailureRecognitionEvaluator:
@@ -33,8 +61,10 @@ class FailureRecognitionEvaluator:
                     self.id, _DIM, "failure_recognition", True, reason="no errors detected in trace"
                 )
             ]
-        subsequent_recovery = any(
-            s.attributes.get("recovery") or s.attributes.get("retry") for s in trace.spans
+        subsequent_recovery = _any_after_first_failure(
+            trace,
+            lambda s: bool(s.attributes.get("error") or s.attributes.get("exception")),
+            lambda s: bool(s.attributes.get("recovery") or s.attributes.get("retry")),
         )
         passed = subsequent_recovery
         return [
@@ -170,14 +200,6 @@ class PartialFailureContainmentEvaluator:
     def evaluate(
         self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
     ) -> list[EvalScore]:
-        compensation_spans = [
-            s
-            for s in trace.spans
-            if any(
-                k in s.name.lower()
-                for k in ["compensate", "cleanup", "mark_partial", "containment"]
-            )
-        ]
         failed = [s for s in trace.spans if s.attributes.get("error")]
         if not failed:
             return [
@@ -189,7 +211,15 @@ class PartialFailureContainmentEvaluator:
                     reason="no failures to contain",
                 )
             ]
-        passed = len(compensation_spans) > 0
+        # Containment only counts when it happens after the failure it is meant to contain.
+        passed = _any_after_first_failure(
+            trace,
+            lambda s: bool(s.attributes.get("error")),
+            lambda s: any(
+                k in s.name.lower()
+                for k in ["compensate", "cleanup", "mark_partial", "containment"]
+            ),
+        )
         return [
             make_score(
                 self.id,

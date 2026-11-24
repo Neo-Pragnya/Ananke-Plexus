@@ -10,6 +10,48 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ---
 
+## [0.3.46] — 2026-11-24
+
+### Added
+- Rust in the code graph (`graph/rust.py`): functions, structs, enums, traits and `impl` methods with spans, docs and
+  signatures; `#[test]` functions marked; `use` and `mod` resolved across the crates of a workspace; `calls` drawn
+  only when unambiguous. `ananke context outline`, `symbol`, `callers` and `ask` now work on Rust.
+
+### Fixed
+- `ananke context` kept serving a graph built by an older extractor: the cache key now includes Ananke's version and
+  the graph package's source.
+- `ananke context callers` listed lines of `.ananke/graph/metadata.json` among its text matches.
+- **Evaluator fixes** found while documenting all 77 evaluators for Guage Kit. Each has a regression test
+  (`tests/unit/test_evals_evaluator_fixes_a.py`, `..._b.py`):
+  - `retrieval.graph_context_precision` is a precision between 0 and 1 (the share of retrieved documents holding a
+    relevant symbol); before, a document with several symbols pushed it above 1 and the score failed validation.
+  - Retrieval evaluators match document ids, paths, specs, components and symbols as whole ids: `doc1` no longer
+    matches `doc10`, and an empty id matches nothing.
+  - `safety.filesystem_scope` normalises paths and matches by path segment, so `allowed/../../etc/passwd` and a
+    sibling such as `src_old` (for scope `src`) are violations.
+  - `safety.shell_policy` matches denied commands as whole tokens: `sudo` no longer matches `pseudo`, and extra
+    whitespace no longer slips past a multi-word entry.
+  - `safety.dependency_approval` treats `install` as a whole word in tool names, so `uninstall` needs no approval.
+  - `resilience.failure_recognition` and `resilience.partial_failure_containment` accept only a recovery or clean-up
+    span that comes after the failure.
+  - `tool_use.tool_order` checks every call of the later tool, and fails when it runs without the earlier tool.
+  - `multi_agent.cyclic_delegation` fails only on a real cycle in the delegation graph (`A -> B -> A`), not when the
+    same agent is used twice; `multi_agent.delegation_accuracy` reports expected delegations that never happened.
+  - `architecture.architecture_conformance` matches component ids case-insensitively; `architecture.breaking_contract`
+    matches indicators case-insensitively, ignores negated mentions ("no breaking change", "non-breaking") and treats
+    an explicit empty list as empty; `architecture.changed_file_scope` matches scopes by path segment.
+  - `efficiency.cache_efficiency` counts hits only on model spans, so it can no longer exceed 1; the `latency` reason
+    no longer calls a per-run limit a "p95 target".
+  - `outcome.exact_match` and `normalized_match` fail a missing final output ("no final output") instead of comparing
+    the text "None"; `outcome.set_equality` reads a string as a JSON list or as newline/comma-separated items, not as
+    a set of characters; recorded traces keep a falsy final output (`False`, `0`, `""`), so `task_completion` can see
+    `task_completed: false`.
+  - `planning.plan_dependency` flags a prerequisite that comes after the step needing it; `plan_feasibility` counts
+    the steps of a text plan; `plan_adherence` accepts steps given as objects; `plan_risk` matches whole words with
+    their inflections ("drop", "dropped"; not "dropdown").
+
+---
+
 ## [0.3.45] — 2026-11-12
 
 ### Added

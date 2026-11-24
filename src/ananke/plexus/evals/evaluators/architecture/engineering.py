@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from ananke.plexus.evals.evaluators.base import make_score, skipped_score
@@ -13,6 +14,30 @@ if TYPE_CHECKING:
     from ananke.plexus.evals.context import EvaluationContext
 
 _DIM = "architecture"
+
+# Words that, shortly before a breaking-change indicator in the same clause, negate it
+# ("no breaking change", "not a breaking change", "non-breaking", "without breaking changes").
+_NEGATIONS = frozenset({"no", "not", "non", "without"})
+_NEGATION_WINDOW = 3  # words
+
+
+def _is_negated(text: str, start: int) -> bool:
+    clause = re.split(r"[.;:!?,\n]", text[:start])[-1]
+    words = re.findall(r"[a-z]+", clause)[-_NEGATION_WINDOW:]
+    return any(w in _NEGATIONS for w in words)
+
+
+def _norm_path(path: str) -> str:
+    p = path.replace("\\", "/")
+    while p.startswith("./"):
+        p = p[2:]
+    return p.rstrip("/")
+
+
+def _in_scope(path: str, scope: str) -> bool:
+    if not scope or scope == ".":
+        return True
+    return path == scope or path.startswith(scope + "/")
 
 
 class SpecAdherenceEvaluator:
@@ -128,7 +153,7 @@ class ArchitectureConformanceEvaluator:
             return [make_score(self.id, _DIM, "architecture_conformance", False, reason=str(exc))]
 
         output_text = str(trace.final_output or "").lower()
-        violations = [c for c in declared_components if c and f"del {c}" in output_text]
+        violations = [c for c in declared_components if c and f"del {c.lower()}" in output_text]
         passed = len(violations) == 0
         return [
             make_score(
@@ -224,7 +249,8 @@ class ChangedFileScopeEvaluator:
             return [
                 skipped_score(self.id, _DIM, "changed_file_scope", "no changed_files in metadata")
             ]
-        out_of_scope = [f for f in changed if not any(f.startswith(a) for a in self._allowed)]
+        scopes = [_norm_path(a) for a in self._allowed]
+        out_of_scope = [f for f in changed if not any(_in_scope(_norm_path(f), s) for s in scopes)]
         passed = len(out_of_scope) == 0
         return [
             make_score(
@@ -245,19 +271,29 @@ class BreakingContractEvaluator:
     deterministic = True
 
     def __init__(self, breaking_indicators: list[str] | None = None) -> None:
-        self._indicators = breaking_indicators or [
-            "remove field",
-            "rename field",
-            "change type",
-            "remove endpoint",
-            "breaking change",
-        ]
+        if breaking_indicators is None:
+            breaking_indicators = [
+                "remove field",
+                "rename field",
+                "change type",
+                "remove endpoint",
+                "breaking change",
+            ]
+        self._indicators = breaking_indicators
 
     def evaluate(
         self, *, case: EvalCase, trace: AgentTrace, context: EvaluationContext
     ) -> list[EvalScore]:
         output = str(trace.final_output or "").lower()
-        triggered = [ind for ind in self._indicators if ind in output]
+        triggered = [
+            ind
+            for ind in self._indicators
+            if ind
+            and any(
+                not _is_negated(output, m.start())
+                for m in re.finditer(re.escape(ind.lower()), output)
+            )
+        ]
         passed = len(triggered) == 0
         return [
             make_score(
