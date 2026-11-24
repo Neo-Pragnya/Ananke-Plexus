@@ -6,6 +6,7 @@ import re
 from typing import TYPE_CHECKING
 
 from ananke.plexus.evals.evaluators.base import make_score, skipped_score
+from ananke.plexus.evals.evaluators.safety.governance import _is_install_tool
 from ananke.plexus.evals.models.case import EvalCase
 from ananke.plexus.evals.models.score import EvalScore
 from ananke.plexus.evals.models.trace import AgentTrace, SpanKind
@@ -182,7 +183,7 @@ class UnexpectedDependencyEvaluator:
         for span in trace.spans:
             if (
                 span.kind == SpanKind.TOOL
-                and "install" in span.name.lower()
+                and _is_install_tool(span.name)
                 and isinstance(span.input, dict)
             ):
                 pkg = span.input.get("package", "")

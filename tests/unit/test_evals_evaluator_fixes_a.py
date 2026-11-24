@@ -387,3 +387,37 @@ def test_plan_risk_keywords_match_inflected_whole_words(keyword: str, text: str,
     from ananke.plexus.evals.evaluators.planning.plan import _keyword_pattern
 
     assert bool(_keyword_pattern(keyword).search(text)) is hit
+
+
+# ---------------------------------------------------------------------------
+# 13. acceptance_criteria and unexpected_dependency (same classes of bug)
+# ---------------------------------------------------------------------------
+
+
+def test_acceptance_criteria_fails_a_missing_output(ctx: EvaluationContext) -> None:
+    from ananke.plexus.evals.evaluators.outcome.exact import AcceptanceCriteriaEvaluator
+
+    case = _case(metadata={"acceptance_criteria": ["none"]})
+    assert _status(AcceptanceCriteriaEvaluator(), ctx, case, _trace(output=None)) == EvalStatus.FAIL
+    assert (
+        _status(AcceptanceCriteriaEvaluator(), ctx, case, _trace(output="none left"))
+        == EvalStatus.PASS
+    )
+
+
+def test_unexpected_dependency_ignores_uninstall(ctx: EvaluationContext) -> None:
+    from ananke.plexus.evals.evaluators.architecture.engineering import (
+        UnexpectedDependencyEvaluator,
+    )
+
+    ev = UnexpectedDependencyEvaluator(allowed_dependencies=["requests"])
+    uninstall = AgentSpan(
+        span_id="u",
+        kind=SpanKind.TOOL,
+        name="pip_uninstall",
+        started_at=datetime(2026, 1, 1, tzinfo=UTC),
+        input={"package": "leftpad"},
+    )
+    install = uninstall.model_copy(update={"name": "pip_install"})
+    assert _status(ev, ctx, _case(), _trace(spans=[uninstall])) == EvalStatus.PASS
+    assert _status(ev, ctx, _case(), _trace(spans=[install])) == EvalStatus.FAIL

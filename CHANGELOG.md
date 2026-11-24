@@ -45,7 +45,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   - `outcome.exact_match` and `normalized_match` fail a missing final output ("no final output") instead of comparing
     the text "None"; `outcome.set_equality` reads a string as a JSON list or as newline/comma-separated items, not as
     a set of characters; recorded traces keep a falsy final output (`False`, `0`, `""`), so `task_completion` can see
-    `task_completed: false`.
+    `task_completed: false`. `outcome.acceptance_criteria` fails a missing output instead of searching the text
+    "None", and `architecture.unexpected_dependency` treats `install` as a whole word (`pip_uninstall` is not an install).
   - `planning.plan_dependency` flags a prerequisite that comes after the step needing it; `plan_feasibility` counts
     the steps of a text plan; `plan_adherence` accepts steps given as objects; `plan_risk` matches whole words with
     their inflections ("drop", "dropped"; not "dropdown").

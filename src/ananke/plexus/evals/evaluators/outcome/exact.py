@@ -270,6 +270,10 @@ class AcceptanceCriteriaEvaluator:
                 skipped_score(self.id, _DIM, "acceptance_criteria", "no criteria in case metadata")
             ]
 
+        if trace.final_output is None:
+            return [
+                make_score(self.id, _DIM, "acceptance_criteria", False, reason="no final output")
+            ]
         output_text = str(trace.final_output).lower()
         met = [c for c in criteria if c.lower() in output_text]
         ratio = len(met) / len(criteria)
